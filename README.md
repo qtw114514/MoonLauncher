@@ -1,7 +1,7 @@
 <p align="center"><img src="src/OpenLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
 
-<h1 align="center">OpenLauncher</h1>
-<p align="center">去中心化的 Minecraft 启动器 · 没有服务器 · 单个 exe · GPL-3.0</p>
+<h1 align="center">MoonLauncher</h1>
+<p align="center">使用 OpenLauncher 源码再开发 · 去中心化的 Minecraft 启动器 · 单个 exe · GPL-3.0</p>
 
 ---
 
@@ -28,8 +28,8 @@
 
 ## 下载使用
 
-从 https://honghemc.cn/openlauncher/ 下载 `OpenLauncher.exe`（同一页面也能下载源码），放进一个空文件夹双击即可（Windows 10 / 11 自带 .NET Framework 4.8，无需安装任何东西）。
-游戏文件默认放在 exe 旁边的 `.minecraft`，启动器配置在 `OpenLauncher` 文件夹里——整个文件夹拷走就能在别的电脑上用。
+从 [GitHub Releases](https://github.com/qtw114514/OpenLauncher/releases) 下载 `MoonLauncher.exe`，放进一个空文件夹双击即可（Windows 10 / 11 自带 .NET Framework 4.8，无需安装任何东西）。
+游戏文件默认放在 exe 旁边的 `.minecraft`，启动器配置在 `MoonLauncher` 文件夹里——整个文件夹拷走就能在别的电脑上用。
 
 也可以在 **版本选择 → 添加已有的游戏目录** 里直接使用官方启动器、PCL、HMCL 的 `.minecraft`。
 
@@ -38,7 +38,7 @@
 只需要 [.NET SDK](https://dotnet.microsoft.com/download)（8 或更新），不需要 Visual Studio：
 
 ```powershell
-.\build.ps1        # 输出 dist\OpenLauncher.exe
+.\build.ps1        # 输出 dist\MoonLauncher.exe
 ```
 
 ## 去中心化是怎么做到的
@@ -50,7 +50,7 @@
   CurseForge                      错峰竞速，谁快用谁，失败自动换
                  ╲                   ╱
                   ╲                 ╱
-                   OpenLauncher.exe
+                   MoonLauncher.exe
                   ╱                 ╲
  签名更新清单（GitHub / jsDelivr / Gitee / 任何人的镜像）
    ↑ 只认被信任公钥签名的清单；exe 用 SHA-256 校验

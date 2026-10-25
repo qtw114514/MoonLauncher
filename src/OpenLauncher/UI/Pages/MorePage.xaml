@@ -11,7 +11,7 @@
                     </Grid.ColumnDefinitions>
                     <Image Source="/Assets/icon.png" Width="72" Height="72" RenderOptions.BitmapScalingMode="NearestNeighbor" Margin="0,0,18,0" VerticalAlignment="Top"/>
                     <StackPanel Grid.Column="1">
-                        <TextBlock x:Name="AboutTitle" Text="OpenLauncher" Style="{StaticResource H1}"/>
+                        <TextBlock x:Name="AboutTitle" Text="MoonLauncher" Style="{StaticResource H1}"/>
                         <TextBlock x:Name="AboutSub" Style="{StaticResource Sub}" Margin="0,2,0,8"/>
                         <TextBlock Style="{StaticResource Body}" Text="一个没有中心服务器的 Minecraft 启动器：下载走官方源和公益镜像，更新走签名清单，代码开源（GPL-3.0），任何人都可以编译、镜像、接手维护。我们不保证持续更新——但保证你不需要我们也能继续用、继续更新。"/>
                         <WrapPanel Margin="0,12,0,0">

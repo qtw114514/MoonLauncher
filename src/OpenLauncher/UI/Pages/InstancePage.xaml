@@ -116,7 +116,7 @@
                             <TextBlock Text="启动后自动进入服务器（如 mc.example.com:25565）" Style="{StaticResource Sub}"/>
                             <TextBox x:Name="ServerBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
                             <TextBlock Text="主界面左下角显示的版本类型文字" Style="{StaticResource Sub}"/>
-                            <TextBox x:Name="VersionTypeBox" Margin="0,4,0,10" Tag="OpenLauncher" LostFocus="Text_LostFocus"/>
+                            <TextBox x:Name="VersionTypeBox" Margin="0,4,0,10" Tag="MoonLauncher" LostFocus="Text_LostFocus"/>
                             <TextBlock Text="额外 JVM 参数（留空使用全局设置）" Style="{StaticResource Sub}"/>
                             <TextBox x:Name="JvmBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
                             <TextBlock Text="额外游戏参数（留空使用全局设置）" Style="{StaticResource Sub}"/>

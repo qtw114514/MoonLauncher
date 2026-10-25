@@ -5,8 +5,8 @@ using System.IO;
 namespace OpenLauncher.Core
 {
     /// <summary>
-    /// 便携优先：配置和数据都放在 exe 旁边的 OpenLauncher 文件夹里，拷走就能用。
-    /// exe 所在目录不可写（比如放进了 Program Files）时退回 %APPDATA%\OpenLauncher。
+    /// 便携优先：配置和数据都放在 exe 旁边的 MoonLauncher 文件夹里，拷走就能用。
+    /// exe 所在目录不可写（比如放进了 Program Files）时退回 %APPDATA%\MoonLauncher。
     /// </summary>
     public static class Paths
     {

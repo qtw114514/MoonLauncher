@@ -8,7 +8,7 @@ namespace OpenLauncher.Game
 {
     /// <summary>
     /// versions 下的一个可启动版本，带自己的设置（版本隔离、Java、内存……）。
-    /// 设置存在 versions/&lt;id&gt;/OpenLauncher/settings.json，跟着版本文件夹走。
+    /// 设置存在 versions/&lt;id&gt;/MoonLauncher/settings.json，跟着版本文件夹走。
     /// </summary>
     public class Instance
     {

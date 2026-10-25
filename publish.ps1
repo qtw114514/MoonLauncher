@@ -1,9 +1,9 @@
-﻿# 编译 + 生成签名更新清单（维护者用）
+# 编译 + 生成签名更新清单（维护者用）
 # 用法：
 #   .\publish.ps1 -Version 0.1.1 -Key D:\keys\private-key.xml -Pub D:\keys\public-key.xml `
-#                 -Urls "https://github.com/<你>/OpenLauncher/releases/download/v0.1.1/OpenLauncher.exe","https://<国内镜像>/OpenLauncher.exe" `
+#                 -Urls "https://github.com/<你>/OpenLauncher/releases/download/v0.1.1/MoonLauncher.exe","https://<国内镜像>/MoonLauncher.exe" `
 #                 [-Notes release\notes.md] [-Config release\config.json]
-# 之后：把 dist\OpenLauncher.exe 上传到上面每个地址，把 release\update.json 提交到仓库（以及所有镜像）。
+# 之后：把 dist\MoonLauncher.exe 上传到上面每个地址，把 release\update.json 提交到仓库（以及所有镜像）。
 param(
     [Parameter(Mandatory)] [string]$Version,
     [Parameter(Mandatory)] [string]$Key,
@@ -29,7 +29,7 @@ if (-not $dotnet) { $dotnet = "$env:USERPROFILE\.dotnet\dotnet.exe" }
 $tool = "$root\tools\Release\bin\Release\ol-release.exe"
 
 # 3. 签名清单
-$toolArgs = @('publish', '--exe', "$root\dist\OpenLauncher.exe", '--version', $Version, '--key', $Key, '--pub', $Pub, '--out', "$root\release\update.json")
+$toolArgs = @('publish', '--exe', "$root\dist\MoonLauncher.exe", '--version', $Version, '--key', $Key, '--pub', $Pub, '--out', "$root\release\update.json")
 foreach ($u in $Urls) { $toolArgs += @('--url', $u) }
 if ($Notes) { $toolArgs += @('--notes', $Notes) }
 if ($Config) { $toolArgs += @('--config', $Config) }

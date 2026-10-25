@@ -6,14 +6,14 @@
     <UseWPF>true</UseWPF>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <AssemblyName>OpenLauncher</AssemblyName>
+    <AssemblyName>MoonLauncher</AssemblyName>
     <RootNamespace>OpenLauncher</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <Version>0.0.1</Version>
-    <Product>OpenLauncher</Product>
+    <Product>MoonLauncher</Product>
     <Description>去中心化的 Minecraft 启动器</Description>
-    <Copyright>OpenLauncher contributors, GPL-3.0</Copyright>
+    <Copyright>MoonLauncher contributors, GPL-3.0</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>embedded</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>

@@ -6,12 +6,12 @@ namespace OpenLauncher
     /// </summary>
     public static class Branding
     {
-        public const string AppName = "OpenLauncher";
-        public const string DisplayName = "OpenLauncher";
+        public const string AppName = "MoonLauncher";
+        public const string DisplayName = "MoonLauncher";
         public const string Tagline = "去中心化 Minecraft 启动器";
 
         /// <summary>主页 / 源码下载（仅用于"关于"页面和 User-Agent，不是更新的唯一来源）</summary>
-        public const string RepoUrl = "https://honghemc.cn/openlauncher/";
+        public const string RepoUrl = "https://github.com/qtw114514/OpenLauncher";
 
         /// <summary>
         /// 内置的更新清单地址。任意一个能访问到、且签名验证通过就行，
@@ -19,12 +19,10 @@ namespace OpenLauncher
         /// </summary>
         public static readonly string[] DefaultUpdateSources =
         {
-            "https://honghemc.cn/openlauncher/update.json",
-            "https://raw.githubusercontent.com/OpenLauncher-MC/OpenLauncher/main/release/update.json",
-            "https://cdn.jsdelivr.net/gh/OpenLauncher-MC/OpenLauncher@main/release/update.json",
-            "https://fastly.jsdelivr.net/gh/OpenLauncher-MC/OpenLauncher@main/release/update.json",
-            "https://gitee.com/OpenLauncher-MC/OpenLauncher/raw/main/release/update.json",
-            "https://ghfast.top/https://raw.githubusercontent.com/OpenLauncher-MC/OpenLauncher/main/release/update.json",
+            "https://raw.githubusercontent.com/qtw114514/OpenLauncher/main/release/update.json",
+            "https://cdn.jsdelivr.net/gh/qtw114514/OpenLauncher@main/release/update.json",
+            "https://fastly.jsdelivr.net/gh/qtw114514/OpenLauncher@main/release/update.json",
+            "https://ghfast.top/https://raw.githubusercontent.com/qtw114514/OpenLauncher/main/release/update.json",
         };
 
         /// <summary>
