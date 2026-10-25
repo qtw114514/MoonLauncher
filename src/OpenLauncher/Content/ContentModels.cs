@@ -19,6 +19,8 @@ namespace OpenLauncher.Content
         public string Slug { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        /// <summary>完整介绍原文（Markdown / HTML；搜索接口不返回，详情页按需另行加载）</summary>
+        public string Body { get; set; }
         public string Author { get; set; }
         public string IconUrl { get; set; }
         public string WebUrl { get; set; }

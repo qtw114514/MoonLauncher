@@ -183,6 +183,8 @@
                                 <Button Content="清除" Style="{StaticResource Ghost}" Click="ClearBg_Click"/>
                             </StackPanel>
                         </Grid>
+                        <TextBlock Text="自定义主页（启动页顶部显示的内嵌网页）" Style="{StaticResource Sub}" Margin="0,8,0,4"/>
+                        <TextBox x:Name="HomeUrl" Tag="填网址或本地 .html 文件路径，留空关闭" LostFocus="HomeUrl_LostFocus"/>
                         <CheckBox x:Name="GlassFx" Content="液态玻璃（仿 macOS / iOS 的毛玻璃质感，即时生效）" Margin="0,10,0,0" Click="Glass_Click"/>
                         <StackPanel x:Name="GlassDebug" Margin="0,10,0,0" Visibility="Collapsed">
                             <TextBlock Text="液态玻璃调试（拖动即时生效）" Style="{StaticResource Sub}" Margin="0,0,0,4"/>

@@ -227,6 +227,7 @@ namespace OpenLauncher.Content
                 Slug = j["slug"].Str,
                 Title = j["title"].Str,
                 Description = j["description"].Str,
+                Body = j["body"].Str,
                 IconUrl = NullIfEmpty(j["icon_url"].Str),
                 Downloads = j["downloads"].Long,
                 Updated = ContentJson.Date(j["updated"]),

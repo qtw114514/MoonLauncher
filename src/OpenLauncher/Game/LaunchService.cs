@@ -398,6 +398,7 @@ namespace OpenLauncher.Game
                 int code = 0;
                 try { proc.WaitForExit(); code = proc.ExitCode; } catch { }
                 lock (Running) Running.Remove(session);
+                Accounts.LocalSkinServer.StopAll();
                 Log.Info($"游戏退出，退出码 {code}");
                 session.RaiseExit(code);
                 // 释放进程句柄（句柄攒到 GC 前可能耗尽）；GameSession.Process 无人再读

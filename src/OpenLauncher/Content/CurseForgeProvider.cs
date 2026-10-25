@@ -186,7 +186,15 @@ namespace OpenLauncher.Content
         {
             if (string.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));
             var json = await GetAsync("/mods/" + Uri.EscapeDataString(id), ct).ConfigureAwait(false);
-            return ParseMod(json["data"], null);
+            var p = ParseMod(json["data"], null);
+            // 完整介绍（best-effort，拿不到就留空，不影响页面其它部分）
+            try
+            {
+                var desc = await GetAsync("/mods/" + Uri.EscapeDataString(id) + "/description", ct).ConfigureAwait(false);
+                p.Body = desc["data"].Str;
+            }
+            catch (Exception ex) { Log.Warn($"获取 CurseForge 介绍失败 {id}：{ex.Message}"); }
+            return p;
         }
 
         /// <summary>批量获取项目（POST /v1/mods）</summary>

@@ -37,6 +37,8 @@ namespace OpenLauncher.Accounts
         public string ClientToken { get; set; }
         /// <summary>可选：皮肤地址（用于头像）</summary>
         public string SkinUrl { get; set; }
+        /// <summary>离线账号：本地自定义皮肤的文件名（存于 DataDir\skins\，等于 UUID.png 时才生效）</summary>
+        public string LocalSkin { get; set; }
         /// <summary>上次使用（UTC）</summary>
         public DateTime LastUsed { get; set; }
         /// <summary>
@@ -86,7 +88,7 @@ namespace OpenLauncher.Accounts
         {
             Type = o.Type; Name = o.Name; Uuid = o.Uuid; AccessToken = o.AccessToken; RefreshToken = o.RefreshToken;
             ExpiresAt = o.ExpiresAt; Xuid = o.Xuid; ServerUrl = o.ServerUrl; ServerName = o.ServerName; LoginName = o.LoginName;
-            ClientToken = o.ClientToken; SkinUrl = o.SkinUrl; LastUsed = o.LastUsed; ProfilePending = o.ProfilePending;
+            ClientToken = o.ClientToken; SkinUrl = o.SkinUrl; LocalSkin = o.LocalSkin; LastUsed = o.LastUsed; ProfilePending = o.ProfilePending;
         }
 
         // ---------- 序列化 ----------
@@ -106,6 +108,7 @@ namespace OpenLauncher.Accounts
                 .Set("loginName", LoginName)
                 .Set("clientToken", ClientToken)
                 .Set("skinUrl", SkinUrl)
+                .Set("localSkin", LocalSkin)
                 .Set("lastUsed", AccountUtil.FormatTime(LastUsed))
                 .Set("profilePending", ProfilePending);
         }
@@ -135,6 +138,7 @@ namespace OpenLauncher.Accounts
                 LoginName = n["loginName"].Str,
                 ClientToken = n["clientToken"].Str,
                 SkinUrl = n["skinUrl"].Str,
+                LocalSkin = n["localSkin"].Str,
                 LastUsed = AccountUtil.ParseTime(n["lastUsed"].Str),
                 ProfilePending = n["profilePending"].Bool,
             };

@@ -101,6 +101,7 @@ namespace OpenLauncher.UI.Pages
             MsClientId.Text = Settings.MicrosoftClientId;
             CfKey.Text = Settings.CurseForgeApiKey;
             ThemeHex.Text = Settings.ThemeColor;
+            HomeUrl.Text = Settings.Get("home.url");
             GlassFx.IsChecked = Settings.Glass;
             LoadGlassDebug();
 
@@ -134,6 +135,12 @@ namespace OpenLauncher.UI.Pages
             if (ThreadsText == null) return;
             ThreadsText.Text = ((int)Threads.Value).ToString();
             if (!_loading) Settings.DownloadThreads = (int)Threads.Value;
+        }
+
+        void HomeUrl_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_loading) return;
+            Settings.Set("home.url", HomeUrl.Text.Trim());
         }
 
         void Any_Changed(object sender, RoutedEventArgs e)

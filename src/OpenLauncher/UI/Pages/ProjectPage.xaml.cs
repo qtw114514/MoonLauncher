@@ -57,7 +57,73 @@ namespace OpenLauncher.UI.Pages
             if (_loaded) return;
             _loaded = true;
             Icon.Source = await RemoteImage.LoadAsync(_p.IconUrl ?? "", 128);
+            _ = LoadDescAsync();
             await LoadFilesAsync();
+        }
+
+        // ---------- 介绍 ----------
+        async Task LoadDescAsync()
+        {
+            // 完整介绍原文（best-effort，失败不影响文件列表）
+            try
+            {
+                var prov = ContentService.Get(_p.Source);
+                var full = await Task.Run(() => prov.GetProjectAsync(_p.Id, CancellationToken.None));
+                if (!string.IsNullOrWhiteSpace(full?.Body))
+                {
+                    _p.Body = full.Body;
+                    BodyText.Text = PlainText(full.Body);
+                    DescCard.Visibility = Visibility.Visible;
+                    DescScroll.MaxHeight = 200;
+                    DescToggle.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex) { Log.Warn($"获取项目介绍失败（{_p.Title}）：{ex.Message}"); }
+
+            // 中文简介（MC 百科，best-effort）
+            try
+            {
+                var intro = await Task.Run(() => McmodIntro.FetchAsync(_p.Title, CancellationToken.None));
+                if (intro != null)
+                {
+                    ZhText.Text = intro.Text;
+                    ZhPanel.Visibility = Visibility.Visible;
+                    McmodLink.Tag = intro.Url;
+                    McmodLink.Visibility = Visibility.Visible;
+                    DescCard.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex) { Log.Warn($"获取中文介绍失败（{_p.Title}）：{ex.Message}"); }
+            ZhStatus.Visibility = Visibility.Collapsed;
+        }
+
+        bool _descExpanded;
+        void DescToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _descExpanded = !_descExpanded;
+            DescScroll.MaxHeight = _descExpanded ? double.PositiveInfinity : 200;
+            DescToggle.Content = _descExpanded ? "收起" : "展开";
+        }
+
+        void Mcmod_Click(object sender, RoutedEventArgs e)
+        {
+            if (McmodLink.Tag is string url && !string.IsNullOrEmpty(url)) Util.OpenUrl(url);
+        }
+
+        /// <summary>把 Markdown / HTML 介绍压成可读纯文本（保留段落，去掉格式语法）</summary>
+        static string PlainText(string md)
+        {
+            var s = md ?? "";
+            s = System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", " ");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "!\\[[^\\]]*\\]\\([^)]*\\)", "");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "\\[([^\\]]*)\\]\\([^)]*\\)", "$1");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "^#{1,6}\\s*", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+            s = System.Text.RegularExpressions.Regex.Replace(s, "\\*\\*|__", "");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "&nbsp;", " ");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "&amp;", "&");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "[ \\t]+", " ");
+            s = System.Text.RegularExpressions.Regex.Replace(s, "\\n{3,}", "\n\n");
+            return s.Trim();
         }
 
         async Task LoadFilesAsync()

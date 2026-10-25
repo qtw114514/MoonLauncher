@@ -31,6 +31,26 @@
             </Grid>
         </Border>
 
+        <Border DockPanel.Dock="Top" Style="{StaticResource CardBox}" Margin="0,0,0,10" x:Name="DescCard" Visibility="Collapsed">
+            <StackPanel>
+                <Grid>
+                    <TextBlock Text="介绍" Style="{StaticResource H2}" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="McmodLink" Content="在 MC 百科打开" Style="{StaticResource Ghost}" Visibility="Collapsed" Click="Mcmod_Click"/>
+                        <Button x:Name="DescToggle" Content="展开" Style="{StaticResource Ghost}" Click="DescToggle_Click"/>
+                    </StackPanel>
+                </Grid>
+                <TextBlock x:Name="ZhStatus" Text="正在查找中文介绍…" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
+                <StackPanel x:Name="ZhPanel" Visibility="Collapsed" Margin="0,8,0,0">
+                    <TextBlock Text="中文简介（来自 MC 百科）" Style="{StaticResource Sub}"/>
+                    <TextBlock x:Name="ZhText" Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ScrollViewer x:Name="DescScroll" MaxHeight="0" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="BodyText" Style="{StaticResource Body}" TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+
         <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
             <TextBlock x:Name="FilesTitle" Text="选择要下载的文件" Style="{StaticResource H2}" VerticalAlignment="Center" Margin="0"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

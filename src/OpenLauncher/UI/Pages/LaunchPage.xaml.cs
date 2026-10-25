@@ -24,6 +24,8 @@ namespace OpenLauncher.UI.Pages
         {
             InitializeComponent();
             AccountStore.Changed += () => Dispatcher.BeginInvoke((Action)RefreshAccount);
+            Settings.Changed += RefreshHomeCard;
+            RefreshHomeCard();
             _logTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _logTimer.Tick += (s, e) => FlushLog();
             var h = DateTime.Now.Hour;
@@ -62,6 +64,62 @@ namespace OpenLauncher.UI.Pages
         }
 
         void Accounts_Click(object sender, RoutedEventArgs e) => _ = AccountDialogs.ManageAsync();
+
+        // ---------- 自定义主页 ----------
+        string _homeNavigated;
+        void RefreshHomeCard()
+        {
+            if (HomeCard == null) return;
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshHomeCard); return; }
+            var raw = (Settings.Get("home.url") ?? "").Trim();
+            if (string.IsNullOrEmpty(raw))
+            {
+                HomeCard.Visibility = Visibility.Collapsed;
+                _homeNavigated = null;
+                return;
+            }
+            Uri uri = null;
+            try
+            {
+                uri = System.IO.File.Exists(raw)
+                    ? new Uri(System.IO.Path.GetFullPath(raw))
+                    : new Uri(raw, UriKind.Absolute);
+                if (uri.Scheme != "http" && uri.Scheme != "https" && uri.Scheme != "file") uri = null;
+            }
+            catch { uri = null; }
+            if (uri == null)
+            {
+                HomeCard.Visibility = Visibility.Visible;
+                HomeWeb.Visibility = Visibility.Collapsed;
+                HomeHint.Visibility = Visibility.Visible;
+                _homeNavigated = null;
+                return;
+            }
+            HomeCard.Visibility = Visibility.Visible;
+            HomeHint.Visibility = Visibility.Collapsed;
+            HomeWeb.Visibility = Visibility.Visible;
+            var key = uri.ToString();
+            if (_homeNavigated != key) { _homeNavigated = key; try { HomeWeb.Navigate(uri); } catch { HomeHint.Visibility = Visibility.Visible; } }
+        }
+
+        void OpenHome_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_homeNavigated)) Util.OpenUrl(_homeNavigated);
+        }
+
+        void HomeWeb_LoadCompleted(object sender, System.Windows.Navigation.NavigationEventArgs e) => HomeHint.Visibility = Visibility.Collapsed;
+
+        /// <summary>屏蔽 IE 脚本错误弹窗（WPF WebBrowser 没有公开的开关，反射设置 IWebBrowser2.Silent）</summary>
+        void HomeWeb_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var fi = typeof(WebBrowser).GetField("_axIWebBrowser2", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                var com = fi?.GetValue(HomeWeb);
+                com?.GetType().InvokeMember("Silent", System.Reflection.BindingFlags.SetProperty, null, com, new object[] { true });
+            }
+            catch { }
+        }
 
         // ---------- 版本 ----------
         public static Instance SelectedInstance()

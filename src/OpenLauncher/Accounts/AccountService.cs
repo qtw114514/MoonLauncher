@@ -31,7 +31,7 @@ namespace OpenLauncher.Accounts
                 var uuid = AccountUtil.NormalizeUuid(acc.Uuid);
                 if (!AccountUtil.IsHex32(uuid)) uuid = Util.OfflineUuid(acc.Name);
                 Touch(acc);
-                return new LaunchAuth
+                var auth = new LaunchAuth
                 {
                     PlayerName = acc.Name,
                     Uuid = uuid,
@@ -40,6 +40,26 @@ namespace OpenLauncher.Accounts
                     Xuid = "0",
                     ClientId = "0",
                 };
+                // 离线皮肤：本地 Yggdrasil 服务器 + authlib-injector，游戏内显示自定义皮肤
+                if (LocalSkinServer.HasSkin(acc))
+                {
+                    try
+                    {
+                        var jar = await AuthlibInjector.EnsureJarAsync(task, ct).ConfigureAwait(false);
+                        var api = LocalSkinServer.Start(acc);
+                        auth.ExtraJvmArgs = new List<string>
+                        {
+                            $"-javaagent:{jar}={api}",
+                            "-Dauthlibinjector.side=client",
+                        };
+                    }
+                    catch (Exception ex) when (!(ex is OperationCanceledException && ct.IsCancellationRequested))
+                    {
+                        LocalSkinServer.StopAll();
+                        Log.Warn("准备离线皮肤失败，按无皮肤启动：" + AccountUtil.Short(ex));
+                    }
+                }
+                return auth;
             }
 
             var gate = Gates.GetOrAdd(acc.Id ?? "", _ => new SemaphoreSlim(1, 1));

@@ -57,6 +57,18 @@
         <!-- 右侧：主页内容 -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="22,22,22,10">
+                <!-- 自定义主页 -->
+                <Border x:Name="HomeCard" Style="{StaticResource CardBox}" Visibility="Collapsed">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="主页" Style="{StaticResource H2}"/>
+                            <Button Content="打开原网页" Style="{StaticResource Ghost}" HorizontalAlignment="Right" Click="OpenHome_Click"/>
+                        </Grid>
+                        <WebBrowser x:Name="HomeWeb" Height="240" Margin="0,10,0,0" LoadCompleted="HomeWeb_LoadCompleted" Loaded="HomeWeb_Loaded"/>
+                        <TextBlock x:Name="HomeHint" Text="主页地址无效或加载失败，请检查 设置 → 个性化 里的网址" Style="{StaticResource Sub}" Margin="0,10,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- 游戏运行中 -->
                 <Border x:Name="RunningCard" Style="{StaticResource CardBox}" Visibility="Collapsed">
                     <StackPanel>

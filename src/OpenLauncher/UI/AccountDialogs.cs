@@ -27,8 +27,21 @@ namespace OpenLauncher.UI
                     row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                     var info = new StackPanel();
                     info.Children.Add(new TextBlock { Text = a.Name, FontWeight = FontWeights.SemiBold, FontSize = 14 });
-                    info.Children.Add(new TextBlock { Text = a.TypeText + (a.Type == AccountType.Yggdrasil ? " · " + a.LoginName : ""), Style = S("Sub") });
+                    info.Children.Add(new TextBlock { Text = a.TypeText + (a.Type == AccountType.Yggdrasil ? " · " + a.LoginName : "") + (LocalSkinServer.HasSkin(a) ? " · 已设皮肤" : ""), Style = S("Sub") });
                     row.Children.Add(info);
+                    var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+                    if (a.Type == AccountType.Offline)
+                    {
+                        var skinBtn = new Button { Style = S("Ghost"), ToolTip = LocalSkinServer.HasSkin(a) ? "更换 / 清除自定义皮肤" : "给离线账号设置自定义皮肤", Content = new TextBlock { Text = "皮肤", FontSize = 12 } };
+                        skinBtn.Click += async (s, e) =>
+                        {
+                            e.Handled = true;
+                            await SetSkinAsync(a);
+                            _ = info.Children[1].Dispatcher.BeginInvoke((Action)(() =>
+                                ((TextBlock)info.Children[1]).Text = a.TypeText + (LocalSkinServer.HasSkin(a) ? " · 已设皮肤" : "")));
+                        };
+                        buttons.Children.Add(skinBtn);
+                    }
                     var del = new Button { Style = S("Ghost"), ToolTip = "删除这个账号", Content = new TextBlock { Text = "", Style = S("Icon") } };
                     del.Click += async (s, e) =>
                     {
@@ -39,8 +52,8 @@ namespace OpenLauncher.UI
                             list.Items.Remove(list.Items.Cast<object>().FirstOrDefault(x => (x as Grid)?.Tag == a));
                         }
                     };
-                    Grid.SetColumn(del, 1);
-                    row.Children.Add(del);
+                    Grid.SetColumn(buttons, 1);
+                    row.Children.Add(buttons);
                     list.Items.Add(row);
                     if (a == AccountStore.Selected) list.SelectedItem = row;
                 }
@@ -62,6 +75,41 @@ namespace OpenLauncher.UI
                     default: return;
                 }
             }
+        }
+
+        /// <summary>给离线账号设置 / 更换 / 清除本地自定义皮肤</summary>
+        static async Task SetSkinAsync(Account a)
+        {
+            if (LocalSkinServer.HasSkin(a))
+            {
+                if (!await Dialogs.Confirm("自定义皮肤", "已设置自定义皮肤。\n\n「更换」重新选择 PNG 文件；「清除」删除皮肤。", "更换", cancel: "清除")) { /* 更换，继续往下 */ }
+                else
+                {
+                    // 清除
+                    a.LocalSkin = null;
+                    Util.TryDelete(LocalSkinServer.SkinPath(a));
+                    AccountStore.AddOrUpdate(a);
+                    Skins.Invalidate(a);
+                    Dialogs.Toast("已清除皮肤");
+                    return;
+                }
+            }
+            var file = Pickers.PickFile("选择皮肤", "PNG 图片|*.png");
+            if (string.IsNullOrEmpty(file)) return;
+            byte[] bytes;
+            try { bytes = System.IO.File.ReadAllBytes(file); }
+            catch (Exception ex) { await Dialogs.Alert("读取失败", ex.Message); return; }
+            var err = Skins.ValidateSkin(bytes);
+            if (err != null) { await Dialogs.Alert("不是有效的皮肤", err); return; }
+            try
+            {
+                System.IO.File.WriteAllBytes(LocalSkinServer.SkinPath(a), bytes);
+            }
+            catch (Exception ex) { await Dialogs.Alert("保存失败", ex.Message); return; }
+            a.LocalSkin = System.IO.Path.GetFileName(LocalSkinServer.SkinPath(a));
+            AccountStore.AddOrUpdate(a);
+            Skins.Invalidate(a);
+            Dialogs.Toast($"已设置 {a.Name} 的皮肤", MainWindow.ToastKind.Ok);
         }
 
         static async Task AddOfflineAsync()

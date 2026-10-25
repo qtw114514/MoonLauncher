@@ -30,7 +30,7 @@ namespace OpenLauncher.Accounts
 
         public static async Task<BitmapSource> GetHeadAsync(Account acc, int size = 64)
         {
-            if (acc == null || acc.Type == AccountType.Offline || string.IsNullOrEmpty(acc.Uuid)) return null;
+            if (acc == null || string.IsNullOrEmpty(acc.Uuid)) return null;
             size = size <= 0 ? 64 : Math.Min(size, 512);
             var key = AccountKey(acc);
             var memKey = key + "@" + size;
@@ -74,6 +74,13 @@ namespace OpenLauncher.Accounts
         // ---------- 取皮肤 ----------
         static async Task<byte[]> LoadSkinBytesAsync(Account acc, string key)
         {
+            // 离线账号：用本地自定义皮肤（LocalSkinServer 管保存位置）
+            if (acc.Type == AccountType.Offline)
+            {
+                if (LocalSkinServer.HasSkin(acc)) return File.ReadAllBytes(LocalSkinServer.SkinPath(acc));
+                return null;
+            }
+
             var lastKnown = Path.Combine(Dir, key + ".png");
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
             {
@@ -245,6 +252,24 @@ namespace OpenLauncher.Accounts
             var bmp = BitmapSource.Create(size, size, 96, 96, PixelFormats.Bgra32, null, outPx, size * 4);
             bmp.Freeze();
             return bmp;
+        }
+
+        /// <summary>校验 PNG 是否为合法皮肤（64x64 / 64x32 及其整数倍）。合法返回 null，否则返回中文错误</summary>
+        public static string ValidateSkin(byte[] png)
+        {
+            if (png == null || png.Length < 8) return "文件不是有效的 PNG 图片";
+            try
+            {
+                using (var ms = new MemoryStream(png))
+                {
+                    var dec = BitmapDecoder.Create(ms, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
+                    var f = dec.Frames[0];
+                    int w = f.PixelWidth, h = f.PixelHeight;
+                    if (w < 64 || w % 64 != 0 || (h != w && h != w / 2)) return $"皮肤尺寸不正确：{w}x{h}（需要 64x64 或 64x32 及其整数倍）";
+                }
+                return null;
+            }
+            catch (Exception ex) { return "文件不是有效的 PNG 图片：" + ex.Message; }
         }
 
         static void CopyRect(byte[] px, int stride, int x0, int y0, int n, byte[] dst)
