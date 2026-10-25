@@ -1,0 +1,18 @@
+bin/
+obj/
+/dist/
+.vs/
+*.user
+*.suo
+
+# 在仓库根目录直接运行时生成的数据（便携模式在 exe 旁边建 OpenLauncher/ 和 .minecraft/）
+/OpenLauncher/
+/.minecraft/
+
+# 发布私钥绝对不要提交
+private-key.xml
+*.private.xml
+
+# 本地 .NET SDK（构建工具链，不入库）
+/.dotnet/
+/.dotnet-install.ps1
