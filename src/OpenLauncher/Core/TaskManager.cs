@@ -8,7 +8,7 @@ using System.Windows.Threading;
 
 namespace OpenLauncher.Core
 {
-    public enum TaskState { Running, Done, Failed, Canceled }
+    public enum TaskState { Running, Paused, Done, Failed, Canceled }
 
     /// <summary>一个后台任务（安装版本、下载 Mod、导入整合包……），界面上的任务列表直接绑定它</summary>
     public class LauncherTask : INotifyPropertyChanged
@@ -19,7 +19,10 @@ namespace OpenLauncher.Core
         public CancellationTokenSource Cts { get; } = new CancellationTokenSource();
         public CancellationToken Token => Cts.Token;
         public DateTime Started { get; } = DateTime.Now;
+        internal Func<LauncherTask, Task> RetryFactory { get; set; }
 
+        readonly SemaphoreSlim _pauseGate = new SemaphoreSlim(1, 1);
+        readonly object _pauseSync = new object();
         string _title, _detail, _error;
         double _progress;
         long _speed;
@@ -31,14 +34,19 @@ namespace OpenLauncher.Core
         /// <summary>0~1；小于 0 表示不确定进度</summary>
         public double Progress { get => _progress; set { _progress = Math.Max(-1, Math.Min(1, value)); On(); On(nameof(ProgressText)); On(nameof(Indeterminate)); } }
         public long Speed { get => _speed; set { _speed = value; On(); On(nameof(SpeedText)); } }
-        public TaskState State { get => _state; set { _state = value; On(); On(nameof(IsActive)); On(nameof(StateText)); } }
+        public TaskState State { get => _state; set { _state = value; On(); On(nameof(IsActive)); On(nameof(StateText)); On(nameof(CanRetry)); On(nameof(CanPause)); On(nameof(CanResume)); On(nameof(CanCancel)); } }
 
-        public bool IsActive => State == TaskState.Running;
+        public bool IsActive => State == TaskState.Running || State == TaskState.Paused;
+        public bool CanRetry => (State == TaskState.Failed || State == TaskState.Canceled) && RetryFactory != null;
+        public bool CanPause => State == TaskState.Running;
+        public bool CanResume => State == TaskState.Paused;
+        public bool CanCancel => IsActive;
         public bool Indeterminate => _progress < 0;
         public string ProgressText => _progress < 0 ? "" : $"{_progress * 100:0}%";
         public string SpeedText => _speed > 0 ? Util.FormatSize(_speed) + "/s" : "";
         public string StateText => State switch
         {
+            TaskState.Paused => "已暂停",
             TaskState.Done => "已完成",
             TaskState.Failed => "失败",
             TaskState.Canceled => "已取消",
@@ -49,6 +57,33 @@ namespace OpenLauncher.Core
         {
             Progress = progress;
             if (detail != null) Detail = detail;
+        }
+
+        public void Pause()
+        {
+            lock (_pauseSync)
+            {
+                if (State != TaskState.Running || !_pauseGate.Wait(0)) return;
+                State = TaskState.Paused;
+                Speed = 0;
+            }
+        }
+
+        public void Resume()
+        {
+            lock (_pauseSync)
+            {
+                if (State != TaskState.Paused) return;
+                State = TaskState.Running;
+                _pauseGate.Release();
+            }
+        }
+
+        /// <summary>在下载等可暂停操作的安全点调用；暂停和取消都能唤醒等待。</summary>
+        public async Task WaitIfPausedAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await _pauseGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            _pauseGate.Release();
         }
 
         public void Cancel() { try { Cts.Cancel(); } catch { } }
@@ -63,9 +98,9 @@ namespace OpenLauncher.Core
         public static event Action<LauncherTask> Finished;
         public static event Action<LauncherTask> Added;
 
-        public static LauncherTask Start(string title, Func<LauncherTask, Task> body)
+        public static LauncherTask Start(string title, Func<LauncherTask, Task> body, bool canRetry = true)
         {
-            var t = new LauncherTask { Title = title, Progress = -1, Detail = "准备中…" };
+            var t = new LauncherTask { Title = title, Progress = -1, Detail = "准备中…", RetryFactory = canRetry ? body : null };
             OnUi(() => { Tasks.Insert(0, t); Added?.Invoke(t); });
             Task.Run(async () =>
             {
@@ -94,6 +129,14 @@ namespace OpenLauncher.Core
                 OnUi(() => Finished?.Invoke(t));
             });
             return t;
+        }
+
+        /// <summary>用原任务工厂创建全新任务和取消令牌，旧任务保留在列表中。</summary>
+        public static LauncherTask Retry(LauncherTask task)
+        {
+            if (task == null) throw new ArgumentNullException(nameof(task));
+            if (!task.CanRetry) throw new InvalidOperationException("只有失败或已取消的任务可以重试。");
+            return Start(task.Title, task.RetryFactory);
         }
 
         public static string Flatten(Exception ex)

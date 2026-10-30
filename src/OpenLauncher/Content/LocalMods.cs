@@ -530,10 +530,12 @@ namespace OpenLauncher.Content
 
             var target = PathGuard.FileIn(dir, u.FileName);
             var final = wasEnabled ? target : target + Disabled;
-            await Downloader.RunAsync(new[]
-            {
-                new DownloadItem { Url = u.Url, AltUrls = u.AltUrls?.ToList(), Path = target, Sha1 = u.Sha1, Sha512 = u.Sha512, Size = u.Size }
-            }, task, 0, 1, "更新 " + m.DisplayName).ConfigureAwait(false);
+            var index = ContentIndex.Load(dir);
+            var item = new DownloadItem { Url = u.Url, AltUrls = u.AltUrls?.ToList(), Path = target, Sha1 = u.Sha1, Sha512 = u.Sha512, Size = u.Size };
+            ContentService.PrepareOverwrite(index, item, u);
+            if (!string.Equals(final, target, StringComparison.OrdinalIgnoreCase))
+                ContentService.PrepareOverwrite(index, new DownloadItem { Path = final, Sha1 = u.Sha1, Sha512 = u.Sha512, Size = u.Size }, u);
+            await Downloader.RunAsync(new[] { item }, task, 0, 1, "更新 " + m.DisplayName).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
 
             if (!string.Equals(final, target, StringComparison.OrdinalIgnoreCase))
@@ -549,7 +551,6 @@ namespace OpenLauncher.Content
 
             try
             {
-                var index = ContentIndex.Load(dir);
                 var oldName = Path.GetFileName(old);
                 if (oldName.EndsWith(Disabled, StringComparison.OrdinalIgnoreCase)) oldName = oldName.Substring(0, oldName.Length - Disabled.Length);
                 index.Remove(oldName);

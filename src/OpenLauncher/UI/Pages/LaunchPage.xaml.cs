@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,7 +19,11 @@ namespace OpenLauncher.UI.Pages
         GameSession _session;
         readonly StringBuilder _pendingLog = new StringBuilder();
         readonly DispatcherTimer _logTimer;
-        bool _latestLoaded;
+        bool _latestLoaded, _launchBusy;
+        string _lastLaunchError;
+        Action<string> _lineHandler;
+        Action _windowHandler;
+        Action<int> _exitHandler;
 
         public LaunchPage()
         {
@@ -36,7 +41,41 @@ namespace OpenLauncher.UI.Pages
         {
             RefreshAccount();
             RefreshVersion();
+            RefreshLaunchState();
             if (!_latestLoaded) _ = LoadLatestAsync();
+        }
+
+        /// <summary>首次使用只串联现有账号和下载页面，不让 Java、内存等高级选项挡住新手。</summary>
+        public async Task RunOnboardingAsync()
+        {
+            if (Settings.OnboardingCompleted) return;
+            // 老用户升级后已有账号和版本，不再打断使用。
+            if (AccountStore.Selected != null && SelectedInstance() != null) { Settings.OnboardingCompleted = true; return; }
+            var start = await Dialogs.Confirm("欢迎使用 MoonLauncher",
+                $"接下来只需添加一个账号并安装游戏版本，Java、内存和下载源都会自动处理。\n\n游戏目录：{Settings.SelectedGameFolder}\n之后可以在“版本选择”中更换。",
+                "开始设置", "跳过");
+            if (!start) { Settings.OnboardingCompleted = true; return; }
+            if (AccountStore.Selected == null) await AccountDialogs.ManageAsync();
+            if (SelectedInstance() == null)
+            {
+                Settings.OnboardingInstalling = true;
+                MainWindow.Current.GoTab("download");
+                Dialogs.Toast("选择一个 Minecraft 版本并点击安装，完成后就能启动游戏");
+                return;
+            }
+            Settings.OnboardingCompleted = true;
+            RefreshVersion();
+            Dialogs.Toast("准备完成，点击“启动游戏”就能开始", MainWindow.ToastKind.Ok);
+        }
+
+        void RefreshLaunchState()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshLaunchState); return; }
+            bool running = _session != null && !_session.HasExited;
+            bool starting = _launchBusy || (_launchTask != null && _launchTask.IsActive);
+            LaunchButton.IsEnabled = !running && !starting;
+            LaunchText.Text = running ? "游戏运行中" : starting ? "正在启动…" : _lastLaunchError != null ? "重试启动" : "启动游戏";
+            if (running) RunningCard.Visibility = Visibility.Visible;
         }
 
         // ---------- 账号 ----------
@@ -143,12 +182,15 @@ namespace OpenLauncher.UI.Pages
             if (inst == null)
             {
                 LaunchSub.Text = "还没有安装任何版本";
-                InstanceCard.Visibility = Visibility.Collapsed;
+                InstanceCard.Visibility = Visibility.Visible;
+                InstanceDesc.Text = $"尚未安装版本\n游戏目录：{GameRepo.Current.Root}\n点击“浏览全部版本”开始安装。";
+                RefreshLaunchState();
                 return;
             }
             LaunchSub.Text = inst.Id;
             InstanceCard.Visibility = Visibility.Visible;
             InstanceDesc.Text = $"{inst.Id}\n{inst.Description}\n游戏目录：{inst.GameDir}" + (inst.Isolated ? "（已开启版本隔离）" : "");
+            RefreshLaunchState();
         }
 
         void Versions_Click(object sender, RoutedEventArgs e) => MainWindow.Current.Push(new VersionsPage());
@@ -227,73 +269,145 @@ namespace OpenLauncher.UI.Pages
 
         public async Task LaunchAsync(Instance inst = null)
         {
-            if (_launchTask != null && _launchTask.IsActive) return;
-            inst = inst ?? SelectedInstance();
-            if (inst == null)
+            if (_launchBusy || (_launchTask != null && _launchTask.IsActive)) return;
+            if (_session != null && !_session.HasExited)
             {
-                if (await Dialogs.Confirm("还没有版本", "当前游戏目录里没有可启动的版本。现在去下载一个？", "去下载"))
-                    MainWindow.Current.GoTab("download");
+                RunningCard.Visibility = Visibility.Visible;
+                RefreshLaunchState();
                 return;
             }
-            var acc = AccountStore.Selected;
-            if (acc == null)
-            {
-                await AccountDialogs.ManageAsync();
-                acc = AccountStore.Selected;
-                if (acc == null) return;
-            }
 
-            LaunchButton.IsEnabled = false;
-            LaunchProgressPanel.Visibility = Visibility.Visible;
-            LaunchStep.Text = "准备启动…";
-            LaunchBar.Value = 0;
-
-            var tcs = new TaskCompletionSource<GameSession>();
-            _launchTask = TaskManager.Start($"启动 {inst.Id}", async t =>
-            {
-                try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t)); }
-                catch (Exception ex) { tcs.TrySetException(ex); throw; }
-            });
-            _launchTask.PropertyChanged += (s, e2) => Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (_launchTask == null) return;
-                LaunchStep.Text = _launchTask.Detail;
-                LaunchBar.IsIndeterminate = _launchTask.Indeterminate;
-                if (!_launchTask.Indeterminate) LaunchBar.Value = _launchTask.Progress;
-            }));
-
+            _launchBusy = true;
+            RefreshLaunchState();
+            Instance reserved = null;
+            Account acc = null;
+            Func<Task> afterError = null;
             try
             {
+                inst = inst ?? SelectedInstance();
+                if (inst == null)
+                {
+                    if (await Dialogs.Confirm("还没有版本", "当前游戏目录里没有可启动的版本。现在去下载一个？", "去下载"))
+                        MainWindow.Current.GoTab("download");
+                    return;
+                }
+                if (!LaunchService.TryBeginLaunch(inst)) { Dialogs.Toast("这个版本正在启动或运行中"); return; }
+                reserved = inst;
+                acc = AccountStore.Selected;
+                if (acc == null)
+                {
+                    await AccountDialogs.ManageAsync();
+                    acc = AccountStore.Selected;
+                    if (acc == null) return;
+                }
+
+                _lastLaunchError = null;
+                LaunchProgressPanel.Visibility = Visibility.Visible;
+                LaunchStep.Text = "准备启动…";
+                LaunchBar.Value = 0;
+
+                var tcs = new TaskCompletionSource<GameSession>();
+                _launchTask = TaskManager.Start($"启动 {inst.Id}", async t =>
+                {
+                    try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t)); }
+                    catch (Exception ex) { tcs.TrySetException(ex); throw; }
+                }, canRetry: false); // 启动由首页重新建立会话和日志订阅，不能重放旧的 TaskCompletionSource
+                _launchTask.PropertyChanged += (s, e2) => Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    if (_launchTask == null) return;
+                    LaunchStep.Text = _launchTask.Detail;
+                    LaunchBar.IsIndeterminate = _launchTask.Indeterminate;
+                    if (!_launchTask.Indeterminate) LaunchBar.Value = _launchTask.Progress;
+                }));
+
                 var session = await tcs.Task;
                 AttachSession(session);
             }
             catch (OperationCanceledException) { Dialogs.Toast("已取消启动"); }
             catch (Exception ex)
             {
-                await Dialogs.ShowAsync("启动失败", Dialogs.Text(TaskManager.Flatten(ex)), new[] { "知道了" });
+                _lastLaunchError = TaskManager.Flatten(ex);
+                var auth = FindAuthException(ex);
+                var actions = new List<ErrorDialogAction>();
+                if (auth?.NeedsRelogin == true && acc != null)
+                {
+                    actions.Add(new ErrorDialogAction("重新登录", () =>
+                    {
+                        afterError = async () => { if (await AccountDialogs.ReloginAsync(acc)) await LaunchAsync(inst); };
+                        return Task.CompletedTask;
+                    }, primary: true));
+                }
+                if (_lastLaunchError.IndexOf("java", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    int major = inst.Info?.JavaMajor > 0 ? inst.Info.JavaMajor : 17;
+                    string component = major >= 25 ? "java-runtime-epsilon" : major >= 21 ? "java-runtime-delta" : major >= 17 ? "java-runtime-gamma" : "jre-legacy";
+                    actions.Add(new ErrorDialogAction($"自动安装 Java {major}", () =>
+                    {
+                        TaskManager.Start($"下载 Java {major}", async t =>
+                        {
+                            await JavaManager.DownloadAsync(major, component, t, 0, 1);
+                            await JavaManager.ScanAsync(true);
+                        });
+                        MainWindow.Current.ToggleTasks(true);
+                    }));
+                }
+                actions.Add(new ErrorDialogAction("重试", () =>
+                {
+                    afterError = () => LaunchAsync(inst);
+                    return Task.CompletedTask;
+                }, primary: auth?.NeedsRelogin != true));
+                await ErrorDialog.ShowAsync("启动失败", _lastLaunchError,
+                    auth?.NeedsRelogin == true ? "保存的登录信息已失效。请重新登录当前账号，成功后会自动重试启动。" : "可根据原因检查网络、账号或游戏文件，然后重试。",
+                    ex, actions);
             }
             finally
             {
-                LaunchButton.IsEnabled = true;
+                LaunchService.EndLaunch(reserved);
+                _launchBusy = false;
                 LaunchProgressPanel.Visibility = Visibility.Collapsed;
+                RefreshLaunchState();
             }
+            if (afterError != null) await afterError();
+        }
+
+        static AuthException FindAuthException(Exception ex)
+        {
+            if (ex == null) return null;
+            if (ex is AuthException auth) return auth;
+            if (ex is AggregateException aggregate)
+                return aggregate.InnerExceptions.Select(FindAuthException).FirstOrDefault(a => a != null);
+            return FindAuthException(ex.InnerException);
         }
 
         void CancelLaunch_Click(object sender, RoutedEventArgs e) => _launchTask?.Cancel();
 
+        void DetachSessionEvents(GameSession s)
+        {
+            if (s == null) return;
+            if (_lineHandler != null) s.Line -= _lineHandler;
+            if (_windowHandler != null) s.WindowAppeared -= _windowHandler;
+            if (_exitHandler != null) s.Exited -= _exitHandler;
+            _lineHandler = null;
+            _windowHandler = null;
+            _exitHandler = null;
+        }
+
         void AttachSession(GameSession s)
         {
+            DetachSessionEvents(_session);
             _session = s;
             RunningCard.Visibility = Visibility.Visible;
             RunningTitle.Text = $"游戏运行中：{s.Instance.Id}";
             GameLog.Clear();
             lock (_pendingLog) _pendingLog.Clear();
             _logTimer.Start();
-            s.Line += line => { lock (_pendingLog) _pendingLog.AppendLine(line); };
+            _lineHandler = line => { lock (_pendingLog) _pendingLog.AppendLine(line); };
+            s.Line += _lineHandler;
             var early = s.Output;
             if (!string.IsNullOrEmpty(early)) GameLog.Text = early + "\n";
-            s.WindowAppeared += () => Dispatcher.BeginInvoke((Action)(() =>
+            _windowHandler = () => Dispatcher.BeginInvoke((Action)(() =>
             {
+                if (!ReferenceEquals(_session, s)) return;
                 Dialogs.Toast("游戏窗口已打开，玩得开心！", MainWindow.ToastKind.Ok);
                 switch (Settings.AfterLaunch)
                 {
@@ -302,7 +416,10 @@ namespace OpenLauncher.UI.Pages
                     case "close": Application.Current.Shutdown(); break;
                 }
             }));
-            s.Exited += code => Dispatcher.BeginInvoke((Action)(() => OnGameExit(s, code)));
+            s.WindowAppeared += _windowHandler;
+            _exitHandler = code => Dispatcher.BeginInvoke((Action)(() => OnGameExit(s, code)));
+            s.Exited += _exitHandler;
+            RefreshLaunchState();
         }
 
         void FlushLog()
@@ -321,10 +438,13 @@ namespace OpenLauncher.UI.Pages
 
         async void OnGameExit(GameSession s, int code)
         {
+            if (!ReferenceEquals(_session, s)) return;
             FlushLog();
             _logTimer.Stop();
-            if (_session == s) _session = null;
+            DetachSessionEvents(s);
+            _session = null;
             RunningCard.Visibility = Visibility.Collapsed;
+            RefreshLaunchState();
             if (!MainWindow.Current.IsVisible) MainWindow.Current.Show();
             if (MainWindow.Current.WindowState == WindowState.Minimized && (code != 0 || !s.WindowShown)) MainWindow.Current.WindowState = WindowState.Normal;
 

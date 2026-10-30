@@ -205,19 +205,46 @@ namespace OpenLauncher.UI
 
                     if (sodium != null)
                     {
+                        var introButton = FindAll<Button>(cv.Results, b => (b.Content as string) == "简介").FirstOrDefault();
+                        if (introButton != null)
+                        {
+                            Click(introButton);
+                            await Until(() => sodium.IntroLoaded && !sodium.IntroLoading, 30000);
+                            await Settle(500);
+                            Snap("mod_intro");
+                        }
+
                         var pp = new ProjectPage(sodium, ContentType.Mod, fabric, "1.20.1", "fabric");
                         W.Push(pp);
                         await Until(() => pp.Files.Items.Count > 0, 40000);
                         await Settle(900);
                         var dl = FindAll<Button>(pp.Files, b => (b.Content as string) == "下载").FirstOrDefault();
                         Snap("project", M("download", dl), M("files", (FrameworkElement)pp.Files), M("title", pp.PTitle));
+                        if (pp.DescToggle.IsVisible)
+                        {
+                            Click(pp.DescToggle);
+                            await Settle(300);
+                            Snap("project_collapsed");
+                            Click(pp.DescToggle);
+                        }
+                        var projectScroller = ScrollerOf(pp);
+                        projectScroller?.ScrollToVerticalOffset(320);
+                        await Settle(300);
+                        Snap("project_scroll");
+                        projectScroller?.ScrollToVerticalOffset(0);
                         if (dl != null)
                         {
                             Click(dl);
+                            await Until(() => ButtonByText(W.DialogHost, "开始安装") != null, 40000);
                             await Settle(350);
-                            Snap("project_click", M("download", dl));
+                            Snap("install_plan", M("install", ButtonByText(W.DialogHost, "开始安装")));
+                            var begin = ButtonByText(W.DialogHost, "开始安装");
+                            if (begin != null) Click(begin);
+                            await Until(() => TaskManager.Tasks.Any(x => x.Title.Contains("Sodium")), 5000);
                             var mt = TaskManager.Tasks.FirstOrDefault(x => x.Title.Contains("Sodium"));
-                            await Until(() => mt == null || !mt.IsActive, 90000);
+                            await Until(() => mt != null && !mt.IsActive, 600000);
+                            await Settle(500);
+                            CloseDialog();
                             W.ToggleTasks(true);
                             await Settle(500);
                             Snap("project_done");
@@ -322,8 +349,8 @@ namespace OpenLauncher.UI
                     W.GoTab("launch"); avatar(); await Settle();
                     _ = Dialogs.ShowUpdateAsync(new UpdateInfo
                     {
-                        Version = "0.2.0", Size = 768_000, Signer = "12c461c38f08483a", FoundAt = "https://cdn.jsdelivr.net/gh/OpenLauncher-MC/OpenLauncher@main/release/update.json",
-                        Notes = "· 新增 EasyTier 联机\n· CurseForge 指纹查更新\n· 修复若干问题", Urls = { "https://example.invalid/OpenLauncher.exe" }, Sha256 = "00",
+                        Version = "0.2.0", Size = 768_000, Signer = "4b05c0b3730e3fc9", FoundAt = "https://cdn.jsdelivr.net/gh/OpenLauncher-MC/OpenLauncher@main/release/update.json",
+                        Notes = "## 主要变化\n- 新增 **EasyTier** 联机\n* 支持 `CurseForge` 指纹查更新\n\n修复若干问题，详见[发布说明](https://github.com/qtw114514/OpenLauncher/releases)。", Urls = { "https://example.invalid/OpenLauncher.exe" }, Sha256 = "00",
                     });
                     await Settle(900);
                     Snap("update_dialog", M("ok", ButtonByText(W.DialogHost, "立即更新")));

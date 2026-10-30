@@ -90,6 +90,36 @@ namespace OpenLauncher.Game
     public static class LaunchService
     {
         public static readonly List<GameSession> Running = new List<GameSession>();
+        static readonly HashSet<string> Preparing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        static string InstanceKey(Instance inst) => inst.Repo.Root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "|" + inst.Id;
+
+        /// <summary>运行中或正在准备启动。版本管理用它在移动、删除前阻止危险操作。</summary>
+        public static bool IsInstanceBusy(Instance inst)
+        {
+            if (inst == null) return false;
+            var key = InstanceKey(inst);
+            lock (Running) return Preparing.Contains(key) || Running.Any(s => !s.HasExited && InstanceKey(s.Instance) == key);
+        }
+
+        /// <summary>在首个 await 前占位，避免重复点击或账号对话框期间进入第二个启动流程。</summary>
+        public static bool TryBeginLaunch(Instance inst)
+        {
+            if (inst == null) return false;
+            var key = InstanceKey(inst);
+            lock (Running)
+            {
+                if (Preparing.Contains(key) || Running.Any(s => !s.HasExited && InstanceKey(s.Instance) == key)) return false;
+                Preparing.Add(key);
+                return true;
+            }
+        }
+
+        public static void EndLaunch(Instance inst)
+        {
+            if (inst == null) return;
+            lock (Running) Preparing.Remove(InstanceKey(inst));
+        }
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool SetWindowText(IntPtr hWnd, string text);
 

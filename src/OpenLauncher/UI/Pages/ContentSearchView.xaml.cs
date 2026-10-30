@@ -15,10 +15,31 @@ namespace OpenLauncher.UI.Pages
 {
     public partial class ContentSearchView : UserControl, IPage
     {
+        sealed class SourceSearchState
+        {
+            public ContentSource Source;
+            public int Offset;
+            public int Total;
+            public bool Done;
+            public string Error;
+        }
+
+        sealed class SourceSearchResult
+        {
+            public ContentSource Source;
+            public SearchResult Result;
+            public Exception Error;
+        }
+
         readonly ContentType _type;
         readonly ObservableCollection<ContentProject> _items = new ObservableCollection<ContentProject>();
+        readonly SourceSearchState _modrinth = new SourceSearchState { Source = ContentSource.Modrinth };
+        readonly SourceSearchState _curseForge = new SourceSearchState { Source = ContentSource.CurseForge };
+        readonly Dictionary<string, ContentProject> _sourceIds = new Dictionary<string, ContentProject>();
+        readonly Dictionary<string, ContentProject> _slugs = new Dictionary<string, ContentProject>();
+        readonly Dictionary<string, ContentProject> _titleAuthors = new Dictionary<string, ContentProject>();
         CancellationTokenSource _cts;
-        int _offset, _total;
+        int _session;
         bool _busy, _init, _suppress;
         Instance _target;
 
@@ -37,13 +58,17 @@ namespace OpenLauncher.UI.Pages
             Results.ItemsSource = _items;
             LoaderPanel.Visibility = type == ContentType.Mod || type == ContentType.Modpack ? Visibility.Visible : Visibility.Collapsed;
             TargetPanel.Visibility = type == ContentType.Modpack ? Visibility.Collapsed : Visibility.Visible;
+            SrcAll.Visibility = type == ContentType.Mod ? Visibility.Visible : Visibility.Collapsed;
             _suppress = true;
             Sort.SelectedIndex = 0;
             Loader.SelectedIndex = 0;
-            (Settings.PreferredContentSource == "curseforge" ? SrcCurse : SrcModrinth).IsChecked = true;
+            var preferred = Settings.PreferredContentSource;
+            if (type == ContentType.Mod && string.Equals(preferred, "all", StringComparison.OrdinalIgnoreCase)) SrcAll.IsChecked = true;
+            else (string.Equals(preferred, "curseforge", StringComparison.OrdinalIgnoreCase) ? SrcCurse : SrcModrinth).IsChecked = true;
             _suppress = false;
         }
 
+        bool IsAll => _type == ContentType.Mod && SrcAll.IsChecked == true;
         ContentSource Source => SrcCurse.IsChecked == true ? ContentSource.CurseForge : ContentSource.Modrinth;
 
         public void SetTarget(Instance inst)
@@ -111,7 +136,7 @@ namespace OpenLauncher.UI.Pages
         void Source_Checked(object sender, RoutedEventArgs e)
         {
             if (_suppress) return;
-            Settings.PreferredContentSource = Source == ContentSource.CurseForge ? "curseforge" : "modrinth";
+            Settings.PreferredContentSource = IsAll ? "all" : Source == ContentSource.CurseForge ? "curseforge" : "modrinth";
             _ = SearchAsync(true);
         }
 
@@ -129,11 +154,24 @@ namespace OpenLauncher.UI.Pages
 
         async Task SearchAsync(bool reset)
         {
-            if (!reset && (_busy || _items.Count >= _total)) return;
+            var all = IsAll;
+            if (!reset && _busy) return;
+            if (reset) _session++;
+            var session = _session;
+            var states = all ? new[] { _modrinth, _curseForge } : new[] { StateFor(Source) };
+            if (!reset && states.All(s => s.Done)) return;
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
-            if (reset) { _offset = 0; _total = 0; _items.Clear(); }
+            if (reset)
+            {
+                ResetState(_modrinth);
+                ResetState(_curseForge);
+                _items.Clear();
+                _sourceIds.Clear();
+                _slugs.Clear();
+                _titleAuthors.Clear();
+            }
             _busy = true;
             if (_items.Count == 0) ShowStatus("搜索中…", true);
             var q = new SearchQuery
@@ -143,29 +181,157 @@ namespace OpenLauncher.UI.Pages
                 GameVersion = TagOf(GameVersion),
                 Loader = LoaderPanel.Visibility == Visibility.Visible ? TagOf(Loader) : null,
                 Sort = TagOf(Sort),
-                Offset = _offset,
                 Limit = 20,
             };
             if (string.IsNullOrEmpty(q.GameVersion)) q.GameVersion = null;
             if (string.IsNullOrEmpty(q.Loader)) q.Loader = null;
-            var src = Source;
             try
             {
-                var r = await Task.Run(() => ContentService.SearchAsync(src, q, ct), ct);
-                if (ct.IsCancellationRequested) return;
-                foreach (var p in r.Items) _items.Add(p);
-                _offset += r.Items.Count;
-                _total = r.Total;
-                if (_items.Count == 0) ShowStatus("没有找到结果，换个关键词试试" + (ZhNames.ContainsCjk(q.Text) ? "（中文名不在词表里时，试试英文名）" : ""), false);
+                var tasks = states.Where(s => !s.Done).Select(s =>
+                {
+                    var query = q.Clone();
+                    query.Offset = s.Offset;
+                    return SearchOneAsync(s.Source, query, ct);
+                }).ToArray();
+                var results = await Task.WhenAll(tasks);
+                if (session != _session || ct.IsCancellationRequested) return;
+                var errors = new List<string>();
+                foreach (var r in results)
+                {
+                    var state = StateFor(r.Source);
+                    if (r.Error != null)
+                    {
+                        state.Done = true;
+                        state.Error = r.Error.Message;
+                        errors.Add(ContentService.SourceName(r.Source) + "：" + state.Error);
+                        continue;
+                    }
+                    state.Error = null;
+                    AddItems(r.Result.Items, all);
+                    state.Offset += r.Result.Items.Count;
+                    state.Total = r.Result.Total;
+                    state.Done = r.Result.Items.Count == 0 || state.Offset >= state.Total;
+                }
+                if (errors.Count > 0)
+                {
+                    var message = string.Join("；", errors);
+                    if (_items.Count == 0) ShowStatus("搜索失败：" + message + (all ? "" : "\n\n可以切换到另一个来源，或在 设置 → 下载 里调整 Mod 下载源"), false);
+                    else
+                    {
+                        StatusPanel.Visibility = Visibility.Collapsed;
+                        Dialogs.Toast((all ? "来源加载失败：" : "加载更多失败：") + message, MainWindow.ToastKind.Error);
+                    }
+                }
+                else if (_items.Count == 0) ShowStatus("没有找到结果，换个关键词试试" + (ZhNames.ContainsCjk(q.Text) ? "（中文名不在词表里时，试试英文名）" : ""), false);
                 else StatusPanel.Visibility = Visibility.Collapsed;
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
+                if (session != _session || ct.IsCancellationRequested) return;
                 if (_items.Count == 0) ShowStatus($"搜索失败：{ex.Message}\n\n可以切换到另一个来源，或在 设置 → 下载 里调整 Mod 下载源", false);
                 else Dialogs.Toast("加载更多失败：" + ex.Message, MainWindow.ToastKind.Error);
             }
-            finally { _busy = false; }
+            finally { if (session == _session) _busy = false; }
+        }
+
+        static async Task<SourceSearchResult> SearchOneAsync(ContentSource source, SearchQuery q, CancellationToken ct)
+        {
+            try
+            {
+                var result = await Task.Run(() => ContentService.SearchAsync(source, q, ct), ct);
+                return new SourceSearchResult { Source = source, Result = result };
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { return new SourceSearchResult { Source = source, Error = ex }; }
+        }
+
+        SourceSearchState StateFor(ContentSource source) => source == ContentSource.CurseForge ? _curseForge : _modrinth;
+
+        static void ResetState(SourceSearchState state)
+        {
+            state.Offset = 0;
+            state.Total = 0;
+            state.Done = false;
+            state.Error = null;
+        }
+
+        static string Normalize(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "";
+            var chars = new List<char>(value.Length);
+            foreach (var c in value.Trim().ToLowerInvariant())
+                if (char.IsLetterOrDigit(c)) chars.Add(c);
+            return new string(chars.ToArray());
+        }
+
+        static string SourceIdKey(ContentProject p) => string.IsNullOrEmpty(p.Id) ? "" : p.Source + "\0" + p.Id;
+
+        static string TitleAuthorKey(ContentProject p)
+        {
+            var title = Normalize(p.Title);
+            var author = Normalize(p.Author);
+            return title.Length == 0 || author.Length == 0 ? "" : title + "\0" + author;
+        }
+
+        void IndexProject(ContentProject project, ContentProject card)
+        {
+            var sourceId = SourceIdKey(project);
+            if (sourceId.Length > 0) _sourceIds[sourceId] = card;
+            var slug = Normalize(project.Slug);
+            if (slug.Length > 0 && !_slugs.ContainsKey(slug)) _slugs.Add(slug, card);
+            var titleAuthor = TitleAuthorKey(project);
+            if (titleAuthor.Length > 0 && !_titleAuthors.ContainsKey(titleAuthor)) _titleAuthors.Add(titleAuthor, card);
+        }
+
+        void AddItems(IEnumerable<ContentProject> projects, bool mergeSources)
+        {
+            foreach (var p in projects)
+            {
+                if (p == null) continue;
+                var sourceId = SourceIdKey(p);
+                ContentProject card;
+                if (sourceId.Length > 0 && _sourceIds.TryGetValue(sourceId, out card)) continue;
+                card = null;
+                var slug = Normalize(p.Slug);
+                if (mergeSources && slug.Length > 0) _slugs.TryGetValue(slug, out card);
+                var titleAuthor = TitleAuthorKey(p);
+                if (mergeSources && card == null && titleAuthor.Length > 0) _titleAuthors.TryGetValue(titleAuthor, out card);
+                if (card != null && card.Source != p.Source)
+                {
+                    MergeProjects(card, p);
+                    IndexProject(p, card);
+                    var index = _items.IndexOf(card);
+                    if (index >= 0) _items[index] = card;
+                    continue;
+                }
+                _items.Add(p);
+                IndexProject(p, p);
+            }
+        }
+
+        static void MergeProjects(ContentProject card, ContentProject other)
+        {
+            if (card.MergedSource != other.Source)
+            {
+                card.Downloads += other.Downloads;
+                card.MergedSource = other.Source;
+            }
+            if (other.Updated > card.Updated) card.Updated = other.Updated;
+            card.Categories = MergeValues(card.Categories, other.Categories);
+            card.Loaders = MergeValues(card.Loaders, other.Loaders);
+            card.GameVersions = MergeValues(card.GameVersions, other.GameVersions);
+            if (string.IsNullOrEmpty(card.IconUrl)) card.IconUrl = other.IconUrl;
+            if (string.IsNullOrEmpty(card.Description)) card.Description = other.Description;
+        }
+
+        static List<string> MergeValues(List<string> values, List<string> other)
+        {
+            values = values ?? new List<string>();
+            if (other == null) return values;
+            foreach (var value in other)
+                if (!string.IsNullOrEmpty(value) && !values.Contains(value, StringComparer.OrdinalIgnoreCase)) values.Add(value);
+            return values;
         }
 
         void ShowStatus(string text, bool loading)
@@ -173,15 +339,71 @@ namespace OpenLauncher.UI.Pages
             StatusPanel.Visibility = Visibility.Visible;
             StatusText.Text = text;
             StatusBar.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
+            RetrySearch.Visibility = !loading && text.StartsWith("搜索失败", StringComparison.Ordinal) ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        void RetrySearch_Click(object sender, RoutedEventArgs e) => _ = SearchAsync(true);
 
         void Results_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             if (e.VerticalOffset > 0 && e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - 80) _ = SearchAsync(false);
         }
 
+        void IntroButton_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button) button.Visibility = _type == ContentType.Mod ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        async void Intro_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (!((sender as FrameworkElement)?.DataContext is ContentProject p)) return;
+            p.IntroExpanded = !p.IntroExpanded;
+            if (p.IntroExpanded && !p.IntroLoaded && !p.IntroLoading) await LoadIntroAsync(p);
+        }
+
+        async Task LoadIntroAsync(ContentProject p)
+        {
+            int session = _session;
+            var ct = _cts?.Token ?? CancellationToken.None;
+            p.IntroLoading = true;
+            p.IntroStatus = "正在查找 MC 百科中文简介…";
+            p.IntroText = p.Description;
+            try
+            {
+                var intro = await Task.Run(() => McmodIntro.FetchAsync(p.Title, ct), ct);
+                if (session != _session || ct.IsCancellationRequested) return;
+                p.IntroLoaded = true;
+                p.McmodUrl = intro?.Url;
+                p.IntroText = intro?.Text ?? p.Description;
+                p.IntroStatus = intro != null ? "中文简介来自 MC 百科" : "未找到 MC 百科中文简介，显示来源站摘要";
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                if (session != _session) return;
+                p.IntroLoaded = false;
+                p.IntroText = p.Description;
+                p.IntroStatus = "中文简介加载失败，收起后重新展开可重试：" + ex.Message;
+            }
+            finally { if (session == _session) p.IntroLoading = false; }
+        }
+
+        void McmodCard_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if ((sender as FrameworkElement)?.DataContext is ContentProject p && !string.IsNullOrEmpty(p.McmodUrl)) Util.OpenUrl(p.McmodUrl);
+        }
+
         void Results_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // 卡片里的简介按钮不触发整卡跳转（MouseUp 先于 Button.Click）。
+            var source = e.OriginalSource as DependencyObject;
+            while (source != null)
+            {
+                if (source is Button) { Results.SelectedItem = null; return; }
+                source = System.Windows.Media.VisualTreeHelper.GetParent(source);
+            }
             if (Results.SelectedItem is ContentProject p)
             {
                 Results.SelectedItem = null;

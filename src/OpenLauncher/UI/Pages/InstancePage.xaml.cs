@@ -33,7 +33,7 @@ namespace OpenLauncher.UI.Pages
             InitializeComponent();
             _inst = inst;
             PackName.Text = inst.Id;
-            (tab == "mods" ? TabMods : TabOverview).IsChecked = true;
+            (tab == "mods" ? TabMods : tab == "resource" ? TabResource : tab == "shader" ? TabShader : tab == "saves" ? TabSaves : tab == "settings" ? TabSettings : TabOverview).IsChecked = true;
         }
 
         public void OnShown()
@@ -106,35 +106,26 @@ namespace OpenLauncher.UI.Pages
 
         async void Rename_Click(object sender, RoutedEventArgs e)
         {
-            var name = await Dialogs.Prompt("重命名版本", "新的版本名（会同时重命名文件夹和里面的 json / jar）", _inst.Id);
+            if (LaunchService.IsInstanceBusy(_inst)) { await Dialogs.Alert("无法重命名", "游戏正在运行或启动准备中，不能重命名版本。"); return; }
+            var children = _inst.Repo.DirectChildren(_inst.Id);
+            var hint = "新的版本名（会同时重命名文件夹和里面的 json / jar）" +
+                (children.Count == 0 ? "" : $"\n将同步更新 {children.Count} 个直接子版本的继承关系");
+            var name = await Dialogs.Prompt("重命名版本", hint, _inst.Id);
             if (string.IsNullOrWhiteSpace(name) || name == _inst.Id) return;
             name = Util.SafeFileName(name);
             try
             {
+                if (LaunchService.IsInstanceBusy(_inst)) throw new InvalidOperationException("游戏正在运行或启动准备中，不能重命名版本");
                 var repo = _inst.Repo;
-                if (repo.HasVersion(name) || Directory.Exists(repo.VersionDir(name))) throw new Exception("已经有同名版本了");
                 var oldId = _inst.Id;
-                var oldDir = _inst.Dir;
-                var newDir = repo.VersionDir(name);
-                Directory.Move(oldDir, newDir);
-                void mv(string ext)
-                {
-                    var a = Path.Combine(newDir, oldId + ext);
-                    if (File.Exists(a)) File.Move(a, Path.Combine(newDir, name + ext));
-                }
-                mv(".json"); mv(".jar");
-                var jsonPath = repo.VersionJson(name);
-                var json = JNode.ParseFile(jsonPath);
-                json.Set("id", name);
-                json.SaveFile(jsonPath);
-                Util.TryDeleteDir(Path.Combine(newDir, oldId + "-natives"));
+                repo.RenameVersion(oldId, name);
                 if (Settings.SelectedVersion == oldId) Settings.SelectedVersion = name;
                 _inst = new Instance(repo, name);
                 OnShown();
                 MainWindow.Current.LaunchPage.RefreshVersion();
                 Dialogs.Toast("已重命名", MainWindow.ToastKind.Ok);
             }
-            catch (Exception ex) { await Dialogs.Alert("重命名失败", ex.Message + "\n（游戏正在运行时不能重命名）"); }
+            catch (Exception ex) { await Dialogs.Alert("重命名失败", ex.Message); }
         }
 
         async void Describe_Click(object sender, RoutedEventArgs e)
@@ -147,9 +138,11 @@ namespace OpenLauncher.UI.Pages
 
         async void Delete_Click(object sender, RoutedEventArgs e)
         {
+            if (LaunchService.IsInstanceBusy(_inst)) { await Dialogs.Alert("无法删除", "游戏正在运行或启动准备中，不能删除版本。"); return; }
             if (!await Dialogs.Confirm("删除版本", $"确定把 {_inst.Id} 放进回收站？{(_inst.Isolated ? "\n这个版本开启了版本隔离，里面的存档和 Mod 也会一起删除！" : "")}", "删除", danger: true)) return;
             try
             {
+                if (LaunchService.IsInstanceBusy(_inst)) throw new InvalidOperationException("游戏正在运行或启动准备中，不能删除版本");
                 RecycleBin.Delete(_inst.Dir);
                 if (Settings.SelectedVersion == _inst.Id) Settings.SelectedVersion = null;
                 MainWindow.Current.LaunchPage.RefreshVersion();

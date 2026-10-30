@@ -76,7 +76,7 @@ namespace OpenLauncher.Core
         public static SourceMode ModSource { get => (SourceMode)GetInt("download.modSource", 0); set => Set("download.modSource", (int)value); }
         public static int DownloadThreads { get => Math.Max(1, Math.Min(128, GetInt("download.threads", 32))); set => Set("download.threads", value); }
         public static int SpeedLimitKb { get => GetInt("download.speedLimitKb", 0); set => Set("download.speedLimitKb", value); }
-        /// <summary>modrinth / curseforge</summary>
+        /// <summary>modrinth / curseforge / all（all 仅用于 Mod 双来源搜索）</summary>
         public static string PreferredContentSource { get => Get("content.source", "modrinth"); set => Set("content.source", value); }
         public static string CurseForgeApiKey
         {
@@ -132,6 +132,9 @@ namespace OpenLauncher.Core
         public static bool Glass { get => GetBool("ui.glass", false); set => Set("ui.glass", value); }
 
         public static bool AutoCheckUpdate { get => GetBool("update.auto", true); set => Set("update.auto", value); }
+        public static bool OnboardingCompleted { get => GetBool("ui.onboarded", false); set => Set("ui.onboarded", value); }
+        /// <summary>首次引导已经开始安装；本次安装完成后提供返回首页并启动的衔接。</summary>
+        public static bool OnboardingInstalling { get => GetBool("ui.onboardingInstalling", false); set => Set("ui.onboardingInstalling", value); }
 
         // ---------- 游戏目录（可以有多个 .minecraft） ----------
         public static List<GameFolder> GameFolders

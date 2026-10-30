@@ -47,17 +47,42 @@ namespace OpenLauncher.UI.Pages
 
         public void OnShown() => Load();
 
+        void SetMode(bool advanced)
+        {
+            CommonNav.Visibility = advanced ? Visibility.Collapsed : Visibility.Visible;
+            AdvancedNav.Visibility = advanced ? Visibility.Visible : Visibility.Collapsed;
+            CommonBody.Visibility = advanced ? Visibility.Collapsed : Visibility.Visible;
+            AdvancedBody.Visibility = advanced ? Visibility.Visible : Visibility.Collapsed;
+            CommonMode.IsChecked = !advanced;
+            AdvancedMode.IsChecked = advanced;
+        }
+
+        void Mode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded) return;
+            SetMode(AdvancedMode.IsChecked == true);
+            Scroller.ScrollToVerticalOffset(0);
+        }
+
         public void ScrollTo(string section)
         {
+            var advanced = section == "java" || section == "args" || section == "jvm" ||
+                           section == "mirrors" || section == "api" || section == "updateAdvanced";
+            SetMode(advanced);
             Dispatcher.BeginInvoke((Action)(() =>
             {
                 FrameworkElement target = section switch
                 {
                     "java" => SecJava,
+                    "args" => SecLaunchArgs,
+                    "jvm" => SecLaunchArgs,
                     "download" => SecDownload,
+                    "mirrors" => SecMirrors,
                     "account" => SecAccount,
+                    "api" => SecApi,
                     "ui" => SecUi,
                     "update" => SecUpdate,
+                    "updateAdvanced" => SecUpdateAdvanced,
                     _ => SecLaunch,
                 };
                 var p = target.TransformToAncestor(Body).Transform(new Point(0, 0));
@@ -69,6 +94,30 @@ namespace OpenLauncher.UI.Pages
         {
             if (!IsLoaded) return;
             ScrollTo((string)((RadioButton)sender).CommandParameter);
+        }
+
+        async void ManageAccounts_Click(object sender, RoutedEventArgs e) => await AccountDialogs.ManageAsync();
+
+        async void ResetJava_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await Dialogs.Confirm("恢复 Java 默认设置", "将全局 Java 改为按游戏版本自动选择，不会删除已安装的 Java。", "恢复默认")) return;
+            _loading = true;
+            Select(JavaGlobal, "");
+            _loading = false;
+            Settings.JavaPath = "";
+            Dialogs.Toast("已恢复自动选择 Java", MainWindow.ToastKind.Ok);
+        }
+
+        async void ResetArgs_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await Dialogs.Confirm("恢复默认启动参数", "将清空额外 JVM 参数和额外游戏参数，其他设置不变。", "恢复默认")) return;
+            _loading = true;
+            JvmArgs.Text = "";
+            GameArgs.Text = "";
+            _loading = false;
+            Settings.JvmArgs = "";
+            Settings.GameArgs = "";
+            Dialogs.Toast("已恢复默认启动参数", MainWindow.ToastKind.Ok);
         }
 
         static void Select(ComboBox box, string tag) =>

@@ -138,6 +138,17 @@ namespace OpenLauncher.UI.Pages
                 }
                 Settings.SelectedVersion = id;
                 TaskManager.OnUi(() => MainWindow.Current.LaunchPage.RefreshVersion());
+                if (Settings.OnboardingInstalling)
+                {
+                    Settings.OnboardingInstalling = false;
+                    Settings.OnboardingCompleted = true;
+                    TaskManager.OnUi(async () =>
+                    {
+                        MainWindow.Current.GoTab("launch");
+                        if (await Dialogs.Confirm("安装完成", $"版本 {id} 已准备好，现在启动游戏吗？", "启动游戏", "稍后"))
+                            await MainWindow.Current.LaunchPage.LaunchAsync(new Instance(repo, id));
+                    });
+                }
             });
             MainWindow.Current.ToggleTasks(true);
             MainWindow.Current.Back();

@@ -74,7 +74,6 @@ namespace OpenLauncher.UI.Pages
                     _p.Body = full.Body;
                     BodyText.Text = PlainText(full.Body);
                     DescCard.Visibility = Visibility.Visible;
-                    DescScroll.MaxHeight = 200;
                     DescToggle.Visibility = Visibility.Visible;
                 }
             }
@@ -97,11 +96,11 @@ namespace OpenLauncher.UI.Pages
             ZhStatus.Visibility = Visibility.Collapsed;
         }
 
-        bool _descExpanded;
+        bool _descExpanded = true;
         void DescToggle_Click(object sender, RoutedEventArgs e)
         {
             _descExpanded = !_descExpanded;
-            DescScroll.MaxHeight = _descExpanded ? double.PositiveInfinity : 200;
+            DescContent.Visibility = _descExpanded ? Visibility.Visible : Visibility.Collapsed;
             DescToggle.Content = _descExpanded ? "收起" : "展开";
         }
 
@@ -131,6 +130,7 @@ namespace OpenLauncher.UI.Pages
             StatusPanel.Visibility = Visibility.Visible;
             StatusText.Text = "加载文件列表…";
             StatusBar.Visibility = Visibility.Visible;
+            RetryFiles.Visibility = Visibility.Collapsed;
             try
             {
                 var prov = ContentService.Get(_p.Source);
@@ -139,9 +139,17 @@ namespace OpenLauncher.UI.Pages
             }
             catch (Exception ex)
             {
-                StatusText.Text = "加载失败：" + ex.Message;
+                _loaded = false;
+                StatusText.Text = "文件列表加载失败：" + ex.Message;
                 StatusBar.Visibility = Visibility.Collapsed;
+                RetryFiles.Visibility = Visibility.Visible;
             }
+        }
+
+        async void RetryFiles_Click(object sender, RoutedEventArgs e)
+        {
+            _loaded = true;
+            await LoadFilesAsync();
         }
 
         void Apply()
@@ -235,13 +243,60 @@ namespace OpenLauncher.UI.Pages
             var loader = LoaderInfo.Slug(_target.PrimaryLoader);
             bool deps = _type == ContentType.Mod;
             var title = _p.Title;
-            TaskManager.Start($"下载 {title}", async t =>
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; button.Content = "检查中…"; }
+            try
             {
-                Directory.CreateDirectory(dir);
-                var installed = await ContentService.InstallAsync(file, dir, deps, mc, loader, t);
-                if (installed != null && installed.Count > 1) t.Detail = $"已安装 {installed.Count} 个文件（含前置）";
-            });
-            Dialogs.Toast($"开始下载 {title}" + (deps ? "（会自动补齐前置 Mod）" : ""));
+                var plan = await ContentService.PrepareInstallAsync(file, dir, deps, mc, loader, CancellationToken.None);
+                if (!await ConfirmInstallAsync(plan)) return;
+                TaskManager.Start($"下载 {title}", async t =>
+                {
+                    var report = await ContentService.InstallPreparedAsync(plan, t);
+                    t.Detail = report.Installed.Count > 1 ? $"已安装 {report.Installed.Count} 个文件（含前置）" : "安装完成";
+                    TaskManager.OnUi(() => _ = ShowInstallCompleteAsync(report));
+                });
+                MainWindow.Current.ToggleTasks(true);
+                Dialogs.Toast($"开始下载 {title}" + (plan.Files.Count > 1 ? $"（含 {plan.Files.Count - 1} 个前置）" : ""));
+            }
+            catch (Exception ex)
+            {
+                await ErrorDialog.ShowAsync("无法准备安装", TaskManager.Flatten(ex), "检查网络、目标文件归属和版本筛选后重试。", ex);
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; button.Content = "下载"; }
+            }
+        }
+
+        async Task<bool> ConfirmInstallAsync(InstallPlan plan)
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(new TextBlock { Text = $"安装到：{_target.Id}\n目标目录：{plan.TargetDir}", Style = (Style)FindResource("Sub"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) });
+            void Section(string title, IEnumerable<string> values, bool warning = false)
+            {
+                var list = values?.Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+                if (list == null || list.Count == 0) return;
+                panel.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, Foreground = warning ? (System.Windows.Media.Brush)FindResource("Warn") : (System.Windows.Media.Brush)FindResource("Text"), Margin = new Thickness(0, 7, 0, 3) });
+                foreach (var value in list.Take(30)) panel.Children.Add(new TextBlock { Text = "• " + value, Style = (Style)FindResource("Body"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(5, 0, 0, 2) });
+                if (list.Count > 30) panel.Children.Add(new TextBlock { Text = $"…另有 {list.Count - 30} 项", Style = (Style)FindResource("Sub") });
+            }
+            Section("将下载", plan.Files.Select((f, i) => (i == 0 ? "主文件：" : "前置：") + f.FileName + (f.Size > 0 ? $"（{Util.FormatSize(f.Size)}）" : "")));
+            Section("安装成功后将替换（旧文件移入回收站）", plan.Replacements.Select(Path.GetFileName));
+            Section("已安装，跳过", plan.Skipped);
+            Section("找不到适配的前置（需要之后手动处理）", plan.Missing, true);
+            var choice = await Dialogs.ShowAsync("确认安装", new ScrollViewer { Content = panel, MaxHeight = 380, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, new[] { "取消", "开始安装" }, primary: 1, width: 560);
+            return choice == 1;
+        }
+
+        async Task ShowInstallCompleteAsync(InstallReport report)
+        {
+            var text = $"已安装 {report.Installed.Count} 个文件到 {_target.Id}。";
+            if (report.Replaced.Count > 0) text += $"\n已替换 {report.Replaced.Count} 个旧文件（旧文件在回收站）。";
+            if (report.Missing.Count > 0) text += "\n仍未找到前置：" + string.Join("、", report.Missing);
+            var choice = await Dialogs.ShowAsync("安装完成", Dialogs.Text(text), new[] { "完成", "打开管理页" }, primary: 1, width: 480);
+            if (choice != 1) return;
+            var tab = _type == ContentType.ResourcePack ? "resource" : _type == ContentType.Shader ? "shader" : _type == ContentType.DataPack ? "saves" : "mods";
+            MainWindow.Current.GoTab("launch", new InstancePage(_target, tab));
         }
     }
 }

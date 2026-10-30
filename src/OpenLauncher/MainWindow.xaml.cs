@@ -145,7 +145,40 @@ namespace OpenLauncher
         void Tasks_Click(object sender, RoutedEventArgs e) => ToggleTasks(TaskLayer.Visibility != Visibility.Visible);
         void TaskLayer_MouseDown(object sender, MouseButtonEventArgs e) => ToggleTasks(false);
         void ClearTasks_Click(object sender, RoutedEventArgs e) => TaskManager.ClearFinished();
-        void CancelTask_Click(object sender, RoutedEventArgs e) => ((sender as FrameworkElement)?.DataContext as LauncherTask)?.Cancel();
+        static LauncherTask TaskOf(object sender) => (sender as FrameworkElement)?.DataContext as LauncherTask;
+        void CancelTask_Click(object sender, RoutedEventArgs e) => TaskOf(sender)?.Cancel();
+        void PauseTask_Click(object sender, RoutedEventArgs e) => TaskOf(sender)?.Pause();
+        void ResumeTask_Click(object sender, RoutedEventArgs e) => TaskOf(sender)?.Resume();
+        void RetryTask_Click(object sender, RoutedEventArgs e)
+        {
+            var task = TaskOf(sender);
+            if (task != null && task.CanRetry) TaskManager.Retry(task);
+        }
+        void CopyTask_Click(object sender, RoutedEventArgs e)
+        {
+            var task = TaskOf(sender);
+            if (task == null) return;
+            try
+            {
+                Clipboard.SetText($"{task.Title}\r\n状态：{task.StateText}\r\n{task.Detail}\r\n{task.Error}");
+                Toast("诊断信息已复制", ToastKind.Ok);
+            }
+            catch (Exception ex) { Toast("复制失败：" + ex.Message, ToastKind.Error); }
+        }
+
+        void TaskDetails_Click(object sender, RoutedEventArgs e)
+        {
+            var task = TaskOf(sender);
+            if (task == null) return;
+            var summary = string.IsNullOrWhiteSpace(task.Error) ? task.Detail : task.Error;
+            var details = $"{task.Title}\r\n状态：{task.StateText}\r\n开始时间：{task.Started:yyyy-MM-dd HH:mm:ss}\r\n{task.Detail}\r\n{task.Error}";
+            var actions = new List<ErrorDialogAction>();
+            if (task.CanRetry)
+                actions.Add(new ErrorDialogAction("重试任务", () => { TaskManager.Retry(task); ToggleTasks(true); }, primary: true));
+            _ = ErrorDialog.ShowAsync(task.Title + "失败", summary,
+                task.CanRetry ? "可以直接重试任务；若再次失败，请复制技术详情排查。" : "请根据原因处理后，从原页面重新发起任务。",
+                details, actions);
+        }
 
         public void ToggleTasks(bool show)
         {
@@ -231,6 +264,7 @@ namespace OpenLauncher
         // ---------- 启动时 ----------
         async Task StartupChecksAsync()
         {
+            await LaunchPage.RunOnboardingAsync();
             _ = Task.Run(() => Mirrors.ProbeAsync());
             if (Environment.GetCommandLineArgs().Contains("--updated"))
                 Toast($"已更新到 {AppInfo.VersionString}", ToastKind.Ok);

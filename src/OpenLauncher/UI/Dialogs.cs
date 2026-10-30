@@ -112,15 +112,185 @@ namespace OpenLauncher.UI
         public static void Toast(string text, MainWindow.ToastKind kind = MainWindow.ToastKind.Info) => MainWindow.Current?.Toast(text, kind);
 
         // ---------- 更新 ----------
+        static bool IsWebUrl(string value, out Uri uri)
+        {
+            return Uri.TryCreate(value, UriKind.Absolute, out uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        static void AddMarkdownInlines(InlineCollection inlines, string text)
+        {
+            int plainStart = 0;
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (text[i] == '`')
+                {
+                    int end = text.IndexOf('`', i + 1);
+                    if (end > i + 1)
+                    {
+                        if (i > plainStart) inlines.Add(new Run(text.Substring(plainStart, i - plainStart)));
+                        inlines.Add(new Run(text.Substring(i + 1, end - i - 1))
+                        {
+                            FontFamily = new FontFamily("Consolas, Microsoft YaHei UI"),
+                            FontSize = 12,
+                            Foreground = B("Text"),
+                            Background = B("AccentSoft"),
+                        });
+                        i = plainStart = end + 1;
+                        continue;
+                    }
+                }
+                if (i + 1 < text.Length && text[i] == '*' && text[i + 1] == '*')
+                {
+                    int end = text.IndexOf("**", i + 2, StringComparison.Ordinal);
+                    if (end > i + 2)
+                    {
+                        if (i > plainStart) inlines.Add(new Run(text.Substring(plainStart, i - plainStart)));
+                        var bold = new Bold();
+                        AddMarkdownInlines(bold.Inlines, text.Substring(i + 2, end - i - 2));
+                        inlines.Add(bold);
+                        i = plainStart = end + 2;
+                        continue;
+                    }
+                }
+                if (text[i] == '[')
+                {
+                    int labelEnd = text.IndexOf("](", i + 1, StringComparison.Ordinal);
+                    int urlEnd = labelEnd < 0 ? -1 : text.IndexOf(')', labelEnd + 2);
+                    if (labelEnd > i + 1 && urlEnd > labelEnd + 2)
+                    {
+                        string url = text.Substring(labelEnd + 2, urlEnd - labelEnd - 2);
+                        if (IsWebUrl(url, out Uri uri))
+                        {
+                            if (i > plainStart) inlines.Add(new Run(text.Substring(plainStart, i - plainStart)));
+                            var link = new Hyperlink(new Run(text.Substring(i + 1, labelEnd - i - 1)))
+                            {
+                                NavigateUri = uri,
+                                Foreground = B("Accent"),
+                                ToolTip = uri.AbsoluteUri,
+                            };
+                            link.RequestNavigate += (s, e) =>
+                            {
+                                e.Handled = true;
+                                if (e.Uri != null && (e.Uri.Scheme == Uri.UriSchemeHttp || e.Uri.Scheme == Uri.UriSchemeHttps))
+                                    Util.OpenUrl(e.Uri.AbsoluteUri);
+                            };
+                            inlines.Add(link);
+                            i = plainStart = urlEnd + 1;
+                            continue;
+                        }
+                    }
+                }
+                i++;
+            }
+            if (plainStart < text.Length) inlines.Add(new Run(text.Substring(plainStart)));
+        }
+
+        static FlowDocument MarkdownDocument(string markdown)
+        {
+            var document = new FlowDocument
+            {
+                FontFamily = new FontFamily("Segoe UI, Microsoft YaHei UI"),
+                FontSize = 13,
+                Foreground = B("Text2"),
+                LineHeight = 20,
+                PagePadding = new Thickness(12, 8, 12, 8),
+            };
+            var paragraphLines = new List<string>();
+            System.Windows.Documents.List list = null;
+
+            void FlushParagraph()
+            {
+                if (paragraphLines.Count == 0) return;
+                var paragraph = new Paragraph { Margin = new Thickness(0, 3, 0, 8) };
+                AddMarkdownInlines(paragraph.Inlines, string.Join(" ", paragraphLines));
+                document.Blocks.Add(paragraph);
+                paragraphLines.Clear();
+            }
+            void FlushList()
+            {
+                if (list == null) return;
+                document.Blocks.Add(list);
+                list = null;
+            }
+
+            string[] lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            foreach (string rawLine in lines)
+            {
+                string line = rawLine.Trim();
+                if (line.Length == 0)
+                {
+                    FlushParagraph();
+                    FlushList();
+                    continue;
+                }
+
+                int heading = 0;
+                while (heading < line.Length && heading < 6 && line[heading] == '#') heading++;
+                if (heading > 0 && heading < line.Length && line[heading] == ' ')
+                {
+                    FlushParagraph();
+                    FlushList();
+                    double size = heading == 1 ? 22 : heading == 2 ? 18 : heading == 3 ? 16 : 14;
+                    var paragraph = new Paragraph
+                    {
+                        FontSize = size,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = B("Text"),
+                        LineHeight = size * 1.4,
+                        Margin = new Thickness(0, document.Blocks.Count == 0 ? 2 : 10, 0, 7),
+                        Padding = new Thickness(0, 0, 0, heading <= 2 ? 5 : 0),
+                        BorderBrush = heading <= 2 ? B("Line") : null,
+                        BorderThickness = new Thickness(0, 0, 0, heading <= 2 ? 1 : 0),
+                    };
+                    AddMarkdownInlines(paragraph.Inlines, line.Substring(heading + 1).Trim());
+                    document.Blocks.Add(paragraph);
+                    continue;
+                }
+
+                if (line.Length > 2 && (line.StartsWith("- ", StringComparison.Ordinal) || line.StartsWith("* ", StringComparison.Ordinal)))
+                {
+                    FlushParagraph();
+                    if (list == null) list = new System.Windows.Documents.List { MarkerStyle = TextMarkerStyle.Disc, Margin = new Thickness(20, 2, 0, 8), Padding = new Thickness(0) };
+                    var paragraph = new Paragraph { Margin = new Thickness(0, 1, 0, 3) };
+                    AddMarkdownInlines(paragraph.Inlines, line.Substring(2).Trim());
+                    list.ListItems.Add(new ListItem(paragraph));
+                    continue;
+                }
+
+                FlushList();
+                paragraphLines.Add(line);
+            }
+            FlushParagraph();
+            FlushList();
+            return document;
+        }
+
         public static async Task ShowUpdateAsync(UpdateInfo info)
         {
             var panel = new StackPanel();
             panel.Children.Add(new TextBlock { Text = $"当前 {AppInfo.VersionString}  →  新版本 {info.Version}", Style = S("Body"), FontWeight = FontWeights.SemiBold });
             panel.Children.Add(new TextBlock { Text = $"签名者 {info.Signer} · 来源 {new Uri(info.FoundAt).Host} · {Util.FormatSize(info.Size)}", Style = S("Sub"), Margin = new Thickness(0, 4, 0, 10) });
             if (!string.IsNullOrWhiteSpace(info.Notes))
-                panel.Children.Add(new TextBox { Text = info.Notes, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 220, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalContentAlignment = VerticalAlignment.Top });
+            {
+                var notes = new FlowDocumentScrollViewer
+                {
+                    Document = MarkdownDocument(info.Notes),
+                    MaxHeight = 280,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                };
+                panel.Children.Add(new Border
+                {
+                    Child = notes,
+                    BorderBrush = B("Line"),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(8),
+                });
+            }
             panel.Children.Add(new TextBlock { Text = "更新文件经过发布者签名校验，可以从任意镜像下载。", Style = S("Sub"), Margin = new Thickness(0, 10, 0, 0) });
-            var r = await ShowAsync("发现新版本", panel, new[] { "以后再说", "立即更新" }, primary: 1, width: 520);
+            var r = await ShowAsync("发现新版本", panel, new[] { "以后再说", "立即更新" }, primary: 1, width: 560);
             if (r == 1)
             {
                 TaskManager.Start($"更新到 {info.Version}", t => Updater.DownloadAndApplyAsync(info, t));

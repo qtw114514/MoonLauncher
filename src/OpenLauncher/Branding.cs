@@ -32,8 +32,6 @@ namespace OpenLauncher
         /// </summary>
         public static readonly string[] TrustedKeys =
         {
-            // 指纹 12c461c38f08483a（OpenLauncher 初始发布钥匙）
-            "<RSAKeyValue><Modulus>ugyFBDPVmXZcK68n80vPAgS5wrhhCwOgmlZuvUZULR1tGN67q7fShd4BV/iyjC0t4Qn9moE0NGY9O1KRMnlWPd2wnGzinX+536lrkmba43dbBL733tUhRbLjRa0WWGjV1CoABlljVU4XoUYgyuAOWnTWYwBq+dNeCr1nq5CUH8F+3KNUMrA5HGM50OiIRkM7j3IDpwxB8wQMngP5ObPLDMBpz94Zqn/+ZFFpXhlw81vZACe/7KrnEtIXHkVusDtZFuVAN7M6XLwaTyDHkEYshudCnj80sXBi1dbC3beKmcBSSd3oH1lDRmdEen+vU5aDOi9mY4V2RstgCdZKPt3xJ/G98Nm6t8khnrlpitqyAD60DHWhtDCLDUlAaaWsfda+PeGt1s8novdpnaiSJO9Fcaywiz+WdMHjvBN+Z1u18Adiu9MdYACY/Rg70pnk37drYp4GD8o+tZEfRxW32RfFV5jDI4INrFWdlT33VLmTpPtWQItW6ibXDgOIP23cnGAh</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>",
             // 指纹 4b05c0b3730e3fc9（当前维护者发布钥匙，私钥离线保存于维护者处）
             "<RSAKeyValue><Modulus>ysT/Z/UMh4EVyKHE6Xe1nDoF/5G9MyPFvopmrQQewq6qNg9JT/flrt1X4G4pxMIegu5mgookSXsfMxEEcrRtsX41W6oCvVWnKBzUFlrfUSoZbz2QPC0K2vEwBjh4dSF/WzriyDafBqT5JazM+pUi3W7BzZqUkbRPFzh0HF8oduYDx+0zjN2D9iDGWalWM8RFDNEDLUbCkWiTs1AsFocejcyNeRbCSyJ0zjfIHU7uTC6hGEHMXcLZ/BbrX7UAAD0XK1Mqn0ayX92DXdQjYEtrMHAxAbvInxPVg6DFzXwkC05Zyj2zE0Y2T24wy8HKNm8HKliZFF1Q0iV8FISDRSbAfynsXuX3nauQ3+JAjhGGmzgG7NPItqfdXFIBBOIxWhubKB8ol6KsRjAfz/vv+bSXGC/gPcaA2/BjwEtic3QLbvKWuckSHu2MbxacJClrP/xP8pE1h85EDWGrZ27S83KJDepPOzWFPIl5gH7jx7O+RQSqAAI8gv3YZmEnIFOVDzMZ</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>",
         };

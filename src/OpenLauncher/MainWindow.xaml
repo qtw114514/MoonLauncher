@@ -89,13 +89,35 @@
                                                              Visibility="{Binding IsActive, Converter={StaticResource BoolVis}}"/>
                                                 <TextBlock Text="{Binding Detail}" Style="{StaticResource Sub}" MaxHeight="120" Margin="0,2,0,0"/>
                                                 <Grid Margin="0,4,0,0">
-                                                    <TextBlock Style="{StaticResource Sub}">
+                                                    <TextBlock Style="{StaticResource Sub}" VerticalAlignment="Center">
                                                         <Run Text="{Binding ProgressText, Mode=OneWay}"/>
                                                         <Run Text="  "/>
                                                         <Run Text="{Binding SpeedText, Mode=OneWay}"/>
                                                     </TextBlock>
-                                                    <Button Content="取消" Style="{StaticResource Ghost}" Padding="6,2" HorizontalAlignment="Right" Click="CancelTask_Click"
-                                                            Visibility="{Binding IsActive, Converter={StaticResource BoolVis}}"/>
+                                                    <WrapPanel HorizontalAlignment="Right">
+                                                        <Button Content="暂停" Style="{StaticResource Ghost}" Padding="6,2" Margin="3,0" Click="PauseTask_Click"
+                                                                Visibility="{Binding CanPause, Converter={StaticResource BoolVis}}"/>
+                                                        <Button Content="继续" Style="{StaticResource Ghost}" Padding="6,2" Margin="3,0" Click="ResumeTask_Click"
+                                                                Visibility="{Binding CanResume, Converter={StaticResource BoolVis}}"/>
+                                                        <Button Content="重试" Style="{StaticResource Ghost}" Padding="6,2" Margin="3,0" Click="RetryTask_Click"
+                                                                Visibility="{Binding CanRetry, Converter={StaticResource BoolVis}}"/>
+                                                        <Button Content="复制诊断" Style="{StaticResource Ghost}" Padding="6,2" Margin="3,0" Click="CopyTask_Click"
+                                                                Visibility="{Binding CanRetry, Converter={StaticResource BoolVis}}"/>
+                                                        <Button Content="失败详情" Padding="6,2" Margin="3,0" Click="TaskDetails_Click">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource Ghost}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding State}" Value="Failed">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="取消" Style="{StaticResource Ghost}" Padding="6,2" Margin="3,0" Click="CancelTask_Click"
+                                                                Visibility="{Binding CanCancel, Converter={StaticResource BoolVis}}"/>
+                                                    </WrapPanel>
                                                 </Grid>
                                             </StackPanel>
                                         </Border>

@@ -2,15 +2,21 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:OpenLauncher.UI">
-    <DockPanel Margin="22,16,22,10">
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+    <Grid Margin="22,16,22,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
             <Button Style="{StaticResource Ghost}" Click="Back_Click" Margin="-8,0,6,0">
                 <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}"/>
             </Button>
             <TextBlock Text="资源详情" Style="{StaticResource H1}" VerticalAlignment="Center"/>
         </StackPanel>
 
-        <Border DockPanel.Dock="Top" Style="{StaticResource CardBox}">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+        <Border Style="{StaticResource CardBox}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -37,17 +43,17 @@
                     <TextBlock Text="介绍" Style="{StaticResource H2}" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="McmodLink" Content="在 MC 百科打开" Style="{StaticResource Ghost}" Visibility="Collapsed" Click="Mcmod_Click"/>
-                        <Button x:Name="DescToggle" Content="展开" Style="{StaticResource Ghost}" Click="DescToggle_Click"/>
+                        <Button x:Name="DescToggle" Content="收起" Style="{StaticResource Ghost}" Click="DescToggle_Click"/>
                     </StackPanel>
                 </Grid>
-                <TextBlock x:Name="ZhStatus" Text="正在查找中文介绍…" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
-                <StackPanel x:Name="ZhPanel" Visibility="Collapsed" Margin="0,8,0,0">
-                    <TextBlock Text="中文简介（来自 MC 百科）" Style="{StaticResource Sub}"/>
-                    <TextBlock x:Name="ZhText" Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                <StackPanel x:Name="DescContent">
+                    <TextBlock x:Name="ZhStatus" Text="正在查找中文介绍…" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
+                    <StackPanel x:Name="ZhPanel" Visibility="Collapsed" Margin="0,8,0,0">
+                        <TextBlock Text="中文简介（来自 MC 百科）" Style="{StaticResource Sub}"/>
+                        <TextBlock x:Name="ZhText" Style="{StaticResource Body}" FontFamily="Microsoft YaHei, Microsoft YaHei UI, SimSun" FontSize="14" LineHeight="23" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <TextBlock x:Name="BodyText" Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                 </StackPanel>
-                <ScrollViewer x:Name="DescScroll" MaxHeight="0" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="BodyText" Style="{StaticResource Body}" TextWrapping="Wrap"/>
-                </ScrollViewer>
             </StackPanel>
         </Border>
 
@@ -60,9 +66,10 @@
         </Grid>
 
         <Grid>
-            <ListBox x:Name="Files" Style="{StaticResource CardList}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel">
-                <ListBox.ItemTemplate>
+            <ItemsControl x:Name="Files">
+                <ItemsControl.ItemTemplate>
                     <DataTemplate>
+                        <Border Style="{StaticResource CardBox}" Margin="0,0,0,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -87,13 +94,17 @@
                             </StackPanel>
                             <Button Grid.Column="1" Content="下载" Style="{StaticResource Primary}" Padding="16,6" VerticalAlignment="Center" Click="Download_Click"/>
                         </Grid>
+                        </Border>
                     </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <StackPanel x:Name="StatusPanel" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock x:Name="StatusText" Text="加载文件列表…" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel x:Name="StatusPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,30">
+                <TextBlock x:Name="StatusText" Text="加载文件列表…" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
                 <ProgressBar x:Name="StatusBar" IsIndeterminate="True" Width="200" Margin="0,10,0,0"/>
+                <Button x:Name="RetryFiles" Content="重试" Margin="0,10,0,0" Padding="18,5" Visibility="Collapsed" Click="RetryFiles_Click"/>
             </StackPanel>
         </Grid>
-    </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

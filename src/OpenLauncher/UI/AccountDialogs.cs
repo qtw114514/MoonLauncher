@@ -66,7 +66,12 @@ namespace OpenLauncher.UI
                 };
 
                 panel.Children.Add(new TextBlock { Text = "添加账号", Style = S("Sub"), Margin = new Thickness(0, 12, 0, 6) });
-                var r = await Dialogs.ShowAsync("账号", panel, new[] { "完成", "离线", "微软正版", "外置登录" }, primary: 0, width: 500);
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "离线：无需联网，适合单人游戏和允许离线玩家的服务器。\n微软正版：适合已购买 Minecraft Java 版的微软账号，可进入正版验证服务器。\n外置登录：适合 LittleSkin、Blessing Skin 等皮肤站账号，是否可用取决于服务器设置。",
+                    Style = S("Sub"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8)
+                });
+                var r = await Dialogs.ShowAsync("账号", panel, new[] { "完成", "离线", "微软正版", "外置登录" }, primary: 0, width: 540);
                 switch (r)
                 {
                     case 1: await AddOfflineAsync(); break;
@@ -124,6 +129,18 @@ namespace OpenLauncher.UI
             Dialogs.Toast($"已添加离线账号 {name}", MainWindow.ToastKind.Ok);
         }
 
+        /// <summary>重新登录当前账号；只有确实选择了新登录结果才返回 true。</summary>
+        public static async Task<bool> ReloginAsync(Account account)
+        {
+            if (account == null) return false;
+            var before = AccountStore.Selected;
+            if (account.Type == AccountType.Microsoft) await AddMicrosoftAsync();
+            else if (account.Type == AccountType.Yggdrasil) await AddYggdrasilAsync(account);
+            else return false;
+            var selected = AccountStore.Selected;
+            return selected != null && !ReferenceEquals(selected, before);
+        }
+
         static async Task AddMicrosoftAsync()
         {
             if (!MicrosoftAuth.HasClientId)
@@ -133,35 +150,63 @@ namespace OpenLauncher.UI
                                  "去中心化的启动器不能共用一个会被封的 ID，所以由发布者或你自己申请：\n" +
                                  "1. 在 Azure 门户注册应用（个人 Microsoft 账户，允许公共客户端流）\n" +
                                  "2. 在 Mojang 的申请表提交 Client ID，等待审核通过\n" +
-                                 "3. 把 Client ID 填到 设置 → 账户\n\n详细步骤见项目文档 docs/微软登录.md。"),
-                    new[] { "取消", "去设置" }, primary: 1, width: 520);
-                if (go == 1) { MainWindow.Current.GoTab("settings"); MainWindow.Current.SettingsPage.ScrollTo("account"); }
+                                 "3. 把 Client ID 填到 设置 → 高级 → API\n\n" +
+                                 "暂时没有 Client ID 也可以改用离线账号或外置登录。详细步骤见 docs/微软登录.md。"),
+                    new[] { "取消", "去设置", "离线账号", "外置登录" }, primary: 1, width: 600);
+                if (go == 1) { MainWindow.Current.GoTab("settings"); MainWindow.Current.SettingsPage.ScrollTo("api"); }
+                else if (go == 2) await AddOfflineAsync();
+                else if (go == 3) await AddYggdrasilAsync();
                 return;
             }
 
             var cts = new CancellationTokenSource();
             DeviceCodeInfo info;
             try { info = await MicrosoftAuth.StartAsync(cts.Token); }
-            catch (Exception ex) { await Dialogs.Alert("微软登录失败", ex.Message); return; }
-
-            try { Clipboard.SetText(info.UserCode); } catch { }
-            Util.OpenUrl(info.VerificationUri);
+            catch (Exception ex)
+            {
+                await ErrorDialog.ShowAsync("微软登录失败", TaskManager.Flatten(ex), "检查网络和 Client ID 配置后重试。", ex);
+                return;
+            }
 
             var panel = new StackPanel();
-            panel.Children.Add(new TextBlock { Text = "浏览器已经打开微软登录页，输入下面的代码（已复制到剪贴板）：", Style = S("Body") });
+            panel.Children.Add(new TextBlock { Text = "点击按钮复制代码并打开微软登录页，然后在浏览器中输入下面的代码：", Style = S("Body"), TextWrapping = TextWrapping.Wrap });
             panel.Children.Add(new TextBox { Text = info.UserCode, IsReadOnly = true, FontSize = 28, FontWeight = FontWeights.Bold, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 12, 0, 8), FontFamily = new FontFamily("Consolas") });
-            var status = new TextBlock { Text = "等待你在浏览器里完成登录…", Style = S("Sub") };
+            var status = new TextBlock { Style = S("Sub") };
             panel.Children.Add(status);
-            var linkBtn = new Button { Content = "没打开？点这里", Style = S("Ghost"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(-8, 6, 0, 0) };
-            linkBtn.Click += (s, e) => Util.OpenUrl(info.VerificationUri);
-            panel.Children.Add(linkBtn);
+            var openBtn = new Button { Content = "复制代码并打开浏览器", Style = S("Primary"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 10, 0, 0) };
+            openBtn.Click += (s, e) =>
+            {
+                try { Clipboard.SetText(info.UserCode); }
+                catch (Exception ex) { Dialogs.Toast("复制失败，请手动复制代码：" + ex.Message, MainWindow.ToastKind.Error); }
+                Util.OpenUrl(info.VerificationUri);
+            };
+            panel.Children.Add(openBtn);
 
-            var dialog = Dialogs.ShowAsync("微软登录", panel, new[] { "取消" }, primary: 0);
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            void updateTime()
+            {
+                var remaining = info.ExpiresAtUtc - DateTime.UtcNow;
+                status.Text = remaining > TimeSpan.Zero
+                    ? $"等待浏览器确认 · 剩余 {(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}"
+                    : "代码已过期，正在结束登录；请重新登录获取新代码";
+            }
+            timer.Tick += (s, e) => updateTime();
+            updateTime();
+            timer.Start();
+
+            var dialog = Dialogs.ShowAsync("微软登录", panel, new[] { "取消登录" }, primary: 0);
             var login = MicrosoftAuth.CompleteAsync(info, cts.Token);
             var done = await Task.WhenAny(dialog, login);
-            if (done == dialog) { cts.Cancel(); return; }
+            if (done == dialog)
+            {
+                timer.Stop();
+                cts.Cancel();
+                try { await login; } catch { }
+                Dialogs.Toast("已取消微软登录");
+                return;
+            }
 
-            // 登录流程结束，关掉等待框
+            timer.Stop();
             CloseTop();
             try
             {
@@ -170,18 +215,24 @@ namespace OpenLauncher.UI
                 AccountStore.Selected = acc;
                 Dialogs.Toast($"已登录 {acc.Name}", MainWindow.ToastKind.Ok);
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { await Dialogs.Alert("微软登录失败", ex.Message); }
+            catch (OperationCanceledException) { Dialogs.Toast("已取消微软登录"); }
+            catch (Exception ex)
+            {
+                var message = TaskManager.Flatten(ex);
+                var expired = message.IndexOf("过期", StringComparison.Ordinal) >= 0;
+                await ErrorDialog.ShowAsync(expired ? "登录代码已过期" : "微软登录失败", message,
+                    expired ? "重新发起微软登录，并在倒计时结束前完成浏览器授权。" : "检查网络、浏览器授权和 Client ID 配置后重试。", ex);
+            }
         }
 
-        static async Task AddYggdrasilAsync()
+        static async Task AddYggdrasilAsync(Account existing = null)
         {
             var panel = new StackPanel();
             panel.Children.Add(new TextBlock { Text = "认证服务器（皮肤站）地址", Style = S("Sub") });
-            var server = new TextBox { Text = Settings.Get("account.lastYggdrasil", "littleskin.cn"), Margin = new Thickness(0, 4, 0, 10) };
+            var server = new TextBox { Text = existing?.ServerUrl ?? Settings.Get("account.lastYggdrasil", "littleskin.cn"), Margin = new Thickness(0, 4, 0, 10) };
             panel.Children.Add(server);
             panel.Children.Add(new TextBlock { Text = "邮箱 / 用户名", Style = S("Sub") });
-            var user = new TextBox { Margin = new Thickness(0, 4, 0, 10) };
+            var user = new TextBox { Text = existing?.LoginName ?? "", Margin = new Thickness(0, 4, 0, 10) };
             panel.Children.Add(user);
             panel.Children.Add(new TextBlock { Text = "密码", Style = S("Sub") });
             var pass = new PasswordBox { Margin = new Thickness(0, 4, 0, 0) };
@@ -189,7 +240,7 @@ namespace OpenLauncher.UI
             panel.Children.Add(new TextBlock { Text = "使用 authlib-injector，支持 LittleSkin、Blessing Skin 等 Yggdrasil 皮肤站。密码只发给你填的服务器，不会保存。", Style = S("Sub"), Margin = new Thickness(0, 10, 0, 0) });
             user.Loaded += (s, e) => user.Focus();
 
-            if (await Dialogs.ShowAsync("外置登录", panel, new[] { "取消", "登录" }, primary: 1, width: 460) != 1) return;
+            if (await Dialogs.ShowAsync(existing == null ? "外置登录" : "重新外置登录", panel, new[] { "取消", "登录" }, primary: 1, width: 460) != 1) return;
             try
             {
                 var api = await YggdrasilAuth.ResolveApiAsync(server.Text.Trim(), CancellationToken.None);
@@ -209,7 +260,10 @@ namespace OpenLauncher.UI
                 AccountStore.Selected = acc;
                 Dialogs.Toast($"已登录 {acc.Name}（{acc.TypeText}）", MainWindow.ToastKind.Ok);
             }
-            catch (Exception ex) { await Dialogs.Alert("外置登录失败", ex.Message); }
+            catch (Exception ex)
+            {
+                await ErrorDialog.ShowAsync("外置登录失败", TaskManager.Flatten(ex), "检查认证服务器地址、账号密码和网络后重试。", ex);
+            }
         }
 
         static void CloseTop()

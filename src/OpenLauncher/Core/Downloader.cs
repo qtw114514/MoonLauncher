@@ -21,6 +21,8 @@ namespace OpenLauncher.Core
         public string Sha512 { get; set; }
         public long Size { get; set; }
         public bool UseMirror { get; set; } = true;
+        /// <summary>覆盖已有目标前先把旧文件移入回收站；默认仍直接删除。</summary>
+        public bool RecycleExisting { get; set; } = false;
         public string Name => System.IO.Path.GetFileName(Path);
 
         public DownloadItem() { }
@@ -99,8 +101,9 @@ namespace OpenLauncher.Core
                 sw.Restart();
                 if (task != null && secs > 0)
                 {
-                    task.Speed = (long)((b - lastBytes) / secs);
-                    task.Report(progressFrom + (progressTo - progressFrom) * Math.Min(1, (double)b / total),
+                    task.Speed = task.State == TaskState.Paused ? 0 : Math.Max(0, (long)((b - lastBytes) / secs));
+                    var fraction = total > 0 ? Math.Max(0, Math.Min(1, (double)b / total)) : 1;
+                    task.Report(progressFrom + (progressTo - progressFrom) * fraction,
                         waitingNet ? $"{label}：等待网络恢复…（{doneFiles}/{list.Count}）" : $"{label}：{doneFiles}/{list.Count}");
                 }
                 lastBytes = b;
@@ -108,29 +111,33 @@ namespace OpenLauncher.Core
             {
                 var jobs = list.Select(async item =>
                 {
+                    if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                     await sem.WaitAsync(ct).ConfigureAwait(false);
-                    long counted = 0;
-                    // 临时文件名固定（不再每次重试换名）：断网恢复后从同一个临时文件断点续传
-                    var tmp = item.Path + "." + Guid.NewGuid().ToString("N").Substring(0, 8) + ".oltmp";
+                    // 固定临时名让任务失败/取消后的下一次运行也能从同一文件断点续传
+                    var tmp = item.Path + ".oltmp";
+                    long counted = TempLength(tmp);
+                    if (counted > 0) Interlocked.Add(ref doneBytes, counted);
                     try
                     {
+                        if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                         while (true)
                         {
                             try
                             {
-                                await DownloadOneAsync(item, tmp, ct, n => { counted += n; Interlocked.Add(ref doneBytes, n); }).ConfigureAwait(false);
+                                await DownloadOneAsync(item, tmp, task, ct, n => { counted += n; Interlocked.Add(ref doneBytes, n); }).ConfigureAwait(false);
                                 break;
                             }
                             catch (OperationCanceledException) when (ct.IsCancellationRequested)
                             {
-                                Util.TryDelete(tmp);
-                                throw;
+                                throw; // 保留部分文件，重试时继续 Range 下载
                             }
                             catch (NetworkDownException)
                             {
                                 // 网断了：进度保留在临时文件里，挂起等网络恢复后重试（下载器会发 Range 续传）
                                 waitingNet = true;
+                                if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                                 await NetWatch.WaitOnlineAsync(ct).ConfigureAwait(false);
+                                if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                                 waitingNet = false;
                             }
                         }
@@ -142,7 +149,7 @@ namespace OpenLauncher.Core
                     catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                     catch (Exception ex)
                     {
-                        Util.TryDelete(tmp);
+                        // 普通失败也保留部分文件；只有校验失败会在 DownloadOneAsync 中删除
                         errors.Enqueue($"{item.Name}：{ex.Message}");
                         Log.Error($"下载失败 {item.Url} -> {item.Path}", ex);
                     }
@@ -163,7 +170,17 @@ namespace OpenLauncher.Core
         public static Task DownloadFileAsync(DownloadItem item, LauncherTask task, double from = 0, double to = 1)
             => RunAsync(new[] { item }, task, from, to, "下载 " + item.Name);
 
-        static async Task DownloadOneAsync(DownloadItem item, string tmp, CancellationToken ct, Action<long> onBytes)
+        static long TempLength(string path)
+        {
+            try
+            {
+                var p = Util.LP(path);
+                return File.Exists(p) ? new FileInfo(p).Length : 0;
+            }
+            catch { return 0; }
+        }
+
+        static async Task DownloadOneAsync(DownloadItem item, string tmp, LauncherTask task, CancellationToken ct, Action<long> onBytes)
         {
             var candidates = item.Candidates();
             if (candidates.Count == 0) throw new Exception("没有下载地址");
@@ -175,16 +192,28 @@ namespace OpenLauncher.Core
                 for (int attempt = 0; attempt < 2; attempt++)
                 {
                     ct.ThrowIfCancellationRequested();
-                    long got = 0;
+                    if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                     try
                     {
-                        await FetchToFile(url, tmp, ct, n => { got += n; onBytes(n); }).ConfigureAwait(false);
+                        await FetchToFile(url, tmp, task, ct, onBytes).ConfigureAwait(false);
                         var check = new DownloadItem { Path = tmp, Sha1 = item.Sha1, Sha512 = item.Sha512, Size = item.Size };
-                        if (!check.IsValid()) throw new InvalidDataException("文件校验失败");
+                        if (!check.IsValid())
+                        {
+                            // 校验不通过的缓存绝不能留到下次 Range，否则会反复拼出坏文件
+                            var invalidBytes = TempLength(tmp);
+                            Util.TryDelete(tmp);
+                            onBytes(-invalidBytes);
+                            throw new InvalidDataException("文件校验失败");
+                        }
+                        if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                         var dest = Util.LP(item.Path);
                         try
                         {
-                            if (File.Exists(dest)) File.Delete(dest);
+                            if (File.Exists(dest))
+                            {
+                                if (item.RecycleExisting) RecycleBin.Delete(dest);
+                                else File.Delete(dest);
+                            }
                             File.Move(Util.LP(tmp), dest);
                         }
                         catch (IOException) when (new DownloadItem { Path = item.Path, Sha1 = item.Sha1, Sha512 = item.Sha512, Size = item.Size }.IsValid())
@@ -194,13 +223,12 @@ namespace OpenLauncher.Core
                         Mirrors.ReportSuccess(url);
                         return;
                     }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested) { Util.TryDelete(tmp); throw; }
+                    catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                     catch (HttpStatusException ex) when (ex.Status == 404 || ex.Status == 403 || ex.Status == 410)
                     {
-                        onBytes(-got);
                         last = ex;
                         Mirrors.ReportFailure(url);
-                        break; // 这个地址没有这个文件，换下一个来源
+                        break; // 这个地址没有这个文件，保留已下载部分并换下一个来源
                     }
                     catch (Exception ex)
                     {
@@ -209,24 +237,20 @@ namespace OpenLauncher.Core
                         if (NetWatch.ProbablyOffline(ex))
                         {
                             // 网络问题：不删临时文件（进度在里面），交给外层挂起等网恢复后断点续传
-                            // got 也不回滚——这些字节确实已经下下来留在盘上了
                             throw new NetworkDownException(ex);
                         }
-                        onBytes(-got);
-                        Util.TryDelete(tmp);
+                        // 其他失败同样保留部分文件；若是校验失败，上面已经先删掉了
                     }
                 }
             }
-            Util.TryDelete(tmp);
             throw last ?? new Exception("下载失败");
         }
 
-        static async Task FetchToFile(string url, string path, CancellationToken ct, Action<long> onBytes)
+        static async Task FetchToFile(string url, string path, LauncherTask task, CancellationToken ct, Action<long> onBytes)
         {
             string lp = Util.LP(path);
             // 断点续传：临时文件里已有上次下到的部分就从那里接着下
-            long pos = 0;
-            try { if (File.Exists(lp)) pos = new FileInfo(lp).Length; } catch { pos = 0; }
+            long pos = TempLength(path);
             using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
             {
                 cts.CancelAfter(TimeSpan.FromSeconds(10)); // 10 秒连不上就换下一个来源
@@ -239,21 +263,25 @@ namespace OpenLauncher.Core
                     // 416 = 区间不满足：临时文件很可能已经完整，让后续校验去判定
                     if (!resp.IsSuccessStatusCode && resp.StatusCode != System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
                         throw new HttpStatusException(url, (int)resp.StatusCode, null);
+                    if (resp.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable && pos > 0) return;
                     // 有的镜像出错时返回 200 + 网页；要的不是网页就当这个来源失败
                     var mt = resp.Content.Headers.ContentType?.MediaType ?? "";
-                    // 临时文件名是 “原文件名.8位随机.oltmp”，取原文件的扩展名
-                    var real = path.EndsWith(".oltmp") && path.Length > 15 ? path.Substring(0, path.Length - 15) : path;
+                    // 临时文件名是“原文件名.oltmp”，取原文件的扩展名
+                    var real = path.EndsWith(".oltmp", StringComparison.OrdinalIgnoreCase) ? path.Substring(0, path.Length - ".oltmp".Length) : path;
                     var ext = System.IO.Path.GetExtension(real).ToLowerInvariant();
                     if (mt.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) && ext != ".html" && ext != ".htm")
                         throw new InvalidDataException("下载源返回了网页而不是文件");
                     var append = resp.StatusCode == System.Net.HttpStatusCode.PartialContent && pos > 0;
-                    if (!append) pos = 0; // 服务器不认 Range（或区间异常）：从头写
+                    var discard = !append && pos > 0;
                     using (var src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var dst = new FileStream(lp, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, true))
                     {
+                        // Create 已成功截断旧文件后才回滚旧字节，避免服务器忽略 Range 时重复累计
+                        if (discard) onBytes(-pos);
                         var buf = new byte[1 << 16];
                         while (true)
                         {
+                            if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                             // 25 秒没收到数据就算卡死，换下一个来源
                             cts.CancelAfter(TimeSpan.FromSeconds(25));
                             int n;
@@ -265,6 +293,7 @@ namespace OpenLauncher.Core
                             }
                             catch (IOException ex) { throw new NetStreamException(ex); } // 网络流断了（磁盘错误不会走到这）
                             if (n <= 0) break;
+                            if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
                             await dst.WriteAsync(buf, 0, n, ct).ConfigureAwait(false);
                             onBytes(n);
                             await ThrottleAsync(n, ct).ConfigureAwait(false);

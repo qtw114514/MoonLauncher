@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenLauncher.Core;
@@ -12,9 +14,17 @@ namespace OpenLauncher.Content
     public enum ContentSource { Modrinth, CurseForge }
 
     /// <summary>社区资源（Mod / 整合包 / 资源包 / 光影 / 数据包）的一个项目</summary>
-    public class ContentProject
+    public class ContentProject : INotifyPropertyChanged
     {
+        bool _introExpanded, _introLoaded, _introLoading;
+        string _introText, _introStatus, _mcmodUrl;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        void Notify([CallerMemberName] string name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
         public ContentSource Source { get; set; }
+        /// <summary>跨站合并卡片的另一来源；Source 和 Id 始终保留可打开详情的真实主项目</summary>
+        public ContentSource? MergedSource { get; set; }
         public string Id { get; set; }
         public string Slug { get; set; }
         public string Title { get; set; }
@@ -32,7 +42,17 @@ namespace OpenLauncher.Content
         public List<string> GameVersions { get; set; } = new List<string>();
         public ContentType Type { get; set; }
 
-        public string SourceText => ContentService.SourceName(Source);
+        /// <summary>搜索卡片内的中文简介状态；只在用户展开时加载。</summary>
+        public bool IntroExpanded { get => _introExpanded; set { _introExpanded = value; Notify(); Notify(nameof(IntroButtonText)); } }
+        public bool IntroLoaded { get => _introLoaded; set { _introLoaded = value; Notify(); } }
+        public bool IntroLoading { get => _introLoading; set { _introLoading = value; Notify(); } }
+        public string IntroText { get => _introText; set { _introText = value; Notify(); } }
+        public string IntroStatus { get => _introStatus; set { _introStatus = value; Notify(); } }
+        public string McmodUrl { get => _mcmodUrl; set { _mcmodUrl = value; Notify(); Notify(nameof(HasMcmodUrl)); } }
+        public bool HasMcmodUrl => !string.IsNullOrEmpty(McmodUrl);
+        public string IntroButtonText => IntroExpanded ? "收起简介" : "简介";
+
+        public string SourceText => MergedSource.HasValue ? "Modrinth + CurseForge" : ContentService.SourceName(Source);
         public string DownloadsText => Util.FormatCount(Downloads);
         public string UpdatedText => Updated == DateTime.MinValue ? "" : Updated.ToString("yyyy-MM-dd");
         public string LoadersText => string.Join(" / ", Loaders.ConvertAll(ContentService.LoaderDisplayName));
@@ -84,6 +104,19 @@ namespace OpenLauncher.Content
         public bool IsRelease => ReleaseType == "release";
 
         public override string ToString() => $"{DisplayName} [{FileName}]";
+    }
+
+    /// <summary>下载前生成并由确认后的安装任务复用的完整计划。</summary>
+    public class InstallPlan
+    {
+        public ContentFile Root { get; internal set; }
+        public string TargetDir { get; internal set; }
+        public List<ContentFile> Files { get; } = new List<ContentFile>();
+        public List<DownloadItem> Items { get; } = new List<DownloadItem>();
+        public List<string> Skipped { get; } = new List<string>();
+        public List<string> Missing { get; } = new List<string>();
+        public List<string> Replacements { get; } = new List<string>();
+        internal ContentIndex Index { get; set; }
     }
 
     public class SearchQuery

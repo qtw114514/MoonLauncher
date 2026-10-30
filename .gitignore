@@ -17,3 +17,6 @@ private-key.xml
 # 本地 .NET SDK（构建工具链，不入库）
 /.dotnet/
 /.dotnet-install.ps1
+
+# 本地界面验证截图与日志
+/.test-artifacts*/

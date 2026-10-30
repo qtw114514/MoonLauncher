@@ -129,18 +129,17 @@ namespace OpenLauncher.Content
         public static async Task<List<string>> InstallAsync(ContentFile file, string targetDir, bool withDependencies, string gameVersion, string loader, LauncherTask task)
             => (await InstallWithReportAsync(file, targetDir, withDependencies, gameVersion, loader, task).ConfigureAwait(false)).Installed;
 
-        /// <summary>
-        /// 下载文件到 targetDir。withDependencies 时递归解析必需前置（同游戏版本 + 加载器），已装的跳过。
-        /// 同一项目的旧文件会在新文件下载成功后移到回收站。
-        /// </summary>
-        public static async Task<InstallReport> InstallWithReportAsync(ContentFile file, string targetDir, bool withDependencies, string gameVersion, string loader, LauncherTask task)
+        /// <summary>在下载前解析主文件、前置、已有文件和替换项；确认后可直接执行这份计划。</summary>
+        public static Task<InstallPlan> PrepareInstallAsync(ContentFile file, string targetDir, bool withDependencies, string gameVersion, string loader, CancellationToken ct)
+            => PrepareInstallAsync(file, targetDir, withDependencies, gameVersion, loader, null, ct);
+
+        static async Task<InstallPlan> PrepareInstallAsync(ContentFile file, string targetDir, bool withDependencies, string gameVersion, string loader, LauncherTask task, CancellationToken ct)
         {
             if (file == null) throw new ArgumentNullException(nameof(file));
             if (string.IsNullOrEmpty(targetDir)) throw new ArgumentNullException(nameof(targetDir));
-            var ct = task?.Token ?? CancellationToken.None;
             Directory.CreateDirectory(targetDir);
-            var report = new InstallReport();
-            var index = ContentIndex.Load(targetDir);
+            var plan = new InstallPlan { Root = file, TargetDir = targetDir, Index = ContentIndex.Load(targetDir) };
+            var index = plan.Index;
 
             // 先认一认文件夹里已有的文件属于哪个项目（只查没记录过的），装前置、换版本都靠它
             if (file.Source == ContentSource.Modrinth)
@@ -149,22 +148,20 @@ namespace OpenLauncher.Content
                 await IdentifyLocalAsync(targetDir, index, ct).ConfigureAwait(false);
             }
 
-            var plan = new List<ContentFile> { file };
+            plan.Files.Add(file);
             var skipped = new List<(ContentSource src, string id, string name)>();
             var missing = new List<(ContentSource src, string id, string name)>();
             var titles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (withDependencies && file.Dependencies.Any(d => d.Required))
             {
                 task?.Report(-1, "正在解析前置…");
-                await ResolveDependenciesAsync(file, targetDir, index, gameVersion, loader, plan, skipped, missing, titles, ct).ConfigureAwait(false);
+                await ResolveDependenciesAsync(file, targetDir, index, gameVersion, loader, plan.Files, skipped, missing, titles, ct).ConfigureAwait(false);
             }
 
-            // 下载
-            var items = new List<DownloadItem>();
-            foreach (var f in plan)
+            foreach (var f in plan.Files)
             {
                 if (string.IsNullOrEmpty(f.Url)) throw new ContentException($"{f.FileName} 没有下载地址");
-                items.Add(new DownloadItem
+                plan.Items.Add(new DownloadItem
                 {
                     Url = f.Url,
                     AltUrls = f.AltUrls?.ToList(),
@@ -174,14 +171,49 @@ namespace OpenLauncher.Content
                     Size = f.Size,
                 });
             }
-            var label = plan.Count == 1 ? "下载 " + file.FileName : $"下载 {file.FileName} 及 {plan.Count - 1} 个前置";
-            await Downloader.RunAsync(items, task, 0, 1, label).ConfigureAwait(false);
+            // 完整计划先统一检查归属，任何冲突都不能在下载一部分后才暴露
+            var replacements = new List<string>();
+            for (int i = 0; i < plan.Files.Count; i++)
+            {
+                PrepareOverwrite(index, plan.Items[i], plan.Files[i]);
+                if (!string.IsNullOrEmpty(plan.Files[i].ProjectId))
+                    replacements.AddRange(index.ExistingFilesOf(plan.Files[i].Source, plan.Files[i].ProjectId).Where(old =>
+                        !string.Equals(old, plan.Items[i].Path, StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(old, plan.Items[i].Path + ".disabled", StringComparison.OrdinalIgnoreCase)));
+            }
+            plan.Replacements.AddRange(replacements.Distinct(StringComparer.OrdinalIgnoreCase));
+
+            // 跳过 / 缺失的前置换成可读的名字（尽力而为）
+            await FillTitlesAsync(skipped.Concat(missing), titles, ct).ConfigureAwait(false);
+            string nameOf((ContentSource src, string id, string name) x)
+                => x.id != null && titles.TryGetValue(ContentIndex.Key(x.src, x.id), out var t) ? t : x.name ?? x.id;
+            plan.Skipped.AddRange(skipped.Select(nameOf));
+            plan.Missing.AddRange(missing.Select(nameOf));
+            return plan;
+        }
+
+        /// <summary>生成并执行安装计划。</summary>
+        public static async Task<InstallReport> InstallWithReportAsync(ContentFile file, string targetDir, bool withDependencies, string gameVersion, string loader, LauncherTask task)
+        {
+            var ct = task?.Token ?? CancellationToken.None;
+            var plan = await PrepareInstallAsync(file, targetDir, withDependencies, gameVersion, loader, task, ct).ConfigureAwait(false);
+            return await InstallPreparedAsync(plan, task).ConfigureAwait(false);
+        }
+
+        /// <summary>执行用户已经确认的安装计划，不重复解析前置。</summary>
+        public static async Task<InstallReport> InstallPreparedAsync(InstallPlan plan, LauncherTask task)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            var report = new InstallReport();
+            var index = plan.Index;
+            var label = plan.Files.Count == 1 ? "下载 " + plan.Root.FileName : $"下载 {plan.Root.FileName} 及 {plan.Files.Count - 1} 个前置";
+            await Downloader.RunAsync(plan.Items, task, 0, 1, label).ConfigureAwait(false);
 
             // 记索引、清理同项目的旧文件
-            for (int i = 0; i < plan.Count; i++)
+            for (int i = 0; i < plan.Files.Count; i++)
             {
-                var f = plan[i];
-                var path = items[i].Path;
+                var f = plan.Files[i];
+                var path = plan.Items[i].Path;
                 report.Installed.Add(path);
                 if (!string.IsNullOrEmpty(f.ProjectId))
                 {
@@ -202,18 +234,30 @@ namespace OpenLauncher.Content
             }
             index.Save();
 
-            // 跳过 / 缺失的前置换成可读的名字（尽力而为）
-            await FillTitlesAsync(skipped.Concat(missing), titles, ct).ConfigureAwait(false);
-            string nameOf((ContentSource src, string id, string name) x)
-                => x.id != null && titles.TryGetValue(ContentIndex.Key(x.src, x.id), out var t) ? t : x.name ?? x.id;
-            report.Skipped.AddRange(skipped.Select(nameOf));
-            report.Missing.AddRange(missing.Select(nameOf));
+            report.Skipped.AddRange(plan.Skipped);
+            report.Missing.AddRange(plan.Missing);
 
             Log.Info($"安装完成：{string.Join(", ", report.Installed.Select(Path.GetFileName))}" +
                      (report.Skipped.Count > 0 ? $"；已有前置：{string.Join(", ", report.Skipped)}" : "") +
                      (report.Missing.Count > 0 ? $"；缺少前置：{string.Join(", ", report.Missing)}" : ""));
             if (report.Missing.Count > 0) task?.Report(1, "已安装，但找不到适配的前置：" + string.Join("、", report.Missing));
             return report;
+        }
+
+        /// <summary>已有目标校验不符时，只允许覆盖索引里明确属于本项目的文件</summary>
+        internal static void PrepareOverwrite(ContentIndex index, DownloadItem item, ContentFile file)
+        {
+            if (!File.Exists(item.Path) || item.IsValid()) return;
+            var owner = index.ProjectOf(Path.GetFileName(item.Path));
+            var expected = ContentIndex.Key(file.Source, file.ProjectId);
+            if (!string.Equals(owner, expected, StringComparison.OrdinalIgnoreCase))
+            {
+                var reason = owner == null
+                    ? "没有项目归属记录，可能是手动添加的文件"
+                    : $"属于其他项目（{owner}）";
+                throw new ContentException($"目标文件“{item.Name}”已存在且校验不符，{reason}。为防止误覆盖，已停止安装或更新，请先移走该文件。");
+            }
+            item.RecycleExisting = true;
         }
 
         static async Task ResolveDependenciesAsync(ContentFile root, string targetDir, ContentIndex index, string gameVersion, string loader,
