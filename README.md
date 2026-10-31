@@ -1,7 +1,7 @@
 <p align="center"><img src="src/MoonLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
 
 <h1 align="center">MoonLauncher</h1>
-<p align="center">使用 MoonLauncher 源码再开发 · 去中心化的 Minecraft 启动器 · 单个 exe · GPL-3.0</p>
+<p align="center">使用 OpenLauncher 源码再开发 · 去中心化的 Minecraft 启动器 · 单个 exe · GPL-3.0</p>
 
 ---
 
