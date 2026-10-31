@@ -1,0 +1,35 @@
+# 编译闸门：develop / main 是 net48 + WPF，只能在 Windows 上构建。
+# 用途：在没有 Windows 开发机时，用它验证提交能不能编译。
+name: build
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - "feature/**"
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+jobs:
+  windows:
+    # windows-latest 自带 .NET Framework 4.8 目标包与 .NET SDK 8
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # 规范第 7 节：编译通过，0 警告 0 错误
+      - name: 编译启动器
+        run: dotnet build src/MoonLauncher/MoonLauncher.csproj -c Release -nologo -v m -warnaserror
+
+      - name: 编译发布工具
+        run: dotnet build tools/Release/MoonLauncher.Release.csproj -c Release -nologo -v m -warnaserror
