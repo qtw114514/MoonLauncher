@@ -124,7 +124,7 @@ namespace OpenLauncher.Core
                         {
                             try
                             {
-                                await DownloadOneAsync(item, tmp, task, ct, n => { counted += n; Interlocked.Add(ref doneBytes, n); }).ConfigureAwait(false);
+                                await DownloadOneAsync(item, tmp, task, ct, n => { Interlocked.Add(ref counted, n); Interlocked.Add(ref doneBytes, n); }).ConfigureAwait(false);
                                 break;
                             }
                             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -202,6 +202,7 @@ namespace OpenLauncher.Core
                             // 校验不通过的缓存绝不能留到下次 Range，否则会反复拼出坏文件
                             var invalidBytes = TempLength(tmp);
                             Util.TryDelete(tmp);
+                            DeleteParts(tmp);
                             onBytes(-invalidBytes);
                             throw new InvalidDataException("文件校验失败");
                         }
@@ -220,6 +221,7 @@ namespace OpenLauncher.Core
                         {
                             Util.TryDelete(tmp); // 别的任务已经放好了同一个文件
                         }
+                        DeleteParts(tmp); // 清掉崩溃残留的段文件，或上次没删干净的分段
                         Mirrors.ReportSuccess(url);
                         return;
                     }
@@ -271,6 +273,12 @@ namespace OpenLauncher.Core
                     var ext = System.IO.Path.GetExtension(real).ToLowerInvariant();
                     if (mt.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) && ext != ".html" && ext != ".htm")
                         throw new InvalidDataException("下载源返回了网页而不是文件");
+                    // 大文件走多段并行：单连接速度有限，分段才能把大文件也跑满带宽
+                    if (TryPlanSegments(resp, pos, out var total, out var segCount))
+                    {
+                        await DownloadSegments(url, path, pos, total, segCount, task, ct, onBytes).ConfigureAwait(false);
+                        return;
+                    }
                     var append = resp.StatusCode == System.Net.HttpStatusCode.PartialContent && pos > 0;
                     var discard = !append && pos > 0;
                     using (var src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
@@ -301,6 +309,123 @@ namespace OpenLauncher.Core
                     }
                 }
             }
+        }
+
+        const long SegThreshold = 4L * 1024 * 1024;  // 剩余部分 >= 4MB 才分段
+        const long SegMinSize = 2L * 1024 * 1024;    // 每段最小 2MB
+        const int SegMax = 8;                        // 单文件最多 8 段，避免连接数爆炸
+
+        static string PartPath(string path, int i) => path + ".part" + i;
+
+        /// <summary>清理临时文件对应的全部分段文件（校验失败、下载成功、崩溃残留时调用）</summary>
+        static void DeleteParts(string tmp)
+        {
+            try
+            {
+                var lp = Util.LP(tmp);
+                var dir = System.IO.Path.GetDirectoryName(lp);
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+                var prefix = System.IO.Path.GetFileName(lp) + ".part";
+                foreach (var f in Directory.EnumerateFiles(dir, prefix + "*")) Util.TryDelete(f);
+            }
+            catch { }
+        }
+
+        /// <summary>判断要不要分段下载，输出文件总大小和段数。服务器没声明支持 Range 就不分（退回单连接）。</summary>
+        static bool TryPlanSegments(HttpResponseMessage resp, long pos, out long total, out int segs)
+        {
+            total = 0; segs = 0;
+            long remaining;
+            if (pos > 0)
+            {
+                // 断点续传拿的是 206，总大小在 Content-Range 里
+                var cr = resp.Content.Headers.ContentRange;
+                if (resp.StatusCode != System.Net.HttpStatusCode.PartialContent || cr == null || !cr.HasLength) return false;
+                total = cr.Length.Value;
+                remaining = total - pos;
+            }
+            else
+            {
+                var len = resp.Content.Headers.ContentLength;
+                if (len == null) return false;
+                total = len.Value;
+                remaining = total;
+            }
+            if (remaining < SegThreshold) return false;
+            if (!resp.Headers.AcceptRanges.Contains("bytes")) return false;
+            segs = (int)Math.Min(SegMax, remaining / SegMinSize);
+            return segs >= 2;
+        }
+
+        /// <summary>
+        /// 分段并行下载：每段一条 Range 连接，写独立的 .partN 文件（段内支持断点续传），
+        /// 全部完成后按顺序拼进目标文件。任一段失败都会保留已完成的段，交给上层重试续传。
+        /// </summary>
+        static async Task DownloadSegments(string url, string path, long basePos, long total, int segs, LauncherTask task, CancellationToken ct, Action<long> onBytes)
+        {
+            long chunk = (total - basePos + segs - 1) / segs;
+            var jobs = Enumerable.Range(0, segs).Select(async i =>
+            {
+                long start = basePos + i * chunk;
+                long end = Math.Min(start + chunk, total);
+                if (start >= end) return;
+                string part = PartPath(path, i);
+                long expected = end - start;
+                long have = TempLength(part);
+                if (have >= expected) return; // 这段上次已经下完
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                {
+                    cts.CancelAfter(TimeSpan.FromSeconds(10)); // 10 秒连不上就换下一个来源
+                    var req = new HttpRequestMessage(HttpMethod.Get, url);
+                    req.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(start + have, end - 1);
+                    using (var resp = await Http.Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token).ConfigureAwait(false))
+                    using (cts.Token.Register(() => { try { resp.Dispose(); } catch { } }))
+                    {
+                        if (resp.StatusCode != System.Net.HttpStatusCode.PartialContent)
+                            throw new InvalidDataException("下载源不支持分段下载");
+                        using (var src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var dst = new FileStream(Util.LP(part), have > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, true))
+                        {
+                            var buf = new byte[1 << 16];
+                            while (true)
+                            {
+                                if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
+                                // 25 秒没收到数据就算卡死，换下一个来源
+                                cts.CancelAfter(TimeSpan.FromSeconds(25));
+                                int n;
+                                try { n = await src.ReadAsync(buf, 0, buf.Length, cts.Token).ConfigureAwait(false); }
+                                catch (Exception) when (cts.IsCancellationRequested)
+                                {
+                                    if (ct.IsCancellationRequested) throw new OperationCanceledException(ct);
+                                    throw new TimeoutException("下载卡住超过 25 秒");
+                                }
+                                catch (IOException ex) { throw new NetStreamException(ex); } // 网络流断了（磁盘错误不会走到这）
+                                if (n <= 0) break;
+                                if (task != null) await task.WaitIfPausedAsync(ct).ConfigureAwait(false);
+                                await dst.WriteAsync(buf, 0, n, ct).ConfigureAwait(false);
+                                onBytes(n);
+                                await ThrottleAsync(n, ct).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                if (TempLength(part) != expected) throw new IOException("分段数据不完整");
+            }).ToList();
+            await Task.WhenAll(jobs).ConfigureAwait(false);
+
+            // 全部段完成：按顺序拼进目标文件（basePos > 0 时接在已有续传内容后面）
+            string lp = Util.LP(path);
+            using (var dst = new FileStream(lp, basePos > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, true))
+            {
+                for (int i = 0; i < segs; i++)
+                {
+                    var plp = Util.LP(PartPath(path, i));
+                    if (!File.Exists(plp)) throw new IOException("分段文件缺失");
+                    using (var src = new FileStream(plp, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16, true))
+                        await src.CopyToAsync(dst, 1 << 16, ct).ConfigureAwait(false);
+                }
+            }
+            for (int i = 0; i < segs; i++) Util.TryDelete(PartPath(path, i));
         }
 
         /// <summary>全局限速（设置里的 KB/s，0 表示不限）</summary>
