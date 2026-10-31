@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using OpenLauncher.Accounts;
 using OpenLauncher.Content;
 using OpenLauncher.Core;
@@ -13,6 +15,15 @@ using OpenLauncher.Game;
 
 namespace OpenLauncher.UI.Pages
 {
+    public sealed class ModErrorVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            string.IsNullOrWhiteSpace(value as string) ? Visibility.Collapsed : Visibility.Visible;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     public class FileEntry
     {
         public string Path { get; set; }
@@ -40,11 +51,40 @@ namespace OpenLauncher.UI.Pages
         {
             _inst.Reload();
             Title.Text = _inst.Id;
-            SubTitle.Text = _inst.IsValid ? _inst.Description : "版本文件不完整";
+            SubTitle.Text = _inst.IsValid ? _inst.Description : "版本文件不完整：" + _inst.LoadError;
             InfoText.Text = BuildInfo();
-            TabMods.Visibility = _inst.IsModded ? Visibility.Visible : Visibility.Collapsed;
+            TabMods.IsEnabled = _inst.IsModded;
+            TabMods.ToolTip = _inst.IsModded ? "管理已安装的 Mod" : "当前版本未识别到 Mod 加载器";
+            NonModdedHint.Visibility = _inst.IsModded ? Visibility.Collapsed : Visibility.Visible;
+            if (!_inst.IsModded && TabMods.IsChecked == true) TabOverview.IsChecked = true;
+            UpdateSafetyState();
             if (TabSettings.IsChecked == true) LoadSettings();
             if (TabMods.IsChecked == true) _ = LoadModsAsync();
+        }
+
+        void UpdateSafetyState()
+        {
+            bool busy = LaunchService.IsInstanceBusy(_inst);
+            StateText.Text = busy ? "运行中 · 修改已锁定" : _inst.IsValid ? "实例管理" : "版本文件异常";
+            StateText.SetResourceReference(TextBlock.ForegroundProperty, busy ? "Warn" : _inst.IsValid ? "Accent" : "Danger");
+            BusyNotice.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+            CompleteBtn.IsEnabled = !busy;
+            RenameBtn.IsEnabled = !busy;
+            DeleteBtn.IsEnabled = !busy;
+            UpdateAllBtn.IsEnabled = !busy;
+            ModList.Tag = !busy;
+            ModList.AllowDrop = !busy;
+            ModList.ToolTip = busy ? "游戏运行中，Mod 修改与拖放已锁定" : "把 .jar 拖到这里安装 Mod";
+            FileList.Tag = !busy;
+            FileList.AllowDrop = !busy;
+            FileList.ToolTip = busy ? "游戏运行中，文件删除与拖放已锁定" : "可以把文件或文件夹拖到这里";
+        }
+
+        bool EnsureCanModify(string action)
+        {
+            if (!LaunchService.IsInstanceBusy(_inst)) return true;
+            Dialogs.Toast($"游戏正在运行或启动准备中，不能{action}", MainWindow.ToastKind.Error);
+            return false;
         }
 
         string BuildInfo()
@@ -73,9 +113,9 @@ namespace OpenLauncher.UI.Pages
             if (sender == TabSettings) LoadSettings();
             else if (sender == TabMods) _ = LoadModsAsync();
             else if (sender == TabResource) LoadFiles(_inst.ResourcePacksDir, ContentType.ResourcePack, "资源包：把 .zip 拖进来就能安装");
-            else if (sender == TabShader) LoadFiles(_inst.ShaderPacksDir, ContentType.Shader, "光影包：需要 Iris / OptiFine 等光影加载 Mod");
-            else if (sender == TabSaves) LoadFiles(_inst.SavesDir, ContentType.DataPack, "存档");
-            else if (sender == TabShots) LoadFiles(_inst.ScreenshotsDir, ContentType.Mod, "游戏截图（F2 截图）");
+            else if (sender == TabShader) LoadFiles(_inst.ShaderPacksDir, ContentType.Shader, "光影包：需要 Iris / OptiFine 等光影加载 Mod，可拖入 .zip");
+            else if (sender == TabSaves) LoadFiles(_inst.SavesDir, ContentType.DataPack, "存档：可打开文件夹、拖入存档文件夹或删除已有存档");
+            else if (sender == TabShots) LoadFiles(_inst.ScreenshotsDir, ContentType.Mod, "游戏截图（F2 截图）：可打开文件夹、拖入或删除文件");
         }
 
         // ---------- 概览 ----------
@@ -84,6 +124,7 @@ namespace OpenLauncher.UI.Pages
 
         void Complete_Click(object sender, RoutedEventArgs e)
         {
+            if (!EnsureCanModify("补全游戏文件")) return;
             var inst = _inst;
             TaskManager.Start($"补全 {inst.Id}", async t =>
             {
@@ -242,12 +283,26 @@ namespace OpenLauncher.UI.Pages
         {
             var dir = _inst.ModsDir;
             ModStats.Text = "读取中…";
-            _mods = await Task.Run(() => LocalMods.Scan(dir));
-            ApplyModFilter();
+            ModEmpty.Visibility = Visibility.Collapsed;
+            try
+            {
+                _mods = await Task.Run(() => LocalMods.Scan(dir));
+                ApplyModFilter();
+            }
+            catch (Exception ex)
+            {
+                _mods.Clear();
+                ModList.ItemsSource = null;
+                UpdateAllBtn.Visibility = Visibility.Collapsed;
+                ModStats.Text = "Mod 读取失败";
+                ModEmpty.Text = "无法读取 Mod 文件夹：" + ex.Message;
+                ModEmpty.Visibility = Visibility.Visible;
+            }
         }
 
         void ApplyModFilter()
         {
+            if (ModList == null) return;
             var q = ModSearch.Text.Trim();
             var list = string.IsNullOrEmpty(q) ? _mods : _mods.Where(m =>
                 (m.Name ?? "").IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -256,8 +311,13 @@ namespace OpenLauncher.UI.Pages
             ModList.ItemsSource = list;
             int enabled = _mods.Count(m => m.Enabled);
             int upd = _mods.Count(m => m.HasUpdate);
-            ModStats.Text = _mods.Count == 0 ? "还没有 Mod，点右上角下载，或把 .jar 拖进下面" : $"共 {_mods.Count} 个，已启用 {enabled} 个" + (upd > 0 ? $"，{upd} 个可更新" : "");
+            int bad = _mods.Count(m => !string.IsNullOrWhiteSpace(m.LoadError));
+            bool busy = LaunchService.IsInstanceBusy(_inst);
+            ModStats.Text = (_mods.Count == 0 ? "还没有 Mod，点上方下载，或把 .jar 拖进下面" : $"共 {_mods.Count} 个，已启用 {enabled} 个" + (upd > 0 ? $"，{upd} 个可更新" : "") + (bad > 0 ? $"，{bad} 个坏 Mod / 无法读取" : "")) + (busy ? " · 游戏运行中，修改已锁定" : "");
+            ModEmpty.Text = _mods.Count == 0 ? "这里还没有 Mod。\n点上方“下载 Mod”，或把 .jar 文件拖进列表。" : "没有匹配搜索条件的 Mod。";
+            ModEmpty.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateAllBtn.Visibility = upd > 0 ? Visibility.Visible : Visibility.Collapsed;
+            UpdateAllBtn.IsEnabled = !busy;
         }
 
         void ModSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyModFilter();
@@ -287,12 +347,14 @@ namespace OpenLauncher.UI.Pages
 
         void UpdateAll_Click(object sender, RoutedEventArgs e)
         {
+            if (!EnsureCanModify("更新 Mod")) return;
             var list = _mods.Where(m => m.HasUpdate).ToList();
+            if (list.Count == 0) return;
             TaskManager.Start($"更新 {list.Count} 个 Mod", async t =>
             {
                 for (int i = 0; i < list.Count; i++)
                 {
-                    t.Report((double)i / list.Count, $"更新 {list[i].Name}（{i + 1}/{list.Count}）");
+                    t.Report((double)i / list.Count, $"更新 {list[i].DisplayName}（{i + 1}/{list.Count}）");
                     await LocalMods.UpdateAsync(list[i], t);
                 }
                 TaskManager.OnUi(() => _ = LoadModsAsync());
@@ -302,8 +364,8 @@ namespace OpenLauncher.UI.Pages
 
         void UpdateMod_Click(object sender, RoutedEventArgs e)
         {
-            if (!((sender as FrameworkElement)?.DataContext is LocalMod m)) return;
-            TaskManager.Start($"更新 {m.Name}", async t =>
+            if (!((sender as FrameworkElement)?.DataContext is LocalMod m) || !EnsureCanModify("更新 Mod")) return;
+            TaskManager.Start($"更新 {m.DisplayName}", async t =>
             {
                 await LocalMods.UpdateAsync(m, t);
                 TaskManager.OnUi(() => _ = LoadModsAsync());
@@ -312,7 +374,7 @@ namespace OpenLauncher.UI.Pages
 
         void ToggleMod_Click(object sender, RoutedEventArgs e)
         {
-            if (!((sender as FrameworkElement)?.DataContext is LocalMod m)) return;
+            if (!((sender as FrameworkElement)?.DataContext is LocalMod m) || !EnsureCanModify("启用或禁用 Mod")) return;
             try { LocalMods.SetEnabled(m, !m.Enabled); }
             catch (Exception ex) { Dialogs.Toast("操作失败：" + ex.Message, MainWindow.ToastKind.Error); }
             ApplyModFilter();
@@ -321,14 +383,16 @@ namespace OpenLauncher.UI.Pages
 
         async void DeleteMod_Click(object sender, RoutedEventArgs e)
         {
-            if (!((sender as FrameworkElement)?.DataContext is LocalMod m)) return;
-            if (!await Dialogs.Confirm("删除 Mod", $"把 {m.Name}（{m.FileName}）放进回收站？", "删除", danger: true)) return;
+            if (!((sender as FrameworkElement)?.DataContext is LocalMod m) || !EnsureCanModify("删除 Mod")) return;
+            if (!await Dialogs.Confirm("删除 Mod", $"把 {m.DisplayName}（{m.FileName}）放进回收站？", "删除", danger: true)) return;
+            if (!EnsureCanModify("删除 Mod")) return;
             try { LocalMods.Delete(m); _mods.Remove(m); ApplyModFilter(); }
             catch (Exception ex) { await Dialogs.Alert("删除失败", ex.Message); }
         }
 
         void ModList_Drop(object sender, DragEventArgs e)
         {
+            if (!EnsureCanModify("添加 Mod")) return;
             if (!(e.Data.GetData(DataFormats.FileDrop) is string[] files)) return;
             Directory.CreateDirectory(_inst.ModsDir);
             int n = 0;
@@ -348,6 +412,7 @@ namespace OpenLauncher.UI.Pages
             FilesHint.Text = hint;
             FilesDownload.Visibility = TabSaves.IsChecked == true || TabShots.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
             var list = new List<FileEntry>();
+            string error = null;
             try
             {
                 if (Directory.Exists(dir))
@@ -361,8 +426,10 @@ namespace OpenLauncher.UI.Pages
                     }
                 }
             }
-            catch (Exception ex) { Log.Warn("读取文件夹失败：" + ex.Message); }
+            catch (Exception ex) { error = ex.Message; Log.Warn("读取文件夹失败：" + ex.Message); }
             FileList.ItemsSource = list.OrderByDescending(x => x.Info).ToList();
+            FilesEmpty.Text = error == null ? "这里还没有文件。\n可以打开文件夹核对路径，或把文件拖进列表。" : "读取文件夹失败：" + error;
+            FilesEmpty.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         void OpenFiles_Click(object sender, RoutedEventArgs e) => Util.OpenFolder(_filesDir);
@@ -375,8 +442,9 @@ namespace OpenLauncher.UI.Pages
 
         async void DeleteFile_Click(object sender, RoutedEventArgs e)
         {
-            if (!((sender as FrameworkElement)?.DataContext is FileEntry f)) return;
+            if (!((sender as FrameworkElement)?.DataContext is FileEntry f) || !EnsureCanModify("删除文件")) return;
             if (!await Dialogs.Confirm("删除", $"把 {f.Name} 放进回收站？", "删除", danger: true)) return;
+            if (!EnsureCanModify("删除文件")) return;
             try { RecycleBin.Delete(f.Path); }
             catch (Exception ex) { await Dialogs.Alert("删除失败", ex.Message); }
             Tab_Checked(TabResource.IsChecked == true ? TabResource : TabShader.IsChecked == true ? TabShader : TabSaves.IsChecked == true ? TabSaves : TabShots, null);
@@ -384,18 +452,21 @@ namespace OpenLauncher.UI.Pages
 
         void FileList_Drop(object sender, DragEventArgs e)
         {
+            if (!EnsureCanModify("导入文件")) return;
             if (!(e.Data.GetData(DataFormats.FileDrop) is string[] files) || _filesDir == null) return;
             Directory.CreateDirectory(_filesDir);
+            int added = 0, failed = 0;
             foreach (var f in files)
             {
                 try
                 {
-                    if (File.Exists(f)) File.Copy(f, Path.Combine(_filesDir, Path.GetFileName(f)), true);
-                    else if (Directory.Exists(f)) Util.CopyDir(f, Path.Combine(_filesDir, Path.GetFileName(f)));
+                    if (File.Exists(f)) { File.Copy(f, Path.Combine(_filesDir, Path.GetFileName(f)), true); added++; }
+                    else if (Directory.Exists(f)) { Util.CopyDir(f, Path.Combine(_filesDir, Path.GetFileName(f))); added++; }
                 }
-                catch { }
+                catch { failed++; }
             }
-            LoadFiles(_filesDir, _filesType, FilesHint.Text);
+            Dialogs.Toast(failed == 0 ? $"已添加 {added} 个项目" : $"已添加 {added} 个项目，{failed} 个失败", failed == 0 ? MainWindow.ToastKind.Ok : MainWindow.ToastKind.Error);
+            Tab_Checked(TabResource.IsChecked == true ? TabResource : TabShader.IsChecked == true ? TabShader : TabSaves.IsChecked == true ? TabSaves : TabShots, null);
         }
 
         // ---------- 导出 ----------

@@ -30,6 +30,9 @@ namespace OpenLauncher.UI.Pages
             _loading = true;
             Loading.Visibility = Visibility.Visible;
             LoadingText.Text = "正在从官方获取版本列表…";
+            LoadingBar.Visibility = Visibility.Visible;
+            RetryVersions.Visibility = Visibility.Collapsed;
+            EmptyState.Visibility = Visibility.Collapsed;
             List.ItemsSource = null;
             try
             {
@@ -40,6 +43,8 @@ namespace OpenLauncher.UI.Pages
             catch (Exception ex)
             {
                 LoadingText.Text = "获取失败：" + ex.Message + "\n检查网络，或在 设置 → 下载 里换下载源后点刷新";
+                LoadingBar.Visibility = Visibility.Collapsed;
+                RetryVersions.Visibility = Visibility.Visible;
             }
             finally { _loading = false; }
         }
@@ -54,7 +59,9 @@ namespace OpenLauncher.UI.Pages
             else if (FFools.IsChecked == true) q = q.Where(v => v.IsAprilFools);
             var s = Search.Text.Trim();
             if (s.Length > 0) q = q.Where(v => v.Id.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
-            List.ItemsSource = q.ToList();
+            var rows = q.ToList();
+            List.ItemsSource = rows;
+            EmptyState.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         void Filter_Changed(object sender, RoutedEventArgs e) => Apply();

@@ -58,6 +58,11 @@ namespace OpenLauncher.UI.Pages
             Results.ItemsSource = _items;
             LoaderPanel.Visibility = type == ContentType.Mod || type == ContentType.Modpack ? Visibility.Visible : Visibility.Collapsed;
             TargetPanel.Visibility = type == ContentType.Modpack ? Visibility.Collapsed : Visibility.Visible;
+            TargetHint.Text = type == ContentType.Modpack
+                ? "整合包将创建独立的新实例，不选择既有目标实例。"
+                : type == ContentType.DataPack
+                    ? "资源将安装到所选实例；提交前还需选择一个已有存档。"
+                    : "资源将安装到所选实例；目标独立于当前启动实例。";
             SrcAll.Visibility = type == ContentType.Mod ? Visibility.Visible : Visibility.Collapsed;
             _suppress = true;
             Sort.SelectedIndex = 0;
@@ -395,9 +400,20 @@ namespace OpenLauncher.UI.Pages
             if ((sender as FrameworkElement)?.DataContext is ContentProject p && !string.IsNullOrEmpty(p.McmodUrl)) Util.OpenUrl(p.McmodUrl);
         }
 
+        void Details_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if ((sender as FrameworkElement)?.DataContext is ContentProject p) OpenProject(p);
+        }
+
+        void OpenProject(ContentProject p)
+        {
+            MainWindow.Current.Push(new ProjectPage(p, _type, _type == ContentType.Modpack ? null : _target, TagOf(GameVersion), LoaderPanel.Visibility == Visibility.Visible ? TagOf(Loader) : null));
+        }
+
         void Results_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            // 卡片里的简介按钮不触发整卡跳转（MouseUp 先于 Button.Click）。
+            // 卡片里的按钮不触发整卡跳转（MouseUp 先于 Button.Click）。
             var source = e.OriginalSource as DependencyObject;
             while (source != null)
             {
@@ -407,7 +423,7 @@ namespace OpenLauncher.UI.Pages
             if (Results.SelectedItem is ContentProject p)
             {
                 Results.SelectedItem = null;
-                MainWindow.Current.Push(new ProjectPage(p, _type, _type == ContentType.Modpack ? null : _target, TagOf(GameVersion), LoaderPanel.Visibility == Visibility.Visible ? TagOf(Loader) : null));
+                OpenProject(p);
             }
         }
     }

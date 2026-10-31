@@ -5,105 +5,126 @@
     <Grid Margin="22,16,22,10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="*" MinHeight="0"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Style="{StaticResource Ghost}" Click="Back_Click" Margin="-8,0,6,0">
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" MinWidth="0"/>
+            </Grid.ColumnDefinitions>
+            <Button Style="{StaticResource Ghost}" Click="Back_Click" Margin="-8,0,6,0" VerticalAlignment="Top">
                 <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}"/>
             </Button>
-            <TextBlock Text="资源详情" Style="{StaticResource H1}" VerticalAlignment="Center"/>
-        </StackPanel>
+            <TextBlock Grid.Column="1" Text="资源详情" Style="{StaticResource H1}" VerticalAlignment="Center"/>
+        </Grid>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-        <Border Style="{StaticResource CardBox}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Border Width="64" Height="64" CornerRadius="12" Background="{DynamicResource AccentSoft}" Margin="0,0,16,0" ClipToBounds="True" VerticalAlignment="Top">
-                    <Image x:Name="Icon" Stretch="UniformToFill"/>
+                <Border Style="{StaticResource CardBox}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" MinWidth="0"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="72" Height="72" CornerRadius="{StaticResource Radius.Container}" Background="{DynamicResource AccentSoft}" Margin="0,0,16,0" ClipToBounds="True" VerticalAlignment="Top">
+                            <Image x:Name="Icon" Stretch="UniformToFill"/>
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="PTitle" Style="{StaticResource H1}" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="PMeta" Style="{StaticResource Sub}" Margin="0,3,0,6" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="PDesc" Style="{StaticResource Body}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="打开网页" VerticalAlignment="Top" Margin="12,0,0,0" Click="Web_Click"/>
+                    </Grid>
                 </Border>
-                <StackPanel Grid.Column="1">
-                    <TextBlock x:Name="PTitle" Style="{StaticResource H1}" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="PMeta" Style="{StaticResource Sub}" Margin="0,3,0,6"/>
-                    <TextBlock x:Name="PDesc" Style="{StaticResource Body}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="12,0,0,0">
-                    <Button Content="打开网页" Click="Web_Click"/>
-                </StackPanel>
-            </Grid>
-        </Border>
 
-        <Border DockPanel.Dock="Top" Style="{StaticResource CardBox}" Margin="0,0,0,10" x:Name="DescCard" Visibility="Collapsed">
-            <StackPanel>
-                <Grid>
-                    <TextBlock Text="介绍" Style="{StaticResource H2}" VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="McmodLink" Content="在 MC 百科打开" Style="{StaticResource Ghost}" Visibility="Collapsed" Click="Mcmod_Click"/>
-                        <Button x:Name="DescToggle" Content="收起" Style="{StaticResource Ghost}" Click="DescToggle_Click"/>
-                    </StackPanel>
-                </Grid>
-                <StackPanel x:Name="DescContent">
-                    <TextBlock x:Name="ZhStatus" Text="正在查找中文介绍…" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
-                    <StackPanel x:Name="ZhPanel" Visibility="Collapsed" Margin="0,8,0,0">
-                        <TextBlock Text="中文简介（来自 MC 百科）" Style="{StaticResource Sub}"/>
-                        <TextBlock x:Name="ZhText" Style="{StaticResource Body}" FontFamily="Microsoft YaHei, Microsoft YaHei UI, SimSun" FontSize="14" LineHeight="23" TextWrapping="Wrap" Margin="0,2,0,0"/>
-                    </StackPanel>
-                    <TextBlock x:Name="BodyText" Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                </StackPanel>
-            </StackPanel>
-        </Border>
-
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-            <TextBlock x:Name="FilesTitle" Text="选择要下载的文件" Style="{StaticResource H2}" VerticalAlignment="Center" Margin="0"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <CheckBox x:Name="OnlyMatch" Style="{StaticResource Switch}" Content="只看适配当前筛选的" IsChecked="True" Click="OnlyMatch_Click" Margin="0,0,12,0"/>
-                <TextBlock x:Name="TargetInfo" Style="{StaticResource Sub}" VerticalAlignment="Center"/>
-            </StackPanel>
-        </Grid>
-
-        <Grid>
-            <ItemsControl x:Name="Files">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource CardBox}" Margin="0,0,0,8">
+                <Border Style="{StaticResource CardBox}" Margin="0,0,0,10" x:Name="DescCard" Visibility="Collapsed">
+                    <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" MinWidth="0"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
-                                    <Border Background="{DynamicResource AccentSoft}" CornerRadius="4" Padding="5,0" Margin="8,0,0,0">
-                                        <TextBlock Text="{Binding ReleaseTypeText}" FontSize="11" Foreground="{DynamicResource Accent}"/>
-                                    </Border>
-                                </StackPanel>
-                                <TextBlock Style="{StaticResource Sub}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
-                                    <Run Text="{Binding GameVersionsText, Mode=OneWay}"/>
-                                    <Run Text=" · "/>
-                                    <Run Text="{Binding LoadersText, Mode=OneWay}"/>
-                                    <Run Text=" · "/>
-                                    <Run Text="{Binding Published, Mode=OneWay, StringFormat=yyyy-MM-dd}"/>
-                                    <Run Text=" · "/>
-                                    <Run Text="{Binding SizeText, Mode=OneWay}"/>
-                                </TextBlock>
+                            <TextBlock Text="介绍" Style="{StaticResource H2}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="McmodLink" Content="在 MC 百科打开" Style="{StaticResource Ghost}" Visibility="Collapsed" Click="Mcmod_Click"/>
+                                <Button x:Name="DescToggle" Content="收起" Style="{StaticResource Ghost}" Click="DescToggle_Click"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="下载" Style="{StaticResource Primary}" Padding="16,6" VerticalAlignment="Center" Click="Download_Click"/>
                         </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <StackPanel x:Name="StatusPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,30">
-                <TextBlock x:Name="StatusText" Text="加载文件列表…" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
-                <ProgressBar x:Name="StatusBar" IsIndeterminate="True" Width="200" Margin="0,10,0,0"/>
-                <Button x:Name="RetryFiles" Content="重试" Margin="0,10,0,0" Padding="18,5" Visibility="Collapsed" Click="RetryFiles_Click"/>
-            </StackPanel>
-        </Grid>
+                        <StackPanel x:Name="DescContent">
+                            <TextBlock x:Name="ZhStatus" Text="正在查找中文介绍…" Style="{StaticResource Sub}" Margin="0,8,0,0" Visibility="Collapsed"/>
+                            <StackPanel x:Name="ZhPanel" Visibility="Collapsed" Margin="0,8,0,0">
+                                <TextBlock Text="中文简介（来自 MC 百科）" Style="{StaticResource Sub}"/>
+                                <TextBlock x:Name="ZhText" Style="{StaticResource Body}" FontFamily="Microsoft YaHei, Microsoft YaHei UI, SimSun" FontSize="14" LineHeight="23" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <TextBlock x:Name="BodyText" Style="{StaticResource Body}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource TaskRow}" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="安装目标" Style="{StaticResource H3}"/>
+                        <TextBlock x:Name="TargetInfo" Style="{StaticResource Sub}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="0"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="FilesTitle" Text="选择要下载的文件" Style="{StaticResource H2}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <CheckBox x:Name="OnlyMatch" Grid.Column="1" Style="{StaticResource Switch}" Content="只看适配当前筛选的" IsChecked="True" Click="OnlyMatch_Click"/>
+                </Grid>
+
+                <Grid>
+                    <ItemsControl x:Name="Files">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource CardBox}" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" MinWidth="0"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,12,0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" MinWidth="0"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding DisplayName}" Style="{StaticResource H3}" TextWrapping="Wrap"/>
+                                                <Border Grid.Column="1" Background="{DynamicResource AccentSoft}" CornerRadius="{StaticResource Radius.Small}" Padding="5,0" Margin="8,0,0,0" VerticalAlignment="Top">
+                                                    <TextBlock Text="{Binding ReleaseTypeText}" FontSize="11" Foreground="{DynamicResource Accent}"/>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Style="{StaticResource Sub}" TextWrapping="Wrap" Margin="0,3,0,0">
+                                                <Run Text="{Binding GameVersionsText, Mode=OneWay}"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding LoadersText, Mode=OneWay}"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding Published, Mode=OneWay, StringFormat=yyyy-MM-dd}"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding SizeText, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="下载" Style="{StaticResource Primary}" Padding="16,6" VerticalAlignment="Center" Click="Download_Click"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border x:Name="StatusPanel" Style="{StaticResource CardBox}" Margin="0,12,0,30">
+                        <StackPanel>
+                            <TextBlock x:Name="StatusText" Text="加载文件列表…" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                            <ProgressBar x:Name="StatusBar" IsIndeterminate="True" Width="200" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                            <Button x:Name="RetryFiles" Content="重试" Margin="0,10,0,0" Padding="18,5" HorizontalAlignment="Center" Visibility="Collapsed" Click="RetryFiles_Click"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </StackPanel>
         </ScrollViewer>
     </Grid>

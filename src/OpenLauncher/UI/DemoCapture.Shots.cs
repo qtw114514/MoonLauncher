@@ -73,13 +73,13 @@ namespace OpenLauncher.UI
                 {
                     W.GoTab("launch");
                     W.LaunchPage.RefreshVersion();
-                    await Until(() => W.LaunchPage.LatestRelease.Visibility == Visibility.Visible, 30000);
+                    await Until(() => W.LaunchPage.NewsCard.Visibility == Visibility.Visible, 30000);
                     avatar();
                     await Settle(600);
                     avatar();
                     var lp = W.LaunchPage;
                     Snap("launch", M("launch", lp.LaunchButton), M("avatar", (FrameworkElement)lp.Avatar.Parent), M("accounts", ButtonByText(lp, "切换 / 管理账号")),
-                        M("versions", ButtonByText(lp, "版本选择")), M("vsettings", ButtonByText(lp, "版本设置")), M("latest", lp.LatestRelease),
+                        M("versions", ButtonByText(lp, "版本选择")), M("vsettings", ButtonByText(lp, "版本设置")), M("news", lp.NewsCard),
                         M("nav_launch", W.NavLaunch), M("nav_download", W.NavDownload), M("nav_settings", W.NavSettings), M("nav_more", W.NavMore),
                         M("tasks", W.TasksButton), M("card_decentral", Find<Border>(lp, b => FindAll<TextBlock>(b).Any(t => t.Text == "这个启动器没有服务器"))));
                 }

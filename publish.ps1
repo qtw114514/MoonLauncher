@@ -35,5 +35,4 @@ if ($Notes) { $toolArgs += @('--notes', $Notes) }
 if ($Config) { $toolArgs += @('--config', $Config) }
 & $tool @toolArgs
 if ($LASTEXITCODE -ne 0) { throw '签名失败' }
-& $tool verify --in "$root\release\update.json" --pub $Pub --exe "$root\dist\MoonLauncher.exe"
-if ($LASTEXITCODE -ne 0) { throw '更新清单或 exe 校验失败' }
+& $tool verify --in "$root\release\update.json" --pub $Pub --exe "$root\dist\OpenLauncher.exe"

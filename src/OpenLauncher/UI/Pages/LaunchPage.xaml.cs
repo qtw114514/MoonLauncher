@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using OpenLauncher.Accounts;
 using OpenLauncher.Content;
@@ -19,8 +21,11 @@ namespace OpenLauncher.UI.Pages
         GameSession _session;
         readonly StringBuilder _pendingLog = new StringBuilder();
         readonly DispatcherTimer _logTimer;
-        bool _latestLoaded, _launchBusy;
+        bool _launchBusy;
+        bool _newsLoaded, _newsLoading;
         string _lastLaunchError;
+        string _heroLink;
+        string _heroImageUrl;
         Action<string> _lineHandler;
         Action _windowHandler;
         Action<int> _exitHandler;
@@ -35,6 +40,12 @@ namespace OpenLauncher.UI.Pages
             _logTimer.Tick += (s, e) => FlushLog();
             var h = DateTime.Now.Hour;
             Greeting.Text = h < 6 ? "夜深了，注意休息" : h < 12 ? "早上好" : h < 14 ? "中午好" : h < 18 ? "下午好" : "晚上好";
+            // 圆角同心裁剪：卡片圆角取自 Radius.Card 令牌，头图不外溢。
+            NewsCard.SizeChanged += (s, e) =>
+            {
+                double r = ((CornerRadius)FindResource("Radius.Card")).TopLeft;
+                NewsCard.Clip = new RectangleGeometry(new Rect(NewsCard.RenderSize), r, r);
+            };
         }
 
         public void OnShown()
@@ -42,7 +53,7 @@ namespace OpenLauncher.UI.Pages
             RefreshAccount();
             RefreshVersion();
             RefreshLaunchState();
-            if (!_latestLoaded) _ = LoadLatestAsync();
+            if (!_newsLoading && !_newsLoaded) _ = LoadNewsAsync();
         }
 
         /// <summary>首次使用只串联现有账号和下载页面，不让 Java、内存等高级选项挡住新手。</summary>
@@ -76,6 +87,45 @@ namespace OpenLauncher.UI.Pages
             LaunchButton.IsEnabled = !running && !starting;
             LaunchText.Text = running ? "游戏运行中" : starting ? "正在启动…" : _lastLaunchError != null ? "重试启动" : "启动游戏";
             if (running) RunningCard.Visibility = Visibility.Visible;
+
+            var acc = AccountStore.Selected;
+            var inst = SelectedInstance();
+            if (running)
+            {
+                StatusIcon.Text = "\uE73E";
+                StatusTitle.Text = "游戏运行中";
+                StatusDescription.Text = "运行日志已显示在下方，可打开目录或结束游戏。";
+            }
+            else if (starting)
+            {
+                StatusIcon.Text = "\uE916";
+                StatusTitle.Text = "正在启动游戏";
+                StatusDescription.Text = LaunchStep.Text;
+            }
+            else if (_lastLaunchError != null)
+            {
+                StatusIcon.Text = "\uE783";
+                StatusTitle.Text = "上次启动失败";
+                StatusDescription.Text = "点击左侧“重试启动”恢复；详细原因与修复操作见错误提示。";
+            }
+            else if (acc == null)
+            {
+                StatusIcon.Text = "\uE77B";
+                StatusTitle.Text = "需要添加账户";
+                StatusDescription.Text = "点击左侧“切换 / 管理账户”，支持离线、微软与外置账户。";
+            }
+            else if (inst == null)
+            {
+                StatusIcon.Text = "\uE7FC";
+                StatusTitle.Text = "还没有可用实例";
+                StatusDescription.Text = "点击左侧“切换”管理游戏目录，或前往下载页安装版本。";
+            }
+            else
+            {
+                StatusIcon.Text = "\uE73E";
+                StatusTitle.Text = "一切准备就绪";
+                StatusDescription.Text = $"{acc.Name} · {inst.Id}";
+            }
         }
 
         // ---------- 账号 ----------
@@ -85,15 +135,17 @@ namespace OpenLauncher.UI.Pages
             if (acc == null)
             {
                 PlayerName.Text = "未登录";
-                AccountType.Text = "点击下方添加账号";
+                AccountType.Text = "点击下方添加账户";
                 Avatar.Source = null;
                 AvatarFallback.Visibility = Visibility.Visible;
+                RefreshLaunchState();
                 return;
             }
             PlayerName.Text = acc.Name;
             AccountType.Text = acc.TypeText + "账号";
             Avatar.Source = null;
             AvatarFallback.Visibility = Visibility.Visible;
+            RefreshLaunchState();
             try
             {
                 var head = await Skins.GetHeadAsync(acc, 64);
@@ -178,19 +230,54 @@ namespace OpenLauncher.UI.Pages
 
         public void RefreshVersion()
         {
+            RefreshInstances();
+            RefreshCurrentInstance();
+        }
+
+        void RefreshCurrentInstance()
+        {
             var inst = SelectedInstance();
             if (inst == null)
             {
                 LaunchSub.Text = "还没有安装任何版本";
-                InstanceCard.Visibility = Visibility.Visible;
-                InstanceDesc.Text = $"尚未安装版本\n游戏目录：{GameRepo.Current.Root}\n点击“浏览全部版本”开始安装。";
+                InstanceName.Text = "尚未安装实例";
+                InstanceDesc.Text = "去下载页安装一个版本即可开始。";
+                InstanceCard.ToolTip = $"游戏目录：{GameRepo.Current.Root}";
                 RefreshLaunchState();
                 return;
             }
             LaunchSub.Text = inst.Id;
-            InstanceCard.Visibility = Visibility.Visible;
-            InstanceDesc.Text = $"{inst.Id}\n{inst.Description}\n游戏目录：{inst.GameDir}" + (inst.Isolated ? "（已开启版本隔离）" : "");
+            InstanceName.Text = inst.Id;
+            InstanceDesc.Text = (string.IsNullOrWhiteSpace(inst.Description) ? $"Minecraft {inst.McVersion}" : inst.Description) + (inst.Isolated ? " · 版本隔离" : "");
+            InstanceCard.ToolTip = $"{inst.Id}\n{inst.Description}\n游戏目录：{inst.GameDir}";
             RefreshLaunchState();
+        }
+
+        // ---------- 实例列表（左栏，虚拟化+回收，只滚动自身） ----------
+        bool _syncingList;
+
+        public void RefreshInstances()
+        {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshInstances); return; }
+            var items = GameRepo.Current.ListInstances().Select(InstanceItem.From).ToList();
+            var current = SelectedInstance();
+            _syncingList = true;
+            try
+            {
+                InstanceList.ItemsSource = items;
+                InstanceEmpty.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                InstanceList.Visibility = items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+                InstanceList.SelectedItem = current == null ? null : items.FirstOrDefault(x => x.Id == current.Id);
+            }
+            finally { _syncingList = false; }
+        }
+
+        void InstanceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_syncingList) return;
+            if (!(InstanceList.SelectedItem is InstanceItem item) || !item.Instance.IsValid) return;
+            Settings.SelectedVersion = item.Id;
+            RefreshCurrentInstance(); // 只更新当前实例卡片与启动按钮，不重建列表（保留滚动位置）
         }
 
         void Versions_Click(object sender, RoutedEventArgs e) => MainWindow.Current.Push(new VersionsPage());
@@ -205,7 +292,8 @@ namespace OpenLauncher.UI.Pages
         void ManageMods_Click(object sender, RoutedEventArgs e)
         {
             var inst = SelectedInstance();
-            if (inst != null) MainWindow.Current.Push(new InstancePage(inst, "mods"));
+            if (inst == null) { Dialogs.Toast("先选择或安装一个版本，再管理 Mod"); return; }
+            MainWindow.Current.Push(new InstancePage(inst, "mods"));
         }
 
         void DownloadMods_Click(object sender, RoutedEventArgs e)
@@ -218,56 +306,141 @@ namespace OpenLauncher.UI.Pages
         void OpenGameDir_Click(object sender, RoutedEventArgs e)
         {
             var inst = _session?.Instance ?? SelectedInstance();
-            if (inst != null) Util.OpenFolder(inst.GameDir);
+            if (inst == null) { Dialogs.Toast("还没有可打开的实例目录，请先安装版本"); return; }
+            Util.OpenFolder(inst.GameDir);
         }
 
         void GoDownload_Click(object sender, RoutedEventArgs e) => MainWindow.Current.GoTab("download");
 
-        async Task LoadLatestAsync()
+        // ---------- 官方新闻（minecraft.net RSS，后台加载，失败给明确错误与重试） ----------
+        async Task LoadNewsAsync()
+        {
+            _newsLoading = true;
+            try
+            {
+                try
+                {
+                    NewsLoading.Visibility = Visibility.Visible;
+                    NewsError.Visibility = Visibility.Collapsed;
+                    NewsItems.Visibility = Visibility.Collapsed;
+                    NewsHero.Visibility = Visibility.Collapsed;
+                    NewsHeroImage.Source = null;
+                    _heroLink = null;
+                    _heroImageUrl = null;
+                }
+                catch (Exception) { return; } // 窗口已关闭等场景，直接放弃这次加载
+                MinecraftNews.Result result;
+                try { result = await Task.Run(() => MinecraftNews.LoadAsync()); }
+                catch (Exception ex)
+                {
+                    result = new MinecraftNews.Result { Error = "加载官方新闻失败：" + ex.Message };
+                }
+                NewsLoading.Visibility = Visibility.Collapsed;
+                if (result.Error != null)
+                {
+                    NewsErrorText.Text = result.Error;
+                    NewsError.Visibility = Visibility.Visible;
+                    return;
+                }
+                NewsItems.Children.Clear();
+                if (result.FromCache)
+                {
+                    NewsItems.Children.Add(new TextBlock
+                    {
+                        Text = "暂时连不上官网，以下为本地缓存（1 小时内）内容。",
+                        Style = (Style)FindResource("Sub")
+                    });
+                }
+
+                // 首条新闻：顶部大图横幅（标题/日期/摘要压在深蓝黑渐变承托上），点击打开原文。
+                var hero = result.Items[0];
+                NewsHeroDate.Text = hero.Date;
+                NewsHeroTitle.Text = hero.Title;
+                NewsHeroDesc.Text = hero.Description;
+                _heroLink = hero.Link;
+                NewsHero.ToolTip = string.IsNullOrEmpty(hero.Link) ? null : hero.Link + "（点击打开原文）";
+                NewsHero.Visibility = Visibility.Visible;
+                if (!string.IsNullOrEmpty(hero.ImageUrl))
+                {
+                    _heroImageUrl = hero.ImageUrl;
+                    _ = LoadHeroImageAsync(hero.ImageUrl);
+                }
+
+                // 其余新闻保留为下方列表。
+                bool firstRow = true;
+                foreach (var item in result.Items.Skip(1))
+                {
+                    if (!firstRow)
+                        NewsItems.Children.Add(new Border { Height = 1, Background = (System.Windows.Media.Brush)FindResource("Line") });
+                    AddNewsItem(item);
+                    firstRow = false;
+                }
+                NewsItems.Visibility = Visibility.Visible;
+                _newsLoaded = true;
+            }
+            catch (Exception ex) { Log.Warn("更新官方新闻界面失败：" + ex.Message); }
+            finally { _newsLoading = false; }
+        }
+
+        /// <summary>后台下载横幅图（磁盘+内存缓存）；失败时保留玻璃/图标兜底底，不崩。</summary>
+        async Task LoadHeroImageAsync(string url)
         {
             try
             {
-                var list = await Task.Run(() => VersionList.GetMinecraftAsync());
-                _latestLoaded = true;
-                var rel = list.FirstOrDefault(v => v.Type == "release");
-                var snap = list.FirstOrDefault(v => v.Type == "snapshot" && !v.IsAprilFools);
-                var repo = GameRepo.Current;
-                if (rel != null)
-                {
-                    LatestRelease.Content = repo.HasVersion(rel.Id) ? $"最新正式版 {rel.Id}（已安装）" : $"安装最新正式版 {rel.Id}";
-                    LatestRelease.Tag = rel.Id;
-                    LatestRelease.IsEnabled = !repo.HasVersion(rel.Id);
-                    LatestRelease.Visibility = Visibility.Visible;
-                }
-                if (snap != null && list.IndexOf(snap) < list.IndexOf(rel))
-                {
-                    LatestSnapshot.Content = $"最新快照 {snap.Id}";
-                    LatestSnapshot.Tag = snap.Id;
-                    LatestSnapshot.IsEnabled = !repo.HasVersion(snap.Id);
-                    LatestSnapshot.Visibility = Visibility.Visible;
-                }
+                var src = await RemoteImage.LoadAsync(url, 960);
+                if (src != null && _heroImageUrl == url) NewsHeroImage.Source = src;
             }
-            catch (Exception ex) { Log.Warn("获取最新版本失败：" + ex.Message); }
+            catch (Exception ex) { Log.Warn("加载新闻头图失败：" + ex.Message); }
         }
 
-        void InstallLatest_Click(object sender, RoutedEventArgs e)
+        void NewsHero_Click(object sender, MouseButtonEventArgs e)
         {
-            var id = (string)((Button)sender).Tag;
-            ((Button)sender).IsEnabled = false;
-            var repo = GameRepo.Current;
-            TaskManager.Start($"安装 {id}", async t =>
-            {
-                var name = await Installer.InstallAsync(new InstallRequest { Repo = repo, McVersion = id }, t);
-                Settings.SelectedVersion = name;
-                TaskManager.OnUi(RefreshVersion);
-            });
-            MainWindow.Current.ToggleTasks(true);
+            if (!string.IsNullOrEmpty(_heroLink)) Util.OpenUrl(_heroLink);
         }
+
+        void AddNewsItem(MinecraftNews.Item item)
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(new TextBlock
+            {
+                Text = item.Title,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 14,
+                Foreground = (System.Windows.Media.Brush)FindResource("Text"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = item.Title
+            });
+            var meta = string.IsNullOrEmpty(item.Date) ? "阅读全文 →" : $"{item.Date} · 阅读全文 →";
+            panel.Children.Add(new TextBlock { Text = meta, Style = (Style)FindResource("Sub"), Margin = new Thickness(0, 2, 0, 0) });
+            if (!string.IsNullOrEmpty(item.Description))
+                panel.Children.Add(new TextBlock
+                {
+                    Text = item.Description,
+                    Style = (Style)FindResource("Sub"),
+                    Margin = new Thickness(0, 4, 0, 0),
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = item.Description
+                });
+            var btn = new Button
+            {
+                Content = panel,
+                Style = (Style)FindResource("Ghost"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                ToolTip = item.Link
+            };
+            btn.Click += (s, e) => Util.OpenUrl(item.Link);
+            NewsItems.Children.Add(btn);
+        }
+
+        void NewsSource_Click(object sender, RoutedEventArgs e) => Util.OpenUrl(MinecraftNews.SourceUrl);
+        void NewsRetry_Click(object sender, RoutedEventArgs e) => _ = LoadNewsAsync();
 
         // ---------- 启动 ----------
         void Launch_Click(object sender, RoutedEventArgs e) => _ = LaunchAsync();
 
-        public async Task LaunchAsync(Instance inst = null)
+        public async Task LaunchAsync(Instance inst = null, string serverOverride = null)
         {
             if (_launchBusy || (_launchTask != null && _launchTask.IsActive)) return;
             if (_session != null && !_session.HasExited)
@@ -309,7 +482,7 @@ namespace OpenLauncher.UI.Pages
                 var tcs = new TaskCompletionSource<GameSession>();
                 _launchTask = TaskManager.Start($"启动 {inst.Id}", async t =>
                 {
-                    try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t)); }
+                    try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t, serverOverride)); }
                     catch (Exception ex) { tcs.TrySetException(ex); throw; }
                 }, canRetry: false); // 启动由首页重新建立会话和日志订阅，不能重放旧的 TaskCompletionSource
                 _launchTask.PropertyChanged += (s, e2) => Dispatcher.BeginInvoke((Action)(() =>
@@ -333,7 +506,7 @@ namespace OpenLauncher.UI.Pages
                 {
                     actions.Add(new ErrorDialogAction("重新登录", () =>
                     {
-                        afterError = async () => { if (await AccountDialogs.ReloginAsync(acc)) await LaunchAsync(inst); };
+                        afterError = async () => { if (await AccountDialogs.ReloginAsync(acc)) await LaunchAsync(inst, serverOverride); };
                         return Task.CompletedTask;
                     }, primary: true));
                 }
@@ -353,7 +526,7 @@ namespace OpenLauncher.UI.Pages
                 }
                 actions.Add(new ErrorDialogAction("重试", () =>
                 {
-                    afterError = () => LaunchAsync(inst);
+                    afterError = () => LaunchAsync(inst, serverOverride);
                     return Task.CompletedTask;
                 }, primary: auth?.NeedsRelogin != true));
                 await ErrorDialog.ShowAsync("启动失败", _lastLaunchError,

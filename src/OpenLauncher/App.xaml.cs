@@ -1,9 +1,11 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using OpenLauncher.Accounts;
 using OpenLauncher.Core;
+using OpenLauncher.Multiplayer;
 using OpenLauncher.UI;
 using OpenLauncher.Update;
 
@@ -30,6 +32,8 @@ namespace OpenLauncher
             Updater.CleanupOld();
             Task.Run(() => Paths.CleanTemp()); // 清理上次运行残留的临时文件，不阻塞启动
             Settings.Load();
+            // 仅迁移“从未设置过主题色”的旧配置；用户明确选择的自定义颜色保持不变。
+            if (Settings.GetNode("ui.theme").IsNull) Settings.ThemeColor = Theme.DefaultAccentHex;
             try { AccountStore.Load(); } catch (Exception ex) { Log.Error("读取账号失败", ex); }
             Theme.Apply(Settings.ThemeColor);
 #if DEBUG
@@ -43,6 +47,12 @@ namespace OpenLauncher
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // 有界等待和平清理，确保 /panic 在进程退出前真正发出；本地 HTTP 异常最多阻塞 2 秒。
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try { TerracottaService.ShutdownAsync(timeout.Token).GetAwaiter().GetResult(); }
+                catch (Exception ex) { Log.Warn("退出时清理 Terracotta 失败：" + TaskManager.Flatten(ex)); }
+            }
             Settings.SaveNow();
             base.OnExit(e);
         }

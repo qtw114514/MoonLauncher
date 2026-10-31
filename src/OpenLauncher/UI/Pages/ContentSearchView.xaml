@@ -5,54 +5,67 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVis"/>
     </UserControl.Resources>
+
     <DockPanel Margin="22,18,22,10">
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
-            <TextBlock x:Name="Header" Text="Mod" Style="{StaticResource H1}" VerticalAlignment="Center"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <RadioButton x:Name="SrcAll" GroupName="src" Style="{StaticResource Pill}" Content="全部" Margin="0,0,6,0" Visibility="Collapsed" Checked="Source_Checked"/>
-                <RadioButton x:Name="SrcModrinth" GroupName="src" Style="{StaticResource Pill}" Content="Modrinth" Margin="0,0,6,0" Checked="Source_Checked"/>
-                <RadioButton x:Name="SrcCurse" GroupName="src" Style="{StaticResource Pill}" Content="CurseForge" Margin="0" Checked="Source_Checked"/>
-            </StackPanel>
-        </Grid>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <TextBlock x:Name="Header" Text="Mod" Style="{StaticResource H1}"/>
+            <TextBlock Text="搜索社区资源，查看详情与适配文件后再安装。" Style="{StaticResource Sub}" Margin="0,2,0,8"/>
+            <WrapPanel>
+                <RadioButton x:Name="SrcAll" GroupName="src" Style="{StaticResource Pill}" Content="全部" Visibility="Collapsed" Checked="Source_Checked"/>
+                <RadioButton x:Name="SrcModrinth" GroupName="src" Style="{StaticResource Pill}" Content="Modrinth" Checked="Source_Checked"/>
+                <RadioButton x:Name="SrcCurse" GroupName="src" Style="{StaticResource Pill}" Content="CurseForge" Checked="Source_Checked"/>
+            </WrapPanel>
+        </StackPanel>
 
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="Query" Tag="搜索（支持常见中文名，如：钠、机械动力、JEI）" KeyDown="Query_KeyDown"/>
-            <Button Grid.Column="1" Content="搜索" Style="{StaticResource Primary}" Margin="8,0,0,0" Click="Search_Click"/>
-        </Grid>
+        <Border DockPanel.Dock="Top" Style="{StaticResource TaskRow}" Margin="0,0,0,10">
+            <StackPanel>
+                <StackPanel x:Name="TargetPanel" Orientation="Horizontal">
+                    <TextBlock Text="安装到" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="Target" Width="200" SelectionChanged="Target_Changed"/>
+                </StackPanel>
+                <TextBlock x:Name="TargetHint" Style="{StaticResource Sub}" Margin="0,4,0,0"
+                           Text="资源将安装到所选实例；目标独立于当前启动实例。"/>
+            </StackPanel>
+        </Border>
 
-        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
-                <TextBlock Text="版本" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="GameVersion" Width="120" SelectionChanged="Filter_Changed"/>
+        <Border DockPanel.Dock="Top" Style="{StaticResource CardBox}" Margin="0,0,0,10">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="0"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="Query" Tag="搜索（支持常见中文名，如：钠、机械动力、JEI）" KeyDown="Query_KeyDown"/>
+                    <Button Grid.Column="1" Content="搜索" Style="{StaticResource Primary}" Margin="8,0,0,0" Click="Search_Click"/>
+                </Grid>
+
+                <WrapPanel Margin="0,8,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
+                        <TextBlock Text="版本" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="GameVersion" Width="120" SelectionChanged="Filter_Changed"/>
+                    </StackPanel>
+                    <StackPanel x:Name="LoaderPanel" Orientation="Horizontal" Margin="0,0,14,6">
+                        <TextBlock Text="加载器" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="Loader" Width="110" SelectionChanged="Filter_Changed">
+                            <ComboBoxItem Content="全部" Tag=""/>
+                            <ComboBoxItem Content="Fabric" Tag="fabric"/>
+                            <ComboBoxItem Content="Forge" Tag="forge"/>
+                            <ComboBoxItem Content="NeoForge" Tag="neoforge"/>
+                            <ComboBoxItem Content="Quilt" Tag="quilt"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="排序" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="Sort" Width="110" SelectionChanged="Filter_Changed">
+                            <ComboBoxItem Content="相关度" Tag="relevance"/>
+                            <ComboBoxItem Content="下载量" Tag="downloads"/>
+                            <ComboBoxItem Content="最近更新" Tag="updated"/>
+                            <ComboBoxItem Content="最新发布" Tag="newest"/>
+                        </ComboBox>
+                    </StackPanel>
+                </WrapPanel>
             </StackPanel>
-            <StackPanel x:Name="LoaderPanel" Orientation="Horizontal" Margin="0,0,14,6">
-                <TextBlock Text="加载器" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="Loader" Width="110" SelectionChanged="Filter_Changed">
-                    <ComboBoxItem Content="全部" Tag=""/>
-                    <ComboBoxItem Content="Fabric" Tag="fabric"/>
-                    <ComboBoxItem Content="Forge" Tag="forge"/>
-                    <ComboBoxItem Content="NeoForge" Tag="neoforge"/>
-                    <ComboBoxItem Content="Quilt" Tag="quilt"/>
-                </ComboBox>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,14,6">
-                <TextBlock Text="排序" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="Sort" Width="110" SelectionChanged="Filter_Changed">
-                    <ComboBoxItem Content="相关度" Tag="relevance"/>
-                    <ComboBoxItem Content="下载量" Tag="downloads"/>
-                    <ComboBoxItem Content="最近更新" Tag="updated"/>
-                    <ComboBoxItem Content="最新发布" Tag="newest"/>
-                </ComboBox>
-            </StackPanel>
-            <StackPanel x:Name="TargetPanel" Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Text="安装到" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="Target" Width="200" SelectionChanged="Target_Changed"/>
-            </StackPanel>
-        </WrapPanel>
+        </Border>
 
         <Grid>
             <ListBox x:Name="Results" Style="{StaticResource CardList}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel"
@@ -62,19 +75,17 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" MinWidth="0"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Border Width="46" Height="46" CornerRadius="9" Background="{DynamicResource AccentSoft}" Margin="0,0,12,0" ClipToBounds="True" VerticalAlignment="Top">
+                            <Border Width="64" Height="64" CornerRadius="{StaticResource Radius.Container}" Background="{DynamicResource AccentSoft}" Margin="0,0,12,0" ClipToBounds="True" VerticalAlignment="Top">
                                 <Image ui:RemoteImage.Url="{Binding IconUrl}" Stretch="UniformToFill"/>
                             </Border>
                             <StackPanel Grid.Column="1">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding Author}" Style="{StaticResource Sub}" Margin="8,2,0,0"/>
-                                </StackPanel>
-                                <TextBlock Text="{Binding Description}" Style="{StaticResource Sub}" Foreground="{DynamicResource Text2}" TextTrimming="CharacterEllipsis" MaxHeight="34" Margin="0,2,0,3"/>
-                                <TextBlock Style="{StaticResource Sub}">
+                                <TextBlock Text="{Binding Title}" ToolTip="{Binding Title}" Style="{StaticResource H3}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Author}" Style="{StaticResource Sub}" Margin="0,1,0,0"/>
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource Sub}" Foreground="{DynamicResource Text2}" TextWrapping="Wrap" MaxHeight="54" Margin="0,3,0,3"/>
+                                <TextBlock Style="{StaticResource Sub}" TextWrapping="Wrap">
                                     <Run Text="{Binding SourceText, Mode=OneWay}"/>
                                     <Run Text=" · 下载 "/>
                                     <Run Text="{Binding DownloadsText, Mode=OneWay}"/>
@@ -87,16 +98,22 @@
                                     <Button Content="在 MC 百科打开" Style="{StaticResource Ghost}" HorizontalAlignment="Left" Margin="-8,3,0,0" Visibility="{Binding HasMcmodUrl, Converter={StaticResource BoolVis}}" Click="McmodCard_Click"/>
                                 </StackPanel>
                             </StackPanel>
-                            <Button Grid.Column="2" Content="{Binding IntroButtonText}" Style="{StaticResource Ghost}" VerticalAlignment="Top" Margin="8,0,0,0" Visibility="Collapsed" Loaded="IntroButton_Loaded" Click="Intro_Click"/>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="8,0,0,0">
+                                <Button Content="查看详情" Click="Details_Click"/>
+                                <Button Content="{Binding IntroButtonText}" Style="{StaticResource Ghost}" Margin="0,4,0,0" Visibility="Collapsed" Loaded="IntroButton_Loaded" Click="Intro_Click"/>
+                            </StackPanel>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <StackPanel x:Name="StatusPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
-                <TextBlock x:Name="StatusText" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center"/>
-                <ProgressBar x:Name="StatusBar" IsIndeterminate="True" Width="200" Margin="0,10,0,0"/>
-                <Button x:Name="RetrySearch" Content="重试" Margin="0,10,0,0" Padding="18,5" Visibility="Collapsed" Click="RetrySearch_Click"/>
-            </StackPanel>
+
+            <Border x:Name="StatusPanel" Style="{StaticResource CardBox}" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock x:Name="StatusText" Style="{StaticResource Body}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <ProgressBar x:Name="StatusBar" IsIndeterminate="True" Width="200" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                    <Button x:Name="RetrySearch" Content="重试" Margin="0,10,0,0" Padding="18,5" HorizontalAlignment="Center" Visibility="Collapsed" Click="RetrySearch_Click"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </DockPanel>
 </UserControl>

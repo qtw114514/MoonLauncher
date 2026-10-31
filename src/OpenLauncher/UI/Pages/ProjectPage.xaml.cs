@@ -48,7 +48,7 @@ namespace OpenLauncher.UI.Pages
             PTitle.Text = p.Title;
             PMeta.Text = $"{p.Author} · {p.SourceText} · 下载 {p.DownloadsText} · 更新于 {p.Updated:yyyy-MM-dd}" + (p.Categories?.Count > 0 ? " · " + string.Join(" ", p.Categories.Take(6)) : "");
             PDesc.Text = p.Description;
-            TargetInfo.Text = type == ContentType.Modpack ? "整合包会安装成一个新版本" : target != null ? $"安装到 {target.Id}" : "未选择目标版本";
+            TargetInfo.Text = type == ContentType.Modpack ? "整合包会安装成一个独立的新版本" : target != null ? $"安装到 {target.Id}" + (type == ContentType.DataPack ? "；提交时选择已有存档" : "") : "未选择目标版本";
             OnlyMatch.Visibility = _mc == null && _loader == null ? Visibility.Collapsed : Visibility.Visible;
         }
 

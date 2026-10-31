@@ -20,3 +20,11 @@ private-key.xml
 
 # 本地界面验证截图与日志
 /.test-artifacts*/
+
+# 阶段快照与隔离测试运行目录（不上传）
+/backups/
+/tests/stage7/
+/tests/stage7-guest/
+
+# 陶瓦官方运行包由首次使用时按需下载，不作为源码提交
+/tools/Terracotta/

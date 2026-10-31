@@ -47,6 +47,8 @@ namespace OpenLauncher.UI.Pages
 
         public void OnShown() => Load();
 
+        void Back_Click(object sender, RoutedEventArgs e) => MainWindow.Current.Back();
+
         void SetMode(bool advanced)
         {
             CommonNav.Visibility = advanced ? Visibility.Collapsed : Visibility.Visible;
