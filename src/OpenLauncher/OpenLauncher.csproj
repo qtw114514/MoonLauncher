@@ -13,7 +13,7 @@
     <Version>0.0.3</Version>
     <Product>MoonLauncher</Product>
     <Description>去中心化的 Minecraft 启动器</Description>
-    <Copyright>MoonLauncher contributors, GPL-3.0</Copyright>
+    <Copyright>OpenLauncher contributors, MoonLauncher contributors, GPL-3.0</Copyright>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>embedded</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
