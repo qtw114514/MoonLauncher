@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using OpenLauncher.Core;
-using OpenLauncher.Update;
+using MoonLauncher.Core;
+using MoonLauncher.Update;
 
-namespace OpenLauncher.Core
+namespace MoonLauncher.Core
 {
     // UpdateCrypto 依赖 Util.Sha256，这里给一个最小实现，避免把整个启动器的 Util 拉进来
     static class Util
@@ -19,7 +19,7 @@ namespace OpenLauncher.Core
     }
 }
 
-namespace OpenLauncher.Release
+namespace MoonLauncher.Release
 {
     static class Program
     {
@@ -94,7 +94,7 @@ namespace OpenLauncher.Release
             File.WriteAllText(Path.Combine(dir, "public-key.xml"), pub);
             Console.WriteLine("已生成：" + Path.GetFullPath(dir));
             Console.WriteLine("公钥指纹：" + UpdateCrypto.Fingerprint(pub));
-            Console.WriteLine("把 public-key.xml 的内容粘贴进 src/OpenLauncher/Branding.cs 的 TrustedKeys；private-key.xml 离线保存好、多备份，不要提交到仓库。");
+            Console.WriteLine("把 public-key.xml 的内容粘贴进 src/MoonLauncher/Branding.cs 的 TrustedKeys；private-key.xml 离线保存好、多备份，不要提交到仓库。");
             return 0;
         }
 

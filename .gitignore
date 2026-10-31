@@ -6,7 +6,6 @@ obj/
 *.suo
 
 # 在仓库根目录直接运行时生成的数据（便携模式在 exe 旁边建 MoonLauncher/ 和 .minecraft/）
-/OpenLauncher/
 /MoonLauncher/
 /.minecraft/
 

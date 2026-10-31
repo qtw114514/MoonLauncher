@@ -10,14 +10,14 @@ if (-not $dotnet -and (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe")) { $dotn
 if (Test-Path "$root\.dotnet\dotnet.exe") { $dotnet = "$root\.dotnet\dotnet.exe" }
 if (-not $dotnet) { throw '找不到 dotnet，请先安装 .NET SDK' }
 
-& $dotnet build "$root\src\OpenLauncher\OpenLauncher.csproj" -c Release -nologo
+& $dotnet build "$root\src\MoonLauncher\MoonLauncher.csproj" -c Release -nologo
 if ($LASTEXITCODE -ne 0) { throw '编译失败' }
 
 $dist = Join-Path $root 'dist'
 New-Item -ItemType Directory -Force $dist | Out-Null
-Copy-Item "$root\src\OpenLauncher\bin\Release\MoonLauncher.exe" $dist -Force
+Copy-Item "$root\src\MoonLauncher\bin\Release\MoonLauncher.exe" $dist -Force
 # App.config 里的长路径开关已在程序启动时用代码设置，config 文件可有可无
-Copy-Item "$root\src\OpenLauncher\bin\Release\MoonLauncher.exe.config" $dist -Force
+Copy-Item "$root\src\MoonLauncher\bin\Release\MoonLauncher.exe.config" $dist -Force
 
 $exe = Get-Item "$dist\MoonLauncher.exe"
 $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()

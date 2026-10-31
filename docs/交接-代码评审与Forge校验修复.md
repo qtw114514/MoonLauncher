@@ -1,7 +1,7 @@
 # 交接文档：代码评审与修复记录
 
 > 最近更新：2026-10-25（第三批）
-> 范围：`src/OpenLauncher` 全部源码（约 17,100 行，78 个文件）
+> 范围：`src/MoonLauncher` 全部源码（约 17,100 行，78 个文件）
 > 关联文档：[`发布与接手.md`](发布与接手.md) · [`微软登录.md`](微软登录.md) · [`功能对照与路线图.md`](功能对照与路线图.md)
 
 ## 〇、改动总览
@@ -22,13 +22,13 @@
 
 **修法**：Maven 仓库每个构件旁挂 `.sha1` 副车文件（镜像 BMCLAPI 的 maven 代理同样提供）。下载 jar 前先取副车，把 sha1 喂给 `DownloadItem.Sha1`——下载器本就会在落盘前校验哈希，不符自动删临时文件并换下一个来源。
 
-**改动文件**：`src/OpenLauncher/Game/Installer.Forge.cs`
+**改动文件**：`src/MoonLauncher/Game/Installer.Forge.cs`
 
 - `PrepareForgeAsync`：URL 算出后新增 `FetchInstallerSha1Async(url, ct)`，下载项由 `new DownloadItem(url, path)` 改为 `new DownloadItem(url, path, sha1)`。
 - 新增 `FetchInstallerSha1Async`：先按镜像设置竞速拉取（复用 `Http.GetStringAsync` 的 validate 重载），失败再强制官方源；两路都拿不到合法的 40 位十六进制校验值则**拒绝安装**（宁可装不上，不跑来源不明的安装器）。
 - 新增 `LooksLikeSha1File`：校验副车内容是 `<40位hex> 文件名` 而非镜像出错时常见的 200+网页。
 
-**回滚**：`git checkout -- src/OpenLauncher/Game/Installer.Forge.cs`（如已建仓库）；改动为纯新增、不触碰其他逻辑。
+**回滚**：`git checkout -- src/MoonLauncher/Game/Installer.Forge.cs`（如已建仓库）；改动为纯新增、不触碰其他逻辑。
 
 **实机验证清单**：
 
@@ -80,7 +80,7 @@
 
 **修法**：`ProjectPage.Apply()` 中，当 `_type == ContentType.Modpack` 时，按文件标注的最高 MC 版本（`ContentService.CompareGameVersion`）降序排列；未标注版本的文件排最后；版本相同再按发布日期新→旧。**Mod 详情页行为不变**。
 
-**改动文件**：`src/OpenLauncher/UI/Pages/ProjectPage.xaml.cs`（新增 `HighestMcVersion` 辅助方法 + Apply 内排序分支）
+**改动文件**：`src/MoonLauncher/UI/Pages/ProjectPage.xaml.cs`（新增 `HighestMcVersion` 辅助方法 + Apply 内排序分支）
 
 **验证状态**：已编译（0 警告 0 错误）。**实机验证待做**：分别打开一个 Modrinth 整合包和一个 CurseForge 整合包的详情页，确认列表顶部为最高 MC 版本、未标注版本的文件在底部。
 

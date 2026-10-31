@@ -1,4 +1,4 @@
-<p align="center"><img src="src/OpenLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
+<p align="center"><img src="src/MoonLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
 
 <h1 align="center">MoonLauncher</h1>
 <p align="center">开源的跨平台 Minecraft 启动器 · GPL-3.0</p>
