@@ -1,5 +1,12 @@
-# 一键编译发布版：输出 dist\MoonLauncher.exe（单文件，Win10/11 自带 .NET Framework 4.8，双击即用）
+# 一键编译发布版：输出 dist\MoonLauncher.exe
+#   - 默认自包含单文件（目标机不用装 .NET）
+#   - -FrameworkDependent 则产出依赖 .NET 8 运行时的小体积版本
 # 需要 .NET SDK 8+（https://dotnet.microsoft.com/download），不需要 Visual Studio。
+# 其他平台用 sh tools/publish.sh <rid>。
+param(
+    [string]$Runtime = 'win-x64',
+    [switch]$FrameworkDependent
+)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
@@ -10,16 +17,19 @@ if (-not $dotnet -and (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe")) { $dotn
 if (Test-Path "$root\.dotnet\dotnet.exe") { $dotnet = "$root\.dotnet\dotnet.exe" }
 if (-not $dotnet) { throw '找不到 dotnet，请先安装 .NET SDK' }
 
-& $dotnet build "$root\src\OpenLauncher\OpenLauncher.csproj" -c Release -nologo
-if ($LASTEXITCODE -ne 0) { throw '编译失败' }
-
 $dist = Join-Path $root 'dist'
 New-Item -ItemType Directory -Force $dist | Out-Null
-Copy-Item "$root\src\OpenLauncher\bin\Release\MoonLauncher.exe" $dist -Force
-# App.config 里的长路径开关已在程序启动时用代码设置，config 文件可有可无
-Copy-Item "$root\src\OpenLauncher\bin\Release\MoonLauncher.exe.config" $dist -Force
 
-$exe = Get-Item "$dist\MoonLauncher.exe"
+# net8.0 之后 bin\ 里是一堆 dll + apphost，不能再只拷一个 exe；
+# 要单文件必须走 publish。
+$selfContained = if ($FrameworkDependent) { 'false' } else { 'true' }
+& $dotnet publish "$root\src\MoonLauncher\MoonLauncher.csproj" `
+    -c Release -r $Runtime --self-contained $selfContained `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+    -o $dist -nologo
+if ($LASTEXITCODE -ne 0) { throw '编译失败' }
+
+$exe = Get-Item (Join-Path $dist 'MoonLauncher.exe')
 $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
 "已输出 $($exe.FullName)"
-"大小 $([math]::Round($exe.Length / 1KB)) KB   SHA-256 $hash"
+"大小 $([math]::Round($exe.Length / 1MB, 1)) MB   SHA-256 $hash"

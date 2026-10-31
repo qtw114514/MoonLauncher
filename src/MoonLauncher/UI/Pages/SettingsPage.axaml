@@ -1,0 +1,303 @@
+<UserControl x:Class="MoonLauncher.UI.Pages.SettingsPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="170"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+            <StackPanel Margin="12,18,12,12">
+                <TextBlock Text="设置" Classes="h2" Margin="12,0,0,2"/>
+                <TextBlock Text="更改自动保存" Classes="sub" Margin="12,0,0,12"/>
+                <RadioButton x:Name="CommonMode" GroupName="settingsMode" Classes="sidenav" Tag="⌂" Content="常用" IsChecked="True" Checked="Mode_Checked"/>
+                <RadioButton x:Name="AdvancedMode" GroupName="settingsMode" Classes="sidenav" Tag="⚙" Content="高级" Checked="Mode_Checked"/>
+                <Border Height="1" Background="{DynamicResource Line}" Margin="8,10,8,12"/>
+
+                <StackPanel x:Name="CommonNav">
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="▶" Content="启动" IsChecked="True" Checked="Jump_Checked" CommandParameter="launch"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="↓" Content="下载" Checked="Jump_Checked" CommandParameter="download"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="👤" Content="账户" Checked="Jump_Checked" CommandParameter="account"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="◐" Content="外观" Checked="Jump_Checked" CommandParameter="ui"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="⟳" Content="更新检查" Checked="Jump_Checked" CommandParameter="update"/>
+                </StackPanel>
+                <StackPanel x:Name="AdvancedNav" IsVisible="False">
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="？" Content="Java" Checked="Jump_Checked" CommandParameter="java"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="▶" Content="JVM / 游戏参数" Checked="Jump_Checked" CommandParameter="args"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="↓" Content="自定义镜像" Checked="Jump_Checked" CommandParameter="mirrors"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="👤" Content="API" Checked="Jump_Checked" CommandParameter="api"/>
+                    <RadioButton GroupName="st" Classes="sidenav" Tag="⟳" Content="更新源与公钥" Checked="Jump_Checked" CommandParameter="updateAdvanced"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer x:Name="Scroller" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="Body" Margin="22,18,22,10">
+                <StackPanel x:Name="CommonBody">
+                    <!-- 基础启动 -->
+                    <Border x:Name="SecLaunch" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="基础启动" Classes="h2"/>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="版本隔离（默认）" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="Isolation" Width="260" HorizontalAlignment="Right" SelectionChanged="Any_Changed">
+                                    <ComboBoxItem Content="仅隔离装了 Mod 的版本（推荐）" Tag="modded"/>
+                                    <ComboBoxItem Content="所有版本都隔离" Tag="all"/>
+                                    <ComboBoxItem Content="都不隔离（共用 .minecraft）" Tag="none"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="启动游戏后" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="AfterLaunch" Width="260" HorizontalAlignment="Right" SelectionChanged="Any_Changed">
+                                    <ComboBoxItem Content="最小化启动器" Tag="minimize"/>
+                                    <ComboBoxItem Content="隐藏启动器（游戏退出后恢复）" Tag="hide"/>
+                                    <ComboBoxItem Content="保持不变" Tag="keep"/>
+                                    <ComboBoxItem Content="关闭启动器" Tag="close"/>
+                                </ComboBox>
+                            </Grid>
+                            <CheckBox x:Name="MemAuto" Classes="switch" Content="自动分配游戏内存（按空闲内存和 Mod 数量估算）" Click="Any_Changed"/>
+                            <Grid x:Name="MemRow" Margin="0,6,0,8">
+                                <Slider x:Name="MemSlider" Minimum="1024" Maximum="16384" TickFrequency="256" IsSnapToTickEnabled="True" Margin="0,0,180,0" ValueChanged="MemSlider_ValueChanged"/>
+                                <TextBlock x:Name="MemText" HorizontalAlignment="Right" VerticalAlignment="Center" Classes="body"/>
+                            </Grid>
+                            <Grid Margin="0,4,0,8">
+                                <TextBlock Text="游戏窗口大小" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBox x:Name="WinW" Width="70" LostFocus="Any_Changed"/>
+                                    <TextBlock Text="×" Margin="8,0" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="WinH" Width="70" LostFocus="Any_Changed"/>
+                                    <CheckBox x:Name="Fullscreen" Classes="switch" Content="全屏" Margin="14,0,0,0" Click="Any_Changed"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="游戏窗口标题（留空不修改，可用 {version}）" Classes="sub"/>
+                            <TextBox x:Name="WinTitle" Margin="0,4,0,0" LostFocus="Any_Changed"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 下载 -->
+                    <Border x:Name="SecDownload" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="下载" Classes="h2"/>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="游戏文件下载源" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="GameSource" Width="260" HorizontalAlignment="Right" SelectionChanged="Any_Changed">
+                                    <ComboBoxItem Content="镜像优先，失败自动换官方" Tag="0"/>
+                                    <ComboBoxItem Content="官方优先，失败自动换镜像" Tag="1"/>
+                                    <ComboBoxItem Content="只用官方源" Tag="2"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="Mod / 整合包下载源" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="ModSource" Width="260" HorizontalAlignment="Right" SelectionChanged="Any_Changed">
+                                    <ComboBoxItem Content="镜像优先，失败自动换官方" Tag="0"/>
+                                    <ComboBoxItem Content="官方优先，失败自动换镜像" Tag="1"/>
+                                    <ComboBoxItem Content="只用官方源" Tag="2"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="同时下载数" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Slider x:Name="Threads" Width="200" Minimum="1" Maximum="128" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Threads_ValueChanged"/>
+                                    <TextBlock x:Name="ThreadsText" Width="40" TextAlignment="Right" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="限速（KB/s，0 为不限）" VerticalAlignment="Center"/>
+                                <TextBox x:Name="SpeedLimit" Width="100" HorizontalAlignment="Right" LostFocus="Any_Changed"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 账户 -->
+                    <Border x:Name="SecAccount" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="账户管理" Classes="h2"/>
+                            <TextBlock Text="添加、切换或移除微软正版、离线及外置登录账户。" Classes="sub" Margin="0,0,0,10"/>
+                            <Button Content="管理账户" Classes="primary" HorizontalAlignment="Left" Click="ManageAccounts_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 外观 -->
+                    <Border x:Name="SecUi" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="外观" Classes="h2"/>
+                            <TextBlock Text="主题色" Classes="sub" Margin="0,0,0,6"/>
+                            <WrapPanel x:Name="ThemePresets"/>
+                            <Grid Margin="0,6,0,10">
+                                <TextBlock Text="自定义颜色（#RRGGBB）" VerticalAlignment="Center"/>
+                                <TextBox x:Name="ThemeHex" Width="120" HorizontalAlignment="Right" LostFocus="ThemeHex_LostFocus"/>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="背景图片" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="选择图片" Click="PickBg_Click" Margin="0,0,6,0"/>
+                                    <Button Content="清除" Classes="ghost" Click="ClearBg_Click"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="自定义主页（启动页顶部显示的内嵌网页）" Classes="sub" Margin="0,8,0,4"/>
+                            <TextBox x:Name="HomeUrl" Tag="填网址或本地 .html 文件路径，留空关闭" LostFocus="HomeUrl_LostFocus"/>
+                            <CheckBox x:Name="GlassFx" Content="液态玻璃（仿 macOS / iOS 的毛玻璃质感，即时生效）" Margin="0,10,0,0" Click="Glass_Click"/>
+                            <StackPanel x:Name="GlassDebug" Margin="0,10,0,0" IsVisible="False">
+                                <TextBlock Text="液态玻璃调试（拖动即时生效）" Classes="sub" Margin="0,0,0,4"/>
+                                <Grid Margin="0,2,0,0">
+                                    <TextBlock Text="卡片透明度" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GlassCardVal" Classes="sub" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="GlassCard" Minimum="0" Maximum="100" ValueChanged="GlassParam_ValueChanged"/>
+                                <Grid Margin="0,2,0,0">
+                                    <TextBlock Text="窗口背景透明度" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GlassBgVal" Classes="sub" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="GlassBg" Minimum="0" Maximum="100" ValueChanged="GlassParam_ValueChanged"/>
+                                <Grid Margin="0,2,0,0">
+                                    <TextBlock Text="描边亮度" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GlassEdgeVal" Classes="sub" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="GlassEdge" Minimum="0" Maximum="100" ValueChanged="GlassParam_ValueChanged"/>
+                                <Grid Margin="0,2,0,0">
+                                    <TextBlock Text="背景图浓度" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GlassImgVal" Classes="sub" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Slider x:Name="GlassImg" Minimum="0" Maximum="100" ValueChanged="GlassParam_ValueChanged"/>
+                                <CheckBox x:Name="GlassAcrylic" Content="亚克力模糊（关闭则普通模糊）" Margin="0,8,0,0" Click="GlassParam_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 更新检查 -->
+                    <Border x:Name="SecUpdate" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="更新检查" Classes="h2"/>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock x:Name="UpdateStatus" Classes="body" VerticalAlignment="Center" Margin="0,0,120,0"/>
+                                <Button x:Name="CheckUpdateBtn" Content="检查更新" Classes="primary" HorizontalAlignment="Right" Click="CheckUpdate_Click"/>
+                            </Grid>
+                            <CheckBox x:Name="AutoUpdate" Classes="switch" Content="启动时自动检查更新" Click="Any_Changed"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="AdvancedBody" IsVisible="False">
+                    <!-- Java -->
+                    <Border x:Name="SecJava" Classes="cardbox">
+                        <StackPanel>
+                            <Grid>
+                                <TextBlock Text="Java" Classes="h2"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="恢复自动" Classes="ghost" Click="ResetJava_Click"/>
+                                    <Button Content="重新扫描" Margin="0,0,6,0" Click="ScanJava_Click"/>
+                                    <Button Content="手动添加" Margin="0,0,6,0" Click="AddJava_Click"/>
+                                    <Button Content="下载 Java" Classes="primary" Click="DownloadJava_Click"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Classes="sub" Text="启动时会按版本需要自动挑选 Java（1.16 及以前用 8，1.17~1.20.4 用 17，1.20.5 起用 21，26.x 用 25），没有就自动从 Mojang 官方下载。" Margin="0,0,0,8"/>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="全局 Java" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="JavaGlobal" Width="380" HorizontalAlignment="Right" SelectionChanged="Any_Changed"/>
+                            </Grid>
+                            <ItemsControl x:Name="JavaList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Bg}" CornerRadius="7" Padding="10,7" Margin="0,0,0,5">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Display}" FontWeight="SemiBold"/>
+                                                <TextBlock Classes="sub">
+                                                    <Run Text="{Binding Source, Mode=OneWay}"/>
+                                                    <Run Text=" · "/>
+                                                    <Run Text="{Binding JavawPath, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- JVM / 游戏参数 -->
+                    <Border x:Name="SecLaunchArgs" Classes="cardbox">
+                        <StackPanel>
+                            <Grid>
+                                <TextBlock Text="JVM / 游戏参数" Classes="h2"/>
+                                <Button Content="恢复默认值" Classes="ghost" HorizontalAlignment="Right" Click="ResetArgs_Click"/>
+                            </Grid>
+                            <TextBlock Classes="sub" Text="仅供高级用户追加启动参数，默认均为空。启动器已自动处理内存和必要参数；不熟悉时请留空，错误参数可能导致游戏无法启动。" Margin="0,0,0,10"/>
+                            <TextBlock Text="额外 JVM 参数" Classes="sub"/>
+                            <TextBox x:Name="JvmArgs" Margin="0,4,0,10" Tag="例如 -XX:+UseZGC（一般不用填）" LostFocus="Any_Changed"/>
+                            <TextBlock Text="额外游戏参数" Classes="sub"/>
+                            <TextBox x:Name="GameArgs" Margin="0,4,0,0" LostFocus="Any_Changed"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 自定义镜像 -->
+                    <Border x:Name="SecMirrors" Classes="cardbox">
+                        <StackPanel>
+                            <Grid>
+                                <TextBlock Text="自定义镜像" Classes="h2" VerticalAlignment="Center"/>
+                                <Button Content="添加自定义镜像" HorizontalAlignment="Right" Click="AddMirror_Click"/>
+                            </Grid>
+                            <TextBlock Classes="sub" Text="每个官方地址都可以映射到多个镜像，下载时按顺序尝试、自动避开失败的。关掉某个镜像 = 不再使用它。" Margin="0,4,0,8"/>
+                            <ItemsControl x:Name="MirrorList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Bg}" CornerRadius="7" Padding="10,7" Margin="0,0,0,5">
+                                            <Grid>
+                                                <StackPanel Margin="0,0,60,0">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Detail}" Classes="sub"/>
+                                                </StackPanel>
+                                                <CheckBox Classes="switch" IsChecked="{Binding Enabled, Mode=OneWay}" HorizontalAlignment="Right" Click="MirrorToggle_Click"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- API -->
+                    <Border x:Name="SecApi" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="API" Classes="h2"/>
+                            <TextBlock Text="微软登录 Client ID（Azure 应用，需已获得 Minecraft API 权限）" Classes="sub"/>
+                            <TextBox x:Name="MsClientId" Margin="0,4,0,4" Tag="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" LostFocus="Any_Changed"/>
+                            <TextBlock Classes="sub" Margin="0,0,0,10" Text="去中心化：每个发行版 / 每个人都可以用自己申请的 ID，一个被封不影响别人。申请步骤见 docs/微软登录.md。"/>
+                            <TextBlock Text="CurseForge API Key（可选）" Classes="sub"/>
+                            <TextBox x:Name="CfKey" Margin="0,4,0,4" Tag="留空则通过 MCIM 镜像访问 CurseForge" LostFocus="Any_Changed"/>
+                            <TextBlock Classes="sub" Text="在 console.curseforge.com 免费申请。填了以后官方源可用，镜像挂了也能搜 CurseForge。"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 额外更新源与公钥 -->
+                    <Border x:Name="SecUpdateAdvanced" Classes="cardbox">
+                        <StackPanel>
+                            <TextBlock Text="额外更新源与公钥" Classes="h2"/>
+                            <TextBlock Text="额外的更新源（每行一个 update.json 地址，可填自建镜像 / 社区维护地址）" Classes="sub" Margin="0,0,0,4"/>
+                            <TextBox x:Name="UpdateSources" AcceptsReturn="True" TextWrapping="NoWrap" Height="70" VerticalContentAlignment="Top" LostFocus="Any_Changed"/>
+                            <Grid Margin="0,12,0,6">
+                                <TextBlock Text="信任的发布者" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <Button Content="添加公钥" HorizontalAlignment="Right" Click="AddKey_Click"/>
+                            </Grid>
+                            <TextBlock Classes="sub" Text="只有被这里的公钥签名的更新才会被安装。原作者不再维护时，可以添加你信任的社区维护者的公钥来继续接收更新。" Margin="0,0,0,8"/>
+                            <ItemsControl x:Name="KeyList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Bg}" CornerRadius="7" Padding="10,7" Margin="0,0,0,5">
+                                            <Grid>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Fingerprint}" FontFamily="Consolas" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Origin}" Classes="sub"/>
+                                                </StackPanel>
+                                                <Button Content="移除" Classes="ghost" HorizontalAlignment="Right" Click="RemoveKey_Click" IsVisible="{Binding RemovableVis}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

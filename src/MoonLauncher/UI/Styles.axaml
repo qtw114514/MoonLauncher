@@ -1,0 +1,245 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Styles.Resources>
+        <!-- ===== 颜色（Accent 系列在运行时按主题色替换，见 UI/Theme.cs） ===== -->
+        <Color x:Key="AccentColor">#2F7BF5</Color>
+        <SolidColorBrush x:Key="Accent" Color="#2F7BF5"/>
+        <SolidColorBrush x:Key="AccentHover" Color="#4A8DF7"/>
+        <SolidColorBrush x:Key="AccentPressed" Color="#2468D6"/>
+        <SolidColorBrush x:Key="AccentSoft" Color="#E6EFFE"/>
+        <SolidColorBrush x:Key="AccentSoft2" Color="#D3E3FD"/>
+
+        <SolidColorBrush x:Key="Bg" Color="#EEF2F8"/>
+        <SolidColorBrush x:Key="Card" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CardHover" Color="#F7F9FC"/>
+        <SolidColorBrush x:Key="Line" Color="#E3E8F0"/>
+        <SolidColorBrush x:Key="Text" Color="#1F2633"/>
+        <SolidColorBrush x:Key="Text2" Color="#5B6474"/>
+        <SolidColorBrush x:Key="Text3" Color="#8E97A6"/>
+        <SolidColorBrush x:Key="Danger" Color="#E5484D"/>
+        <SolidColorBrush x:Key="DangerSoft" Color="#FDECEC"/>
+        <SolidColorBrush x:Key="Ok" Color="#22A06B"/>
+        <SolidColorBrush x:Key="OkSoft" Color="#E3F6EE"/>
+        <SolidColorBrush x:Key="Warn" Color="#E08A00"/>
+        <SolidColorBrush x:Key="WarnSoft" Color="#FFF4E0"/>
+        <SolidColorBrush x:Key="TitleBrush" Color="#2F7BF5"/>
+
+        <!-- 图标字体：WPF 版用 Windows 的 Segoe MDL2 Assets（独占），这里改成各平台都有的回退链。
+             macOS/Linux 上个别码位会缺字形，页面重写时建议逐步换成 PathIcon。 -->
+        <FontFamily x:Key="Icons">Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, Segoe MDL2 Assets, Apple Symbols, sans-serif</FontFamily>
+
+        <CornerRadius x:Key="R">10</CornerRadius>
+    </Styles.Resources>
+
+    <!-- ===== 文字 ===== -->
+    <Style Selector="TextBlock.h1">
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style Selector="TextBlock.h2">
+        <Setter Property="FontSize" Value="14.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <Style Selector="TextBlock.body">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="LineHeight" Value="22"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style Selector="TextBlock.sub">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text3}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style Selector="TextBlock.icon">
+        <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ===== 卡片 ===== -->
+    <Style Selector="Border.cardbox">
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="18,16"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
+
+    <!-- ===== 按钮 ===== -->
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <!-- WPF 的 Button 默认内容居中；Avalonia 继承 ContentControl 的 Left，需要显式对齐 -->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+    </Style>
+
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentHover}"/>
+    </Style>
+
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+    </Style>
+
+    <Style Selector="Button.dangerbutton">
+        <Setter Property="Background" Value="{DynamicResource DangerSoft}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Danger}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+    </Style>
+
+    <!-- ===== 顶部导航（RadioButton） ===== -->
+    <Style Selector="RadioButton.topnav">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root" Background="Transparent" CornerRadius="8" Padding="14,6" Margin="2,0">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Foreground" Value="#CCFFFFFF"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="RadioButton.topnav:pointerover">
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <Style Selector="RadioButton.topnav:checked">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="RadioButton.topnav:checked /template/ Border#Root">
+        <Setter Property="Background" Value="#33FFFFFF"/>
+    </Style>
+
+    <!-- ===== 侧栏导航 ===== -->
+    <Style Selector="RadioButton.sidenav">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root" Background="Transparent" CornerRadius="8" Padding="10,7" Margin="0,1">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="RadioButton.sidenav:pointerover /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+    </Style>
+
+    <Style Selector="RadioButton.sidenav:checked">
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="RadioButton.sidenav:checked /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+    </Style>
+
+    <!-- ===== 胶囊筛选 ===== -->
+    <Style Selector="RadioButton.pill">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root" Background="Transparent" BorderBrush="{DynamicResource Line}"
+                        BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,6,6">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="RadioButton.pill:checked /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+    </Style>
+
+    <Style Selector="RadioButton.pill:checked">
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+    </Style>
+
+    <!-- ===== 列表 ===== -->
+    <Style Selector="ListBox.cardlist">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <Style Selector="ListBox.cardlist ListBoxItem">
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+
+    <Style Selector="ListBox.cardlist ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+    </Style>
+
+    <!-- ===== 输入 ===== -->
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="MinHeight" Value="32"/>
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- ===== 进度条 ===== -->
+    <Style Selector="ProgressBar">
+        <Setter Property="MinHeight" Value="4"/>
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+    </Style>
+
+</Styles>

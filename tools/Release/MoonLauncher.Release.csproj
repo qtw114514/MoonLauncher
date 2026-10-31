@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 发布工具：生成签名密钥、给更新清单签名、校验清单。只有维护者需要。 -->
+  <!-- 用 net8.0 是为了让维护者不必在 Windows 上操作（macOS / Linux 都能跑）。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>ol-release</AssemblyName>
+    <RootNamespace>MoonLauncher.Release</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\MoonLauncher\Core\Json.cs" Link="Shared\Json.cs" />
+    <Compile Include="..\..\src\MoonLauncher\Update\UpdateCrypto.cs" Link="Shared\UpdateCrypto.cs" />
+  </ItemGroup>
+</Project>

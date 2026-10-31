@@ -1,0 +1,134 @@
+<UserControl x:Class="MoonLauncher.UI.Pages.LaunchPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左栏：账号 + 启动 -->
+        <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="22,26,22,22">
+                <StackPanel DockPanel.Dock="Top" HorizontalAlignment="Center">
+                    <Border Width="84" Height="84" CornerRadius="14" Background="{DynamicResource AccentSoft}" HorizontalAlignment="Center" ClipToBounds="True">
+                        <Grid>
+                            <TextBlock x:Name="AvatarFallback" Text="👤" FontFamily="{StaticResource Icons}" FontSize="34" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Avatar" Stretch="Fill" RenderOptions.BitmapInterpolationMode="None"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="PlayerName" Text="未登录" Classes="h1" HorizontalAlignment="Center" Margin="0,14,0,2" TextTrimming="CharacterEllipsis" MaxWidth="230"/>
+                    <TextBlock x:Name="AccountType" Text="点击下方添加账号" Classes="sub" HorizontalAlignment="Center"/>
+                    <Button Classes="ghost" Margin="0,8,0,0" HorizontalAlignment="Center" Click="Accounts_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⇄" Classes="icon" FontSize="12" Margin="0,1,6,0"/>
+                            <TextBlock Text="切换 / 管理账号"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Button x:Name="LaunchButton" Classes="primary" Height="68" Click="Launch_Click" Padding="0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock x:Name="LaunchText" Text="启动游戏" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White"/>
+                            <TextBlock x:Name="LaunchSub" Text="未选择版本" FontSize="12" HorizontalAlignment="Center" Foreground="#DDFFFFFF" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220"/>
+                        </StackPanel>
+                    </Button>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="版本选择" HorizontalAlignment="Stretch" Click="Versions_Click"/>
+                        <Button Grid.Column="2" Content="版本设置" HorizontalAlignment="Stretch" Click="VersionSettings_Click"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- 启动进度 -->
+                <StackPanel x:Name="LaunchProgressPanel" VerticalAlignment="Center" IsVisible="False">
+                    <TextBlock x:Name="LaunchStep" Text="正在启动…" Classes="body" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    <ProgressBar x:Name="LaunchBar" Maximum="1" Margin="0,10,0,6"/>
+                    <Button Content="取消启动" Classes="ghost" HorizontalAlignment="Center" Click="CancelLaunch_Click"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- 右侧：主页内容 -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="22,22,22,10">
+                <!-- 自定义主页 -->
+                <Border x:Name="HomeCard" Classes="cardbox" IsVisible="False">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="主页" Classes="h2"/>
+                            <Button Content="打开原网页" Classes="ghost" HorizontalAlignment="Right" Click="OpenHome_Click"/>
+                        </Grid>
+                        <TextBlock x:Name="HomeHint" Text="当前平台不内嵌网页，点「打开原网页」在系统浏览器里查看（Avalonia 没有 WPF 的 WebBrowser）" Classes="sub" Margin="0,10,0,0" IsVisible="False"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 游戏运行中 -->
+                <Border x:Name="RunningCard" Classes="cardbox" IsVisible="False">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="9" Height="9" Fill="{DynamicResource Ok}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="RunningTitle" Text="游戏运行中" Classes="h2" Margin="0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="打开游戏目录" Classes="ghost" Click="OpenGameDir_Click"/>
+                                <Button Content="结束游戏" Classes="dangerbutton" Padding="12,5" Margin="6,0,0,0" Click="KillGame_Click"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBox x:Name="GameLog" Margin="0,12,0,0" Height="190" IsReadOnly="True" FontFamily="Consolas, Microsoft YaHei UI" FontSize="11.5"
+                                 VerticalContentAlignment="Top" TextWrapping="NoWrap" Background="#FAFBFD"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 欢迎 -->
+                <Border Classes="cardbox">
+                    <StackPanel>
+                        <TextBlock x:Name="Greeting" Text="欢迎回来" Classes="h2"/>
+                        <TextBlock Classes="body" Text="选择左边的版本，点“启动游戏”就能开玩。没有版本？去「下载」页装一个，原版、Forge、NeoForge、Fabric、Quilt 都能一键装。"/>
+                        <WrapPanel Margin="0,14,0,0">
+                            <Button x:Name="LatestRelease" Classes="primary" Margin="0,0,10,8" Click="InstallLatest_Click" IsVisible="False"/>
+                            <Button x:Name="LatestSnapshot" Margin="0,0,10,8" Click="InstallLatest_Click" IsVisible="False"/>
+                            <Button Content="浏览全部版本" Classes="ghost" Margin="0,0,0,8" Click="GoDownload_Click"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 去中心化说明 -->
+                <Border Classes="cardbox">
+                    <StackPanel>
+                        <TextBlock Text="这个启动器没有服务器" Classes="h2"/>
+                        <TextBlock Classes="body">
+                            <Run Text="• 游戏、加载器、Mod 全部直接从官方源和公益镜像下载（Mojang / BMCLAPI / Modrinth / CurseForge / MCIM），哪个能连用哪个。"/>
+                            <LineBreak/>
+                            <Run Text="• 版本列表实时从上游获取，启动器本身就算很久不更新，也能装到最新版本。"/>
+                            <LineBreak/>
+                            <Run Text="• 启动器更新从多个地址拉取签名清单，签名对得上才会更新；任何人都能做镜像，社区也能接手发版。"/>
+                            <LineBreak/>
+                            <Run Text="• 不收集任何数据，账号令牌只加密保存在你这台电脑上。"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- 当前版本摘要 -->
+                <Border x:Name="InstanceCard" Classes="cardbox" IsVisible="False">
+                    <StackPanel>
+                        <TextBlock Text="当前版本" Classes="h2"/>
+                        <TextBlock x:Name="InstanceDesc" Classes="body"/>
+                        <WrapPanel Margin="0,10,0,0">
+                            <Button Content="打开游戏目录" Margin="0,0,8,6" Click="OpenGameDir_Click"/>
+                            <Button Content="管理 Mod" Margin="0,0,8,6" Click="ManageMods_Click"/>
+                            <Button Content="下载 Mod" Margin="0,0,8,6" Click="DownloadMods_Click"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,7 +1,7 @@
-<p align="center"><img src="src/OpenLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
+<p align="center"><img src="src/MoonLauncher/Assets/icon.png" width="96" style="image-rendering:pixelated"></p>
 
 <h1 align="center">MoonLauncher</h1>
-<p align="center">使用 OpenLauncher 源码再开发 · 去中心化的 Minecraft 启动器 · 单个 exe · GPL-3.0</p>
+<p align="center">使用 MoonLauncher 源码再开发 · 去中心化的 Minecraft 启动器 · 单个 exe · GPL-3.0</p>
 
 ---
 
@@ -28,8 +28,8 @@
 
 ## 下载使用
 
-从 [GitHub Releases](https://github.com/qtw114514/OpenLauncher/releases) 下载 `MoonLauncher.exe`，放进一个空文件夹双击即可（Windows 10 / 11 自带 .NET Framework 4.8，无需安装任何东西）。
-游戏文件默认放在 exe 旁边的 `.minecraft`，启动器配置在 `MoonLauncher` 文件夹里——整个文件夹拷走就能在别的电脑上用。
+从 [GitHub Releases](https://github.com/qtw114514/MoonLauncher/releases) 下载对应平台的包：Windows 用 `MoonLauncher.exe`，macOS 用 `MoonLauncher.app`。都是自包含的，不需要另外安装 .NET。
+游戏文件默认放在程序旁边的 `.minecraft`，启动器配置在 `MoonLauncher` 文件夹里——整个文件夹拷走就能在别的电脑上用。
 
 也可以在 **版本选择 → 添加已有的游戏目录** 里直接使用官方启动器、PCL、HMCL 的 `.minecraft`。
 
@@ -38,8 +38,18 @@
 只需要 [.NET SDK](https://dotnet.microsoft.com/download)（8 或更新），不需要 Visual Studio：
 
 ```powershell
-.\build.ps1        # 输出 dist\MoonLauncher.exe
+.\build.ps1        # Windows：输出 dist\MoonLauncher.exe（自包含单文件）
 ```
+
+macOS / Linux：
+
+```sh
+sh tools/publish.sh linux-x64    # 输出 dist/MoonLauncher
+sh tools/publish.sh osx-x64      # 输出 dist/MoonLauncher.app
+sh tools/publish.sh osx-arm64    # Apple Silicon
+```
+
+加 `-FrameworkDependent`（Windows）/ `--fd`（Unix）可产出依赖 .NET 8 运行时的小体积版本。
 
 ## 去中心化是怎么做到的
 
@@ -56,20 +66,20 @@
    ↑ 只认被信任公钥签名的清单；exe 用 SHA-256 校验
 ```
 
-- 改名、换仓库、换维护者都只需要改 `src/OpenLauncher/Branding.cs` 一个文件。
+- 改名、换仓库、换维护者都只需要改 `src/MoonLauncher/Branding.cs` 一个文件。
 - 发版流程、钥匙轮换、社区接手：见 [docs/发布与接手.md](docs/发布与接手.md)。
 - 微软登录需要自己申请 Client ID：见 [docs/微软登录.md](docs/微软登录.md)。
 
 ## 项目结构
 
 ```
-src/OpenLauncher/
+src/MoonLauncher/
   Core/       JSON、HTTP、镜像表、多线程下载器、设置、任务
   Game/       版本 JSON 合并、安装器（原版 / Fabric / Quilt / Forge / NeoForge）、启动参数、Java 管理、崩溃分析
   Accounts/   离线 / 微软 / 外置登录、authlib-injector、皮肤
   Content/    Modrinth / CurseForge、本地 Mod 管理、整合包导入导出
   Update/     签名清单与自更新
-  UI/         WPF 界面
+  UI/         Avalonia 界面
 tools/Release/  发布工具：生成密钥、签名清单、校验
 docs/           维护文档
 ```

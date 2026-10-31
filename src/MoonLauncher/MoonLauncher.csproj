@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>MoonLauncher</AssemblyName>
+    <RootNamespace>MoonLauncher</RootNamespace>
+    <Version>0.0.3</Version>
+    <Product>MoonLauncher</Product>
+    <Description>去中心化的 Minecraft 启动器</Description>
+    <Copyright>MoonLauncher contributors, GPL-3.0</Copyright>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>embedded</DebugType>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS0618;CA1416;CS8073</NoWarn>
+    <!-- Avalonia 用反射式绑定即可，页面里大量 {Binding} 不启用编译绑定 -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <!-- Windows 专属的清单/图标只在 Windows 上构建时带上，其他平台忽略 -->
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" Condition="'$(Configuration)' == 'Debug'" />
+    <!-- DPAPI 在非 Windows 上会抛 PlatformNotSupported，调用处已 try/catch -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <!-- 注册表探测 Java：包提供 API，非 Windows 上调用抛异常（已 try/catch） -->
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <!-- GBK(936) 等代码页：.NET Core 默认只带 UTF-8 -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <!-- 中文名映射表：运行时要按固定名字取嵌入流，不能当普通资源 -->
+    <EmbeddedResource Include="Assets\zh-names.json" LogicalName="zh-names.json" />
+  </ItemGroup>
+
+</Project>

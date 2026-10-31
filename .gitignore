@@ -5,18 +5,20 @@ obj/
 *.user
 *.suo
 
-# 在仓库根目录直接运行时生成的数据（便携模式在 exe 旁边建 MoonLauncher/ 和 .minecraft/）
 /OpenLauncher/
+/MoonLauncher-data/
 /MoonLauncher/
 /.minecraft/
 
-# 发布私钥绝对不要提交
 private-key.xml
 *.private.xml
 
-# 本地 .NET SDK（构建工具链，不入库）
 /.dotnet/
 /.dotnet-install.ps1
 
-# 本地界面验证截图与日志
 /.test-artifacts*/
+
+/.codewhale/
+/.nugettest/
+/.publish/
+.DS_Store

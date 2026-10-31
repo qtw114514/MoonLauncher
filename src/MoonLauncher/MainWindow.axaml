@@ -1,0 +1,113 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MoonLauncher.MainWindow"
+        Title="MoonLauncher" Width="980" Height="620" MinWidth="840" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Bg}"
+        FontFamily="Microsoft YaHei UI, Segoe UI, PingFang SC, Noto Sans CJK SC, sans-serif"
+        Foreground="{DynamicResource Text}">
+
+    <Grid RowDefinitions="52,*">
+
+        <!-- ===== 顶部：品牌 + 导航 ===== -->
+        <Border Grid.Row="0" Background="{DynamicResource TitleBrush}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Image Name="AppIcon" Width="26" Height="26" VerticalAlignment="Center"/>
+                    <TextBlock Text="MoonLauncher" Foreground="White" FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Margin="9,0,0,0"/>
+                    <Border Background="#33FFFFFF" CornerRadius="4" Padding="5,1" Margin="8,2,0,0" VerticalAlignment="Center">
+                        <TextBlock Name="VersionTag" Foreground="White" FontSize="10.5"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <RadioButton Name="NavLaunch" GroupName="nav" Classes="topnav" Content="启动" IsChecked="True" Checked="Nav_Checked"/>
+                    <RadioButton Name="NavDownload" GroupName="nav" Classes="topnav" Content="下载" Checked="Nav_Checked"/>
+                    <RadioButton Name="NavSettings" GroupName="nav" Classes="topnav" Content="设置" Checked="Nav_Checked"/>
+                    <RadioButton Name="NavMore" GroupName="nav" Classes="topnav" Content="更多" Checked="Nav_Checked"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <Button Name="TasksButton" Classes="topnav" Click="Tasks_Click">
+                        <TextBlock Text="任务" FontSize="13"/>
+                    </Button>
+                    <TextBlock Name="TaskCount" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 页面 ===== -->
+        <ContentControl Name="PageHost" Grid.Row="1"/>
+
+        <!-- ===== 任务抽屉 ===== -->
+        <Grid Name="TaskLayer" Grid.Row="1" IsVisible="False">
+            <Border Background="#22101828"/>
+            <Border HorizontalAlignment="Right" Width="380" Background="{DynamicResource Card}"
+                    BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="18,14,12,8" ColumnDefinitions="*,Auto">
+                        <TextBlock Text="任务" Classes="h1" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Classes="ghost" Content="清除已完成" Click="ClearTasks_Click"/>
+                            <Button Classes="ghost" Content="关闭" Click="Tasks_Click"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Name="NoTasks" Text="暂时没有任务" Classes="sub"
+                               HorizontalAlignment="Center" Margin="0,40,0,0"/>
+                    <ScrollViewer>
+                        <ItemsControl Name="TaskList" Margin="14,0,14,14">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource Bg}" CornerRadius="9" Padding="12,10" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" Margin="0,0,70,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="sub"/>
+                                            </Grid>
+                                            <ProgressBar Margin="0,8,0,6" Maximum="1"
+                                                         Value="{Binding Progress, Mode=OneWay}"
+                                                         IsIndeterminate="{Binding Indeterminate, Mode=OneWay}"
+                                                         IsVisible="{Binding IsActive}"/>
+                                            <TextBlock Text="{Binding Detail}" Classes="sub" MaxHeight="120" Margin="0,2,0,0"/>
+                                            <Grid Margin="0,4,0,0" ColumnDefinitions="*,Auto">
+                                                <TextBlock Classes="sub" VerticalAlignment="Center">
+                                                    <Run Text="{Binding ProgressText, Mode=OneWay}"/>
+                                                    <Run Text="  "/>
+                                                    <Run Text="{Binding SpeedText, Mode=OneWay}"/>
+                                                </TextBlock>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                    <Button Content="暂停" Classes="ghost" Padding="6,2" Margin="3,0"
+                                                            IsVisible="{Binding CanPause}" Click="PauseTask_Click"/>
+                                                    <Button Content="继续" Classes="ghost" Padding="6,2" Margin="3,0"
+                                                            IsVisible="{Binding CanResume}" Click="ResumeTask_Click"/>
+                                                    <Button Content="重试" Classes="ghost" Padding="6,2" Margin="3,0"
+                                                            IsVisible="{Binding CanRetry}" Click="RetryTask_Click"/>
+                                                    <Button Content="取消" Classes="ghost" Padding="6,2" Margin="3,0"
+                                                            IsVisible="{Binding CanCancel}" Click="CancelTask_Click"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===== Toast ===== -->
+        <Border Name="ToastBox" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                Margin="0,0,0,26" Background="#EE1F2633" CornerRadius="18" Padding="18,9"
+                IsVisible="False" IsHitTestVisible="False" MaxWidth="600">
+            <TextBlock Name="ToastText" Foreground="White" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- ===== 对话框层 ===== -->
+        <Grid Name="DialogLayer" Grid.RowSpan="2" IsVisible="False" Background="#73101828">
+            <ContentControl Name="DialogHost" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</Window>
