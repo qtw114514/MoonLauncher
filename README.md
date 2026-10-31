@@ -54,6 +54,6 @@ MoonLauncher 的更新清单使用私钥签名，启动器内置对应的公钥�
 ## 致谢与声明
 
 - 本项目与 Mojang、Microsoft 无关，Minecraft 是 Mojang AB 的商标。
-- 本项目基于 OpenLauncher 的源码继续开发。功能设计参考了 PCL、HMCL 等国内启动器，在此致谢。
+- 本项目基于 [OpenLauncher](https://honghemc.cn/app/openlauncher.html) 的源码继续开发。功能设计参考了 PCL、HMCL 等国内启动器，在此致谢。
 - 本项目使用 AI 辅助开发，包含 AI 生成的代码。
 - 镜像服务由 bangbang93（BMCLAPI）、MCIM 等社区成员公益提供，请合理使用。
