@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using MoonLauncher.Core;
 
@@ -110,12 +109,14 @@ namespace MoonLauncher.Accounts
                 Buffer.BlockCopy(raw, Magic.Length, cipher, 0, cipher.Length);
                 try
                 {
-                    var plain = ProtectedData.Unprotect(cipher, Entropy, DataProtectionScope.CurrentUser);
+                    // 非 Windows 上没有 DPAPI 等价能力，这里会返回 false，走下面的备份分支
+                    if (!Platform.TryUnprotect(cipher, Entropy, out var plain))
+                        throw new PlatformNotSupportedException("当前平台没有可用的用户凭据加密。");
                     return Encoding.UTF8.GetString(plain);
                 }
-                catch (CryptographicException ex)
+                catch (Exception ex)
                 {
-                    Log.Warn("账户文件无法解密（可能是从别的电脑或别的 Windows 用户拷来的），需要重新登录。旧文件已备份。原因：" + ex.Message);
+                    Log.Warn("账户文件无法解密（可能是从别的电脑、别的用户拷来的，或当前平台不支持用户凭据加密），需要重新登录。旧文件已备份。原因：" + ex.Message);
                     Backup(path, "undecryptable");
                     return null;
                 }
@@ -163,7 +164,8 @@ namespace MoonLauncher.Accounts
             }
             try
             {
-                var cipher = ProtectedData.Protect(Encoding.UTF8.GetBytes(json), Entropy, DataProtectionScope.CurrentUser);
+                if (!Platform.TryProtect(Encoding.UTF8.GetBytes(json), Entropy, out var cipher))
+                    throw new PlatformNotSupportedException("当前平台没有可用的用户凭据加密，账户不会被明文写入磁盘。");
                 var data = new byte[Magic.Length + cipher.Length];
                 Buffer.BlockCopy(Magic, 0, data, 0, Magic.Length);
                 Buffer.BlockCopy(cipher, 0, data, Magic.Length, cipher.Length);

@@ -6,8 +6,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using MoonLauncher.Core;
 
 namespace MoonLauncher.Accounts
@@ -22,13 +20,13 @@ namespace MoonLauncher.Accounts
         const string McProfileUrl = "https://api.minecraftservices.com/minecraft/profile";
         const string MojangSessionUrl = "https://sessionserver.mojang.com/session/minecraft/profile/";
 
-        static readonly ConcurrentDictionary<string, (BitmapSource bmp, DateTime time)> Memory = new ConcurrentDictionary<string, (BitmapSource, DateTime)>();
+        static readonly ConcurrentDictionary<string, (Bitmap32 bmp, DateTime time)> Memory = new ConcurrentDictionary<string, (Bitmap32, DateTime)>();
         static readonly ConcurrentDictionary<string, Task<byte[]>> InFlight = new ConcurrentDictionary<string, Task<byte[]>>();
         static readonly TimeSpan MemoryTtl = TimeSpan.FromMinutes(15);
 
         static string Dir => Paths.Ensure(Path.Combine(Paths.Cache, "skins"));
 
-        public static async Task<BitmapSource> GetHeadAsync(Account acc, int size = 64)
+        public static async Task<Bitmap32> GetHeadAsync(Account acc, int size = 64)
         {
             if (acc == null || string.IsNullOrEmpty(acc.Uuid)) return null;
             size = size <= 0 ? 64 : Math.Min(size, 512);
@@ -194,23 +192,20 @@ namespace MoonLauncher.Accounts
         }
 
         // ---------- 渲染 ----------
-        /// <summary>把皮肤 PNG 渲染成 size x size 的头像（脸 + 帽子层），返回已 Freeze 的位图</summary>
-        public static BitmapSource RenderHead(byte[] png, int size)
+        /// <summary>
+        /// 把皮肤 PNG 渲染成 size x size 的头像（脸 + 帽子层），返回 BGRA32 像素。
+        /// 解码由界面层注入的 IImageDecoder 完成，这里只做像素运算。
+        /// </summary>
+        public static Bitmap32 RenderHead(byte[] png, int size)
         {
-            BitmapSource src;
-            using (var ms = new MemoryStream(png))
-            {
-                var dec = BitmapDecoder.Create(ms, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
-                src = dec.Frames[0];
-            }
-            if (src.Format != PixelFormats.Bgra32) src = new FormatConvertedBitmap(src, PixelFormats.Bgra32, null, 0);
-            int w = src.PixelWidth, h = src.PixelHeight;
+            var decoded = Imaging.Decode(png);
+            if (decoded == null) return null;
+            int w = decoded.Width, h = decoded.Height;
             if (w < 64 || w % 64 != 0 || (h != w && h != w / 2)) throw new InvalidDataException($"皮肤尺寸不正确：{w}x{h}");
             int s = w / 64;              // 高清皮肤的倍率
             bool legacy = h == w / 2;    // 1.8 之前的 64x32 格式
             int stride = w * 4;
-            var px = new byte[stride * h];
-            src.CopyPixels(px, stride, 0);
+            var px = decoded.Pixels;
 
             int fw = 8 * s;
             var face = new byte[fw * fw * 4];
@@ -249,8 +244,7 @@ namespace MoonLauncher.Accounts
                     Buffer.BlockCopy(face, (sy * fw + sx) * 4, outPx, (y * size + x) * 4, 4);
                 }
             }
-            var bmp = BitmapSource.Create(size, size, 96, 96, PixelFormats.Bgra32, null, outPx, size * 4);
-            bmp.Freeze();
+            var bmp = new Bitmap32(size, size, outPx);
             return bmp;
         }
 
@@ -258,18 +252,11 @@ namespace MoonLauncher.Accounts
         public static string ValidateSkin(byte[] png)
         {
             if (png == null || png.Length < 8) return "文件不是有效的 PNG 图片";
-            try
-            {
-                using (var ms = new MemoryStream(png))
-                {
-                    var dec = BitmapDecoder.Create(ms, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
-                    var f = dec.Frames[0];
-                    int w = f.PixelWidth, h = f.PixelHeight;
-                    if (w < 64 || w % 64 != 0 || (h != w && h != w / 2)) return $"皮肤尺寸不正确：{w}x{h}（需要 64x64 或 64x32 及其整数倍）";
-                }
-                return null;
-            }
-            catch (Exception ex) { return "文件不是有效的 PNG 图片：" + ex.Message; }
+            var bmp = Imaging.Decode(png);
+            if (bmp == null) return "文件不是有效的 PNG 图片";
+            int w = bmp.Width, h = bmp.Height;
+            if (w < 64 || w % 64 != 0 || (h != w && h != w / 2)) return $"皮肤尺寸不正确：{w}x{h}（需要 64x64 或 64x32 及其整数倍）";
+            return null;
         }
 
         static void CopyRect(byte[] px, int stride, int x0, int y0, int n, byte[] dst)

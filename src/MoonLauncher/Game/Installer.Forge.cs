@@ -197,7 +197,7 @@ namespace MoonLauncher.Game
                     else if (v.StartsWith("'") && v.EndsWith("'")) data[kv.Key] = v.Substring(1, v.Length - 2);
                     else if (v.StartsWith("/"))
                     {
-                        var dst = Path.Combine(ctx.TempDir, v.TrimStart('/').Replace('/', '\\'));
+                        var dst = Path.Combine(ctx.TempDir, Platform.FromManifestPath(v.TrimStart('/')));
                         var entry = zip.GetEntry(v.TrimStart('/'));
                         if (entry != null) { Util.EnsureParent(dst); entry.ExtractToFile(dst, true); }
                         data[kv.Key] = dst;

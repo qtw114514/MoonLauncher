@@ -82,7 +82,7 @@ namespace MoonLauncher.UI
                 {
                     var path = CrashAnalyzer.ExportReport(s.Instance, s.Output, r, s.Java);
                     Dialogs.Toast("错误报告已保存到桌面", MainWindow.ToastKind.Ok);
-                    System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + path + "\"");
+                    Platform.RevealInFolder(path);
                 }
                 catch (Exception ex)
                 {

@@ -58,14 +58,14 @@ namespace MoonLauncher.UI
                 var acc = AccountStore.All.FirstOrDefault(a => a.Name == "Steve") ?? OfflineAuth.Create("Steve");
                 AccountStore.AddOrUpdate(acc);
                 AccountStore.Selected = acc;
-                BitmapSource head = null;
+                MoonLauncher.Core.Bitmap32 head = null;
                 var skin = Path.Combine(OutDir, "steve.png");
                 if (File.Exists(skin)) head = Skins.RenderHead(File.ReadAllBytes(skin), 64);
                 void avatar()
                 {
                     var lp = W.LaunchPage;
                     lp.RefreshAccount();
-                    if (head != null) { lp.Avatar.Source = head; lp.AvatarFallback.Visibility = Visibility.Collapsed; }
+                    if (head != null) { lp.Avatar.Source = WpfHost.ToBitmapSource(head); lp.AvatarFallback.Visibility = Visibility.Collapsed; }
                 }
 
                 // ---------- 启动页 ----------

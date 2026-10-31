@@ -210,7 +210,7 @@ namespace MoonLauncher.Game
                 if (File.Exists(p)) hs = p;
             }
             if (hs == null) hs = Newest(gameDir, "hs_err_pid*.log", since);
-            if (hs == null && !string.Equals(gameDir, inst.Dir, StringComparison.OrdinalIgnoreCase)) hs = Newest(inst.Dir, "hs_err_pid*.log", since);
+            if (hs == null && !string.Equals(gameDir, inst.Dir, Util.PathComparison)) hs = Newest(inst.Dir, "hs_err_pid*.log", since);
             if (hs != null)
             {
                 r.HsErrPath = hs;
@@ -927,7 +927,7 @@ namespace MoonLauncher.Game
             if (files.Count == 0) return false;
 
             var shown = new List<string>();
-            foreach (var f in files.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (var f in files.Distinct(Util.PathComparer))
             {
                 var full = LocateConfig(c, f);
                 if (!shown.Contains(full, StringComparer.OrdinalIgnoreCase)) shown.Add(full);
@@ -941,7 +941,7 @@ namespace MoonLauncher.Game
         {
             try
             {
-                f = f.Trim().Trim('\'', '"').Replace('/', '\\');
+                f = Platform.FromManifestPath(f.Trim().Trim('\'', '"'));
                 if (Path.IsPathRooted(f)) return f;
                 var gameDir = c.Inst?.GameDir;
                 if (gameDir == null) return f;
@@ -955,7 +955,7 @@ namespace MoonLauncher.Game
                     var found = Directory.GetFiles(cfgDir, Path.GetFileName(f), SearchOption.AllDirectories).FirstOrDefault();
                     if (found != null) return found;
                 }
-                return f.Contains("\\") ? direct : inConfig;
+                return f.Contains(Platform.PathSeparator) ? direct : inConfig;
             }
             catch { return f; }
         }
@@ -1007,7 +1007,7 @@ namespace MoonLauncher.Game
             if (!old) return false;
             c.Hit("java.io.FileNotFoundException"); c.Hit("Invalid path"); c.Hit("InvalidPathException");
             r.Add("游戏路径里有中文或特殊字符，旧版本游戏无法正确读取",
-                "把游戏文件夹移动到只有英文和数字的路径（例如 D:\\Minecraft），版本名也不要用中文");
+                "把游戏文件夹移动到只有英文和数字的路径（例如 D:\\Minecraft 或 ~/minecraft），版本名也不要用中文");
             return false;
         }
 
@@ -1212,10 +1212,10 @@ namespace MoonLauncher.Game
                 sb.AppendLine($"mods 文件夹：{dir}");
                 sb.AppendLine($"共 {files.Count} 个文件");
                 sb.AppendLine();
-                foreach (var f in files.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                foreach (var f in files.OrderBy(x => x, Util.PathComparer))
                 {
                     var fi = new FileInfo(f);
-                    var rel = f.Substring(dir.Length).TrimStart('\\');
+                    var rel = f.Substring(dir.Length).TrimStart(Platform.PathSeparator);
                     var state = rel.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) ? "  [已禁用]" : "";
                     sb.AppendLine($"{rel}  ({Util.FormatSize(fi.Length)}, {fi.LastWriteTime:yyyy-MM-dd HH:mm}){state}");
                 }
@@ -1366,7 +1366,7 @@ namespace MoonLauncher.Game
                     if (offset < read) offset++;
                 }
                 try { return new UTF8Encoding(false, true).GetString(buf, offset, read - offset); }
-                catch (DecoderFallbackException) { return Encoding.Default.GetString(buf, offset, read - offset); }
+                catch (DecoderFallbackException) { return PlatformEncoding.DecodeText(buf, offset, read - offset); }
             }
         }
     }

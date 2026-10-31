@@ -33,7 +33,7 @@ namespace MoonLauncher.Core
 
         /// <summary>默认游戏目录：exe 旁边的 .minecraft（和 PCL 习惯一致）</summary>
         public static string DefaultGameDir => Path.Combine(ExeDir, ".minecraft");
-        public static string OfficialGameDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+        public static string OfficialGameDir => Platform.OfficialMinecraftDir;
 
         public static string Ensure(string dir) { Directory.CreateDirectory(dir); return dir; }
 

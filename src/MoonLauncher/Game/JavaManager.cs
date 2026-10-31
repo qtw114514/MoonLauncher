@@ -3,14 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using MoonLauncher.Core;
 
 namespace MoonLauncher.Game
@@ -40,7 +37,7 @@ namespace MoonLauncher.Game
         {
             get
             {
-                var p = Home == null ? null : Path.Combine(Home, "bin", "java.exe");
+                var p = Home == null ? null : Path.Combine(Home, "bin", Platform.JavaConsoleExe);
                 return p != null && File.Exists(p) ? p : JavawPath;
             }
         }
@@ -169,7 +166,7 @@ namespace MoonLauncher.Game
                 int c = b.Major.CompareTo(a.Major);
                 if (c == 0) c = Util.CompareVersion(b.Version, a.Version);
                 if (c == 0) c = b.Is64Bit.CompareTo(a.Is64Bit);
-                if (c == 0) c = string.Compare(a.Home, b.Home, StringComparison.OrdinalIgnoreCase);
+                if (c == 0) c = string.Compare(a.Home, b.Home, Platform.PathComparison);
                 return c;
             });
         }
@@ -227,46 +224,8 @@ namespace MoonLauncher.Game
 
         static void ScanRegistry(List<(string, string)> c)
         {
-            var hives = new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
-            var views = Environment.Is64BitOperatingSystem ? new[] { RegistryView.Registry64, RegistryView.Registry32 } : new[] { RegistryView.Default };
-            foreach (var hive in hives)
-                foreach (var view in views)
-                {
-                    try
-                    {
-                        using (var baseKey = RegistryKey.OpenBaseKey(hive, view))
-                            foreach (var root in RegRoots)
-                                using (var k = baseKey.OpenSubKey(root))
-                                    if (k != null) { int budget = 2000; WalkRegistry(k, 0, c, ref budget); }
-                    }
-                    catch (Exception ex) { Log.Warn($"读取注册表 {hive}/{view} 失败：{ex.Message}"); }
-                }
-        }
-
-        static void WalkRegistry(RegistryKey k, int depth, List<(string, string)> c, ref int budget)
-        {
-            if (--budget < 0) return;
-            foreach (var name in RegValueNames)
-            {
-                try
-                {
-                    if (k.GetValue(name) is string v && !string.IsNullOrWhiteSpace(v)) c.Add((v, SrcRegistry));
-                }
-                catch { }
-            }
-            if (depth >= 4) return;
-            string[] subs;
-            try { subs = k.GetSubKeyNames(); } catch { return; }
-            foreach (var s in subs)
-            {
-                if (RegSkip.Contains(s)) continue;
-                try
-                {
-                    using (var sk = k.OpenSubKey(s))
-                        if (sk != null) WalkRegistry(sk, depth + 1, c, ref budget);
-                }
-                catch { }
-            }
+            // 注册表只有 Windows 有；非 Windows 上 Platform 直接返回，不会调用回调
+            Platform.VisitRegistryValues(RegRoots, RegValueNames, RegSkip, 4, v => c.Add((v, SrcRegistry)));
         }
 
         static void ScanEnvironment(List<(string, string)> c)
@@ -294,11 +253,11 @@ namespace MoonLauncher.Game
                     if (!seen.Add(e)) continue;
                     try
                     {
-                        var w = Path.Combine(e, "javaw.exe");
+                        var w = Path.Combine(e, Platform.JavaWindowedExe);
                         if (File.Exists(w)) c.Add((w, SrcEnv));
                         else
                         {
-                            var j = Path.Combine(e, "java.exe");
+                            var j = Path.Combine(e, Platform.JavaConsoleExe);
                             if (File.Exists(j)) c.Add((j, SrcEnv));
                         }
                     }
@@ -320,7 +279,7 @@ namespace MoonLauncher.Game
             void addRoot(string r)
             {
                 if (string.IsNullOrEmpty(r)) return;
-                if (!roots.Any(x => string.Equals(x.TrimEnd('\\'), r.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))) roots.Add(r);
+                if (!roots.Any(x => string.Equals(x.TrimEnd(Platform.PathSeparator), r.TrimEnd(Platform.PathSeparator), Platform.PathComparison))) roots.Add(r);
             }
             addRoot(Environment.GetEnvironmentVariable("ProgramW6432"));
             addRoot(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
@@ -340,6 +299,9 @@ namespace MoonLauncher.Game
             // IntelliJ IDEA 下载的 JDK
             var user = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (!string.IsNullOrEmpty(user)) ScanTree(Path.Combine(user, ".jdks"), 1, SrcCommon, c);
+
+            // macOS / Linux 的 JDK 装不到 Program Files，统一由 Platform 列出各发行版的默认位置
+            foreach (var root in Platform.CommonJavaRoots) ScanTree(root, 2, SrcCommon, c);
         }
 
         static void ScanOfficial(List<(string, string)> c)
@@ -380,7 +342,7 @@ namespace MoonLauncher.Game
 
         static bool LooksLikeHome(string d)
         {
-            try { return File.Exists(Path.Combine(d, "bin", "javaw.exe")) || File.Exists(Path.Combine(d, "bin", "java.exe")); }
+            try { return File.Exists(Path.Combine(d, "bin", Platform.JavaWindowedExe)) || File.Exists(Path.Combine(d, "bin", Platform.JavaConsoleExe)); }
             catch { return false; }
         }
 
@@ -417,15 +379,15 @@ namespace MoonLauncher.Game
                 if (File.Exists(path))
                 {
                     var name = Path.GetFileName(path);
-                    if (!name.Equals("javaw.exe", StringComparison.OrdinalIgnoreCase) && !name.Equals("java.exe", StringComparison.OrdinalIgnoreCase)) return null;
+                    if (!name.Equals(Platform.JavaWindowedExe, StringComparison.OrdinalIgnoreCase) && !name.Equals(Platform.JavaConsoleExe, StringComparison.OrdinalIgnoreCase)) return null;
                     exe = path;
                 }
                 else if (Directory.Exists(path))
                 {
                     exe = new[]
                     {
-                        Path.Combine(path, "bin", "javaw.exe"), Path.Combine(path, "bin", "java.exe"),
-                        Path.Combine(path, "javaw.exe"), Path.Combine(path, "java.exe"),
+                        Path.Combine(path, "bin", Platform.JavaWindowedExe), Path.Combine(path, "bin", Platform.JavaConsoleExe),
+                        Path.Combine(path, Platform.JavaWindowedExe), Path.Combine(path, Platform.JavaConsoleExe),
                     }.FirstOrDefault(File.Exists);
                 }
                 else return null;
@@ -434,20 +396,20 @@ namespace MoonLauncher.Game
                 // 解开符号链接（Oracle 的 javapath、"latest" 之类的目录联接）
                 exe = FinalPath(exe) ?? exe;
                 var bin = Path.GetDirectoryName(exe);
-                if (bin == null || !Path.GetFileName(bin).Equals("bin", StringComparison.OrdinalIgnoreCase)) return null;
+                if (bin == null || !Path.GetFileName(bin).Equals("bin", Platform.PathComparison)) return null;
                 var home = Path.GetDirectoryName(bin);
                 if (string.IsNullOrEmpty(home)) return null;
                 // 排除 System32 / javapath 里的转发器：真正的 Java 一定有 lib 目录
                 if (!Directory.Exists(Path.Combine(home, "lib"))) return null;
-                return home.TrimEnd('\\');
+                return home.TrimEnd(Platform.PathSeparator);
             }
             catch { return null; }
         }
 
         static JavaInfo InspectHome(string home, bool useCache)
         {
-            var javaw = Path.Combine(home, "bin", "javaw.exe");
-            if (!File.Exists(javaw)) javaw = Path.Combine(home, "bin", "java.exe");
+            var javaw = Path.Combine(home, "bin", Platform.JavaWindowedExe);
+            if (!File.Exists(javaw)) javaw = Path.Combine(home, "bin", Platform.JavaConsoleExe);
             if (!File.Exists(javaw)) return null;
             var stamp = Stamp(home, javaw);
 
@@ -705,7 +667,7 @@ namespace MoonLauncher.Game
             if (string.IsNullOrWhiteSpace(path)) return;
             var home = ResolveHome(path) ?? NormDir(path);
             var list = Settings.ExtraList(ExtraKey);
-            int n = list.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase) || SameHome(ResolveHome(p) ?? NormDir(p), home));
+            int n = list.RemoveAll(p => string.Equals(p, path, Platform.PathComparison) || SameHome(ResolveHome(p) ?? NormDir(p), home));
             if (n > 0) Settings.SetList(ExtraKey, list);
             _known = _known.Where(j => !(j.Source == SrcManual && SameHome(j.Home, home))).ToList().AsReadOnly();
         }
@@ -904,13 +866,13 @@ namespace MoonLauncher.Game
                 if (!files.IsObj || files.Count == 0) throw new Exception("Java 运行时文件清单为空");
 
                 Directory.CreateDirectory(home);
-                var homeFull = Path.GetFullPath(home).TrimEnd('\\') + "\\";
+                var homeFull = Path.GetFullPath(home).TrimEnd(Platform.PathSeparator) + Platform.PathSeparator;
                 var items = new List<DownloadItem>();
                 var links = new List<(string link, string target)>();
                 foreach (var kv in files.Props)
                 {
-                    var target = Path.GetFullPath(Path.Combine(home, kv.Key.Replace('/', '\\')));
-                    if (!target.StartsWith(homeFull, StringComparison.OrdinalIgnoreCase)) continue; // 防目录穿越
+                    var target = Path.GetFullPath(Path.Combine(home, Platform.FromManifestPath(kv.Key)));
+                    if (!target.StartsWith(homeFull, Platform.PathComparison)) continue; // 防目录穿越
                     switch (kv.Value["type"].Str)
                     {
                         case "directory":
@@ -926,8 +888,9 @@ namespace MoonLauncher.Game
                             break;
                     }
                 }
-                if (!items.Any(i => i.Path.EndsWith("\\bin\\javaw.exe", StringComparison.OrdinalIgnoreCase) || i.Path.EndsWith("\\bin\\java.exe", StringComparison.OrdinalIgnoreCase)))
-                    throw new Exception("Java 运行时文件清单里没有 java.exe");
+                var binSuffix = Platform.PathSeparator + "bin" + Platform.PathSeparator;
+                if (!items.Any(i => i.Path.EndsWith(binSuffix + Platform.JavaWindowedExe, Platform.PathComparison) || i.Path.EndsWith(binSuffix + Platform.JavaConsoleExe, Platform.PathComparison)))
+                    throw new Exception("Java 运行时文件清单里没有 " + Platform.JavaConsoleExe);
 
                 await Downloader.RunAsync(items, task, from + span * 0.03, to - span * 0.02, $"下载 Java {major}").ConfigureAwait(false);
 
@@ -936,8 +899,8 @@ namespace MoonLauncher.Game
                 {
                     try
                     {
-                        var src = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(link), t.Replace('/', '\\')));
-                        if (src.StartsWith(homeFull, StringComparison.OrdinalIgnoreCase) && File.Exists(src))
+                        var src = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(link), Platform.FromManifestPath(t)));
+                        if (src.StartsWith(homeFull, Platform.PathComparison) && File.Exists(src))
                         {
                             Util.EnsureParent(link);
                             File.Copy(src, link, true);
@@ -1052,46 +1015,18 @@ namespace MoonLauncher.Game
         }
 
         static bool SameHome(string a, string b) =>
-            a != null && b != null && string.Equals(NormDir(a), NormDir(b), StringComparison.OrdinalIgnoreCase);
+            a != null && b != null && string.Equals(NormDir(a), NormDir(b), Platform.PathComparison);
 
         static string NormDir(string p)
         {
-            try { return Path.GetFullPath(p.Trim().Trim('"')).TrimEnd('\\'); }
+            try { return Path.GetFullPath(p.Trim().Trim('"')).TrimEnd(Platform.PathSeparator); }
             catch { return p; }
         }
 
-        static bool IsUnder(string path, string dir)
-        {
-            var d = NormDir(dir) + "\\";
-            return NormDir(path).StartsWith(d, StringComparison.OrdinalIgnoreCase);
-        }
+        static bool IsUnder(string path, string dir) =>
+            Platform.IsUnder(NormDir(path), NormDir(dir));
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes,
-            uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern uint GetFinalPathNameByHandle(SafeFileHandle hFile, StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
-
-        /// <summary>解开符号链接 / 目录联接后的真实路径</summary>
-        static string FinalPath(string path)
-        {
-            try
-            {
-                // 0 = 只查询属性；7 = 允许读/写/删共享；3 = OPEN_EXISTING；0x02000000 = FILE_FLAG_BACKUP_SEMANTICS
-                using (var h = CreateFile(path, 0, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero))
-                {
-                    if (h.IsInvalid) return null;
-                    var sb = new StringBuilder(1024);
-                    var n = GetFinalPathNameByHandle(h, sb, (uint)sb.Capacity, 0);
-                    if (n == 0 || n >= sb.Capacity) return null;
-                    var s = sb.ToString();
-                    if (s.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) return @"\\" + s.Substring(8);
-                    if (s.StartsWith(@"\\?\")) return s.Substring(4);
-                    return s;
-                }
-            }
-            catch { return null; }
-        }
+        /// <summary>解开符号链接 / 目录联接后的真实路径（实现在 Platform）</summary>
+        static string FinalPath(string path) => Platform.RealPath(path);
     }
 }

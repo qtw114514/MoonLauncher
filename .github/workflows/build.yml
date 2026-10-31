@@ -31,5 +31,9 @@ jobs:
       - name: 编译启动器
         run: dotnet build src/MoonLauncher/MoonLauncher.csproj -c Release -nologo -v m -warnaserror
 
+      # 解耦闸门：后端不得引用 WPF，否则这一步会红
+      - name: 编译后端（不引用界面框架）
+        run: dotnet build tools/Backend/MoonLauncher.Backend.csproj -c Release -nologo -v m -warnaserror
+
       - name: 编译发布工具
         run: dotnet build tools/Release/MoonLauncher.Release.csproj -c Release -nologo -v m -warnaserror

@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -45,13 +43,15 @@ namespace MoonLauncher.Core
         // ---------- 文件 ----------
         /// <summary>
         /// 长路径：超过 240 字符时加 \\?\ 前缀，绕过 Windows 260 字符限制（系统没开长路径支持也能用）。
+        /// 平台判断在 Platform.LongPath 里，非 Windows 上原样返回。
         /// </summary>
-        public static string LP(string path)
-        {
-            if (string.IsNullOrEmpty(path) || path.Length < 240 || path.StartsWith(@"\\?\")) return path;
-            var full = Path.GetFullPath(path);
-            return full.StartsWith(@"\\") ? @"\\?\UNC\" + full.Substring(2) : @"\\?\" + full;
-        }
+        public static string LP(string path) => Platform.LongPath(path);
+
+        /// <summary>路径大小写比较规则（Windows 不区分，Unix 区分）</summary>
+        public static StringComparison PathComparison => Platform.PathComparison;
+
+        /// <summary>路径集合用的比较器</summary>
+        public static StringComparer PathComparer => Platform.PathComparer;
 
         public static void EnsureParent(string path)
         {
@@ -76,35 +76,24 @@ namespace MoonLauncher.Core
             foreach (var d in Directory.GetDirectories(src)) CopyDir(d, Path.Combine(dst, Path.GetFileName(d)), overwrite);
         }
 
-        public static void OpenFolder(string path)
-        {
-            try
-            {
-                Directory.CreateDirectory(path);
-                Process.Start(new ProcessStartInfo("explorer.exe", "\"" + path + "\"") { UseShellExecute = true });
-            }
-            catch (Exception ex) { Log.Warn("打开文件夹失败: " + ex.Message); }
-        }
+        public static void OpenFolder(string path) => Platform.OpenFolder(path);
 
-        public static void OpenUrl(string url)
-        {
-            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch (Exception ex) { Log.Warn("打开网址失败: " + ex.Message); }
-        }
+        public static void OpenUrl(string url) => Platform.OpenUrl(url);
 
         /// <summary>解压 zip 中以 prefix 开头的条目到 dest（去掉 prefix）。防 zip-slip。</summary>
         public static int ExtractPrefix(ZipArchive zip, string prefix, string dest)
         {
             int n = 0;
-            var destFull = Path.GetFullPath(dest).TrimEnd('\\') + "\\";
+            var sep = Platform.PathSeparator;
+            var destFull = Path.GetFullPath(dest).TrimEnd(sep) + sep;
             foreach (var e in zip.Entries)
             {
-                var name = e.FullName.Replace('\\', '/');
+                var name = Platform.ToManifestPath(e.FullName);
                 if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
                 var rel = name.Substring(prefix.Length).TrimStart('/');
                 if (rel.Length == 0) continue;
-                var target = Path.GetFullPath(Path.Combine(dest, rel.Replace('/', '\\')));
-                if (!target.StartsWith(destFull, StringComparison.OrdinalIgnoreCase)) continue;
+                var target = Path.GetFullPath(Path.Combine(dest, Platform.FromManifestPath(rel)));
+                if (!target.StartsWith(destFull, Util.PathComparison)) continue;
                 if (name.EndsWith("/")) { Directory.CreateDirectory(target); continue; }
                 EnsureParent(target);
                 e.ExtractToFile(LP(target), true);
@@ -154,8 +143,12 @@ namespace MoonLauncher.Core
             return n.ToString();
         }
 
-        /// <summary>把命令行参数按 Windows 规则加引号</summary>
-        public static string QuoteArg(string a)
+        /// <summary>把一个参数包成命令行能安全传递的形式（Windows 与 Unix 的引号规则不同）</summary>
+        public static string QuoteArg(string a) =>
+            Platform.IsWindows ? QuoteArgWindows(a) : QuoteArgUnix(a);
+
+        /// <summary>Windows 规则：双引号包裹，连续反斜杠按 MSVCRT 规则转义</summary>
+        static string QuoteArgWindows(string a)
         {
             if (string.IsNullOrEmpty(a)) return "\"\"";
             if (a.IndexOfAny(new[] { ' ', '\t', '"' }) < 0) return a;
@@ -172,8 +165,19 @@ namespace MoonLauncher.Core
             return sb.ToString();
         }
 
-        /// <summary>简单地按空格切分参数（支持双引号）</summary>
-        public static List<string> SplitArgs(string s)
+        /// <summary>Unix 规则：单引号包裹，内部的单引号写成 '\''</summary>
+        static string QuoteArgUnix(string a)
+        {
+            if (string.IsNullOrEmpty(a)) return "''";
+            if (a.IndexOfAny(new[] { ' ', '\t', '"', '\'', '\\', '$', '`' }) < 0) return a;
+            return "'" + a.Replace("'", "'\\''") + "'";
+        }
+
+        /// <summary>简单地按空格切分参数；Windows 上认双引号，Unix 上还认单引号与反斜杠转义</summary>
+        public static List<string> SplitArgs(string s) =>
+            Platform.IsWindows ? SplitArgsWindows(s) : SplitArgsUnix(s);
+
+        static List<string> SplitArgsWindows(string s)
         {
             var list = new List<string>();
             if (string.IsNullOrWhiteSpace(s)) return list;
@@ -193,76 +197,38 @@ namespace MoonLauncher.Core
             return list;
         }
 
-        // ---------- 系统信息 ----------
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        class MEMORYSTATUSEX
+        static List<string> SplitArgsUnix(string s)
         {
-            public uint dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            public uint dwMemoryLoad;
-            public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile, ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
+            var list = new List<string>();
+            if (string.IsNullOrWhiteSpace(s)) return list;
+            var cur = new StringBuilder();
+            bool inSingle = false, inDouble = false, has = false;
+            for (int i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (!inSingle && c == '\\' && i + 1 < s.Length) { cur.Append(s[++i]); has = true; continue; }
+                if (!inDouble && c == '\'') { inSingle = !inSingle; has = true; continue; }
+                if (!inSingle && c == '"') { inDouble = !inDouble; has = true; continue; }
+                if (!inSingle && !inDouble && char.IsWhiteSpace(c))
+                {
+                    if (has || cur.Length > 0) { list.Add(cur.ToString()); cur.Clear(); has = false; }
+                    continue;
+                }
+                cur.Append(c);
+            }
+            if (has || cur.Length > 0) list.Add(cur.ToString());
+            return list;
         }
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+        // ---------- 系统信息（实现全在 Platform）----------
 
-        public static (long totalMb, long availMb) Memory()
-        {
-            var m = new MEMORYSTATUSEX();
-            if (!GlobalMemoryStatusEx(m)) return (8192, 4096);
-            return ((long)(m.ullTotalPhys / 1048576), (long)(m.ullAvailPhys / 1048576));
-        }
-
-        [DllImport("kernel32.dll")] static extern void GetNativeSystemInfo(out SYSTEM_INFO info);
-        [StructLayout(LayoutKind.Sequential)]
-        struct SYSTEM_INFO
-        {
-            public ushort wProcessorArchitecture, wReserved;
-            public uint dwPageSize; public IntPtr lpMin, lpMax, mask;
-            public uint num, type, gran; public ushort level, rev;
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool IsWow64Process2(IntPtr process, out ushort processMachine, out ushort nativeMachine);
+        /// <summary>物理内存总量与可用量，单位 MB</summary>
+        public static (long totalMb, long availMb) Memory() => Platform.Memory();
 
         /// <summary>系统真实架构：x64 / x86 / arm64</summary>
-        public static string OsArch
-        {
-            get
-            {
-                try
-                {
-                    if (IsWow64Process2(Process.GetCurrentProcess().Handle, out _, out var native))
-                    {
-                        if (native == 0xAA64) return "arm64";
-                        if (native == 0x8664) return "x64";
-                        if (native == 0x14c) return "x86";
-                    }
-                }
-                catch { }
-                GetNativeSystemInfo(out var si);
-                return si.wProcessorArchitecture switch { 9 => "x64", 12 => "arm64", _ => "x86" };
-            }
-        }
+        public static string OsArch => Platform.OsArch;
 
-        public static Version OsVersion
-        {
-            get
-            {
-                // Environment.OSVersion 在没有 manifest 声明时会撒谎，读注册表更准
-                try
-                {
-                    using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
-                    {
-                        var major = k?.GetValue("CurrentMajorVersionNumber");
-                        var build = k?.GetValue("CurrentBuildNumber") as string;
-                        if (major != null && build != null)
-                            return new Version(Convert.ToInt32(major), Convert.ToInt32(k.GetValue("CurrentMinorVersionNumber") ?? 0), int.Parse(build));
-                    }
-                }
-                catch { }
-                return Environment.OSVersion.Version;
-            }
-        }
+        public static Version OsVersion => Platform.OsVersion;
 
         /// <summary>比较 "1.20.4" / "26.3" / "0.16.10" 这类版本号，非数字段按字符串比较</summary>
         public static int CompareVersion(string a, string b)

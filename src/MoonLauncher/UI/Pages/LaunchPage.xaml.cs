@@ -149,7 +149,7 @@ namespace MoonLauncher.UI.Pages
             try
             {
                 var head = await Skins.GetHeadAsync(acc, 64);
-                if (head != null && AccountStore.Selected == acc) { Avatar.Source = head; AvatarFallback.Visibility = Visibility.Collapsed; }
+                if (head != null && AccountStore.Selected == acc) { Avatar.Source = WpfHost.ToBitmapSource(head); AvatarFallback.Visibility = Visibility.Collapsed; }
             }
             catch (Exception ex) { Log.Warn("获取头像失败：" + ex.Message); }
         }

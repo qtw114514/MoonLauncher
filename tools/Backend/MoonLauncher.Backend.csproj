@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    解耦守卫：只编译后端（Core / Game / Accounts / Content / Update / Multiplayer），
+    不引用 WPF，也不启用 UseWPF。
+
+    存在的意义是把"后端不许依赖界面框架"从一句约定变成一道编译闸门：
+    谁在业务层引入 System.Windows.* / BitmapSource / Dispatcher，这里立刻编译失败。
+    跨平台分支移植时，这个项目对应"可以在 macOS / Linux 上编译的那部分"。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>MoonLauncher.Backend</AssemblyName>
+    <RootNamespace>MoonLauncher</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\MoonLauncher\Branding.cs" Link="Branding.cs" />
+    <Compile Include="..\..\src\MoonLauncher\Core\**\*.cs" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Game\**\*.cs" Link="Game\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Accounts\**\*.cs" Link="Accounts\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Content\**\*.cs" Link="Content\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Update\**\*.cs" Link="Update\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Multiplayer\**\*.cs" Link="Multiplayer\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Security" />
+    <Reference Include="Microsoft.VisualBasic" />
+  </ItemGroup>
+
+</Project>

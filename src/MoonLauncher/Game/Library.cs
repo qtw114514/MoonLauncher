@@ -27,7 +27,7 @@ namespace MoonLauncher.Game
         public string FileName => $"{Artifact}-{Version}{(string.IsNullOrEmpty(Classifier) ? "" : "-" + Classifier)}.{Ext}";
         /// <summary>同一个库的不同版本视为同一个（合并继承版本时去重用）</summary>
         public string Key => $"{Group}:{Artifact}:{Classifier}";
-        public string LocalPath(string librariesDir) => Path.Combine(librariesDir, RelPath.Replace('/', '\\'));
+        public string LocalPath(string librariesDir) => Path.Combine(librariesDir, Platform.FromManifestPath(RelPath));
     }
 
     /// <summary>对 libraries 里一项的统一封装</summary>
@@ -68,7 +68,7 @@ namespace MoonLauncher.Game
             var art = Json["downloads"]["artifact"];
             if (!art.IsNull)
             {
-                var path = art["path"].Str != null ? Path.Combine(librariesDir, art["path"].Str.Replace('/', '\\')) : Maven.LocalPath(librariesDir);
+                var path = art["path"].Str != null ? Path.Combine(librariesDir, Platform.FromManifestPath(art["path"].Str)) : Maven.LocalPath(librariesDir);
                 var url = art["url"].Str;
                 return new DownloadItem(string.IsNullOrEmpty(url) ? null : url, path, art["sha1"].Str, art["size"].Long);
             }
@@ -91,7 +91,7 @@ namespace MoonLauncher.Game
             var c = Json["downloads"]["classifiers"][cls];
             if (!c.IsNull)
             {
-                var path = c["path"].Str != null ? Path.Combine(librariesDir, c["path"].Str.Replace('/', '\\'))
+                var path = c["path"].Str != null ? Path.Combine(librariesDir, Platform.FromManifestPath(c["path"].Str))
                                                  : new Maven { Group = Maven.Group, Artifact = Maven.Artifact, Version = Maven.Version, Classifier = cls }.LocalPath(librariesDir);
                 return new DownloadItem(c["url"].Str, path, c["sha1"].Str, c["size"].Long);
             }

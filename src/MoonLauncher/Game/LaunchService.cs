@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -120,8 +119,6 @@ namespace MoonLauncher.Game
             if (inst == null) return;
             lock (Running) Preparing.Remove(InstanceKey(inst));
         }
-
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool SetWindowText(IntPtr hWnd, string text);
 
         /// <summary>自动内存：按可用内存与 Mod 数量估算，单位 MB</summary>
         public static int AutoMemory(Instance inst, JavaInfo java)
@@ -384,8 +381,8 @@ namespace MoonLauncher.Game
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 // Java 8 的 JVM 默认字符集是系统 ANSI 代码页（简体中文系统是 GBK），强解 UTF-8 会乱码、崩溃分析失配
-                StandardOutputEncoding = java.Major <= 8 ? Encoding.Default : Encoding.UTF8,
-                StandardErrorEncoding = java.Major <= 8 ? Encoding.Default : Encoding.UTF8,
+                StandardOutputEncoding = java.Major <= 8 ? PlatformEncoding.SystemDefault : Encoding.UTF8,
+                StandardErrorEncoding = java.Major <= 8 ? PlatformEncoding.SystemDefault : Encoding.UTF8,
             };
 
             // Windows 命令行上限 32767 字符：太长时 Java 9+ 用 @参数文件，Java 8 把 classpath 挪进环境变量
@@ -395,7 +392,7 @@ namespace MoonLauncher.Game
                 if (java.Major >= 9)
                 {
                     argFile = Path.Combine(Paths.Temp, $"launch-{Guid.NewGuid():N}.txt");
-                    File.WriteAllText(argFile, string.Join("\n", all.Select(ArgFileQuote)), Encoding.Default);
+                    File.WriteAllText(argFile, string.Join("\n", all.Select(ArgFileQuote)), PlatformEncoding.SystemDefault);
                     argLine = "@" + Util.QuoteArg(argFile);
                 }
                 else
@@ -469,7 +466,7 @@ namespace MoonLauncher.Game
                         {
                             if (!session.WindowShown) session.RaiseWindow();
                             if (string.IsNullOrEmpty(title)) break;
-                            SetWindowText(h, title.Replace("{version}", inst.Id).Replace("{name}", inst.Id));
+                            Platform.SetWindowTitle(h, title.Replace("{version}", inst.Id).Replace("{name}", inst.Id));
                         }
                     }
                     catch { }
@@ -504,7 +501,7 @@ namespace MoonLauncher.Game
             var (jvm, main, game) = BuildArguments(inst, info, java, auth, inst.NativesDir, assetsRoot);
             var all = new List<string>(jvm) { main };
             all.AddRange(game);
-            var javaExe = java.JavawPath.Replace("javaw.exe", "java.exe");
+            var javaExe = java.JavaExePath;
             var sb = new StringBuilder();
             sb.AppendLine("@echo off");
             sb.AppendLine("chcp 65001 >nul");
@@ -514,7 +511,7 @@ namespace MoonLauncher.Game
             {
                 // cmd 一行最多 8191 字符，模组版本的 classpath 远超这个长度：参数放进同名 .args 文件
                 var argPath = Path.ChangeExtension(path, ".args");
-                File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), Encoding.Default);
+                File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), PlatformEncoding.SystemDefault);
                 sb.AppendLine($"\"{javaExe}\" @\"{Path.GetFileName(argPath)}\"".Replace("@\"", "@\"%~dp0"));
             }
             else

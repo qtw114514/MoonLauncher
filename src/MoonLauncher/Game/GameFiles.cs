@@ -151,7 +151,7 @@ namespace MoonLauncher.Game
                     {
                         foreach (var e in zip.Entries)
                         {
-                            var name = e.FullName.Replace('\\', '/');
+                            var name = Platform.ToManifestPath(e.FullName);
                             if (name.EndsWith("/") || excludes.Any(x => name.StartsWith(x, StringComparison.OrdinalIgnoreCase))) continue;
                             // 只要动态库本体，jar 里的 .class / .sha1 / .git 之类跳过
                             var ext = Path.GetExtension(name).ToLowerInvariant();
@@ -184,7 +184,7 @@ namespace MoonLauncher.Game
                 var hash = kv.Value["hash"].Str;
                 if (hash == null) continue;
                 var src = Path.Combine(repo.Assets, "objects", hash.Substring(0, 2), hash);
-                var dst = Path.Combine(dest, kv.Key.Replace('/', '\\'));
+                var dst = Path.Combine(dest, Platform.FromManifestPath(kv.Key));
                 if (!File.Exists(src) || File.Exists(Util.LP(dst))) continue;
                 try { Util.EnsureParent(dst); File.Copy(src, Util.LP(dst)); } catch { }
             }

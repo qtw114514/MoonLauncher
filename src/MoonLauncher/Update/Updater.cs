@@ -32,6 +32,12 @@ namespace MoonLauncher.Update
     /// </summary>
     public static class Updater
     {
+        /// <summary>
+        /// 更新已就绪、需要退出当前进程让新版本接管时触发。
+        /// 业务层不认识具体的 UI 框架，由启动代码订阅这个事件来做“关掉自己”。
+        /// </summary>
+        public static event Action ExitRequested;
+
         public static List<string> Sources
         {
             get
@@ -217,7 +223,7 @@ namespace MoonLauncher.Update
                 catch (Exception rex) { Log.Error("回滚失败", rex); }
                 throw new Exception("新版本被系统拦截无法启动（可能是 Windows 智能应用控制或杀毒软件），已恢复为旧版本。" + ex.Message);
             }
-            TaskManager.OnUi(() => System.Windows.Application.Current?.Shutdown());
+            TaskManager.OnUi(() => ExitRequested?.Invoke());
         }
 
         /// <summary>启动时清理上次更新留下的旧文件</summary>

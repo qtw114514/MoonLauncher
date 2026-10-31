@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
@@ -95,19 +94,24 @@ namespace MoonLauncher.Core
             set => Set("content.cfApiKey", string.IsNullOrEmpty(value) ? "" : Protect(value));
         }
 
-        // DPAPI（CurrentUser）加密：config.json 里不再明文存 Key。换 Windows 用户解不开，当作没填。
+        // DPAPI（CurrentUser）加密：config.json 里不再明文存 Key。换用户解不开，当作没填。
+        // 平台差异（非 Windows 上没有 DPAPI）全在 Platform.TryProtect / TryUnprotect 里。
         const string DpapiPrefix = "dpapi:";
         static string Protect(string s)
         {
-            try { return DpapiPrefix + Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(s), null, DataProtectionScope.CurrentUser)); }
-            catch (Exception ex) { Log.Warn("加密存储失败，退回明文：" + ex.Message); return s; }
+            if (Platform.TryProtect(Encoding.UTF8.GetBytes(s), null, out var cipher))
+                return DpapiPrefix + Convert.ToBase64String(cipher);
+            // 本平台没有等价能力：退回明文，与历史版本在加密失败时的行为一致
+            Log.Warn("当前平台没有可用的用户凭据加密，这项设置将以明文保存");
+            return s;
         }
 
         static string Unprotect(string s)
         {
             if (string.IsNullOrEmpty(s) || !s.StartsWith(DpapiPrefix, StringComparison.Ordinal)) return s;
-            try { return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(s.Substring(DpapiPrefix.Length)), null, DataProtectionScope.CurrentUser)); }
-            catch { return ""; }
+            return Platform.TryUnprotect(Convert.FromBase64String(s.Substring(DpapiPrefix.Length)), null, out var plain)
+                ? Encoding.UTF8.GetString(plain)
+                : "";
         }
         public static string MicrosoftClientId { get => Get("account.msClientId", Branding.DefaultMicrosoftClientId); set => Set("account.msClientId", value); }
         public static string SelectedAccount { get => Get("account.selected"); set => Set("account.selected", value); }
@@ -149,7 +153,7 @@ namespace MoonLauncher.Core
                     if (list.Count == 0)
                     {
                         list.Add(new GameFolder { Name = "当前目录", Path = Paths.DefaultGameDir });
-                        if (Directory.Exists(Paths.OfficialGameDir) && !string.Equals(Paths.OfficialGameDir, Paths.DefaultGameDir, StringComparison.OrdinalIgnoreCase))
+                        if (Directory.Exists(Paths.OfficialGameDir) && !string.Equals(Paths.OfficialGameDir, Paths.DefaultGameDir, Util.PathComparison))
                             list.Add(new GameFolder { Name = "官方启动器目录", Path = Paths.OfficialGameDir });
                     }
                     return list;

@@ -173,7 +173,7 @@ namespace MoonLauncher.Accounts
             try
             {
                 foreach (var f in Directory.GetFiles(Paths.Tools, FilePrefix + "*.jar"))
-                    if (!string.Equals(Path.GetFullPath(f), Path.GetFullPath(keep), StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(Path.GetFullPath(f), Path.GetFullPath(keep), Util.PathComparison))
                         Util.TryDelete(f); // 正在被游戏占用的会删除失败，下次再说
             }
             catch { }

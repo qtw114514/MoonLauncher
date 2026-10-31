@@ -1,10 +1,12 @@
 <UserControl x:Class="MoonLauncher.UI.Pages.InstancePage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:pages="clr-namespace:MoonLauncher.UI.Pages">
+             xmlns:pages="clr-namespace:MoonLauncher.UI.Pages"
+             xmlns:ui="clr-namespace:MoonLauncher.UI">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolVisLocal"/>
         <pages:ModErrorVisibilityConverter x:Key="ModErrorVis"/>
+        <ui:Bitmap32Converter x:Key="Bitmap32"/>
         <Style x:Key="ModActionButton" TargetType="Button" BasedOn="{StaticResource Ghost}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource AncestorType=ListBox}}" Value="False">
@@ -217,7 +219,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource AccentSoft}" Margin="0,0,12,0" ClipToBounds="True">
-                                            <Image Source="{Binding Icon}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                            <Image Source="{Binding IconPixels, Converter={StaticResource Bitmap32}}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
                                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding DisplayName}"/>

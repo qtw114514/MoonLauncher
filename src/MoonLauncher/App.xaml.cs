@@ -27,7 +27,8 @@ namespace MoonLauncher
             AppDomain.CurrentDomain.UnhandledException += (s, ex) => Log.Error("未处理的异常", ex.ExceptionObject as Exception);
             TaskScheduler.UnobservedTaskException += (s, ex) => { Log.Warn("未观察的任务异常：" + ex.Exception?.GetBaseException().Message); ex.SetObserved(); };
 
-            TaskManager.Dispatcher = Dispatcher;
+            WpfHost.Attach(Dispatcher);
+            Updater.ExitRequested += Shutdown;
             Log.Info($"{Branding.AppName} {AppInfo.VersionString} 启动，系统 {Util.OsVersion} {Util.OsArch}，数据目录 {Paths.DataDir}");
             Updater.CleanupOld();
             Task.Run(() => Paths.CleanTemp()); // 清理上次运行残留的临时文件，不阻塞启动

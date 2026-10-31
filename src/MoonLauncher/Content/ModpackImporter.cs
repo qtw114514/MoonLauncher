@@ -80,7 +80,7 @@ namespace MoonLauncher.Content
                 if (e != null) return e;
                 return zip.Entries.FirstOrDefault(x =>
                 {
-                    var f = x.FullName.Replace('\\', '/');
+                    var f = Platform.ToManifestPath(x.FullName);
                     var i = f.IndexOf('/');
                     return i > 0 && i == f.LastIndexOf('/') && f.Substring(i + 1) == name;
                 });
@@ -111,7 +111,7 @@ namespace MoonLauncher.Content
 
         static string RootOf(ZipArchiveEntry e)
         {
-            var f = e.FullName.Replace('\\', '/');
+            var f = Platform.ToManifestPath(e.FullName);
             var i = f.LastIndexOf('/');
             return i < 0 ? "" : f.Substring(0, i + 1);
         }
@@ -159,7 +159,7 @@ namespace MoonLauncher.Content
                 CheckRelative(path, "files", true);
                 var e = new ModpackFileEntry
                 {
-                    Path = path.Replace('\\', '/'),
+                    Path = Platform.ToManifestPath(path),
                     Sha1 = f["hashes"]["sha1"].Str,
                     Sha512 = f["hashes"]["sha512"].Str,
                     Size = f["fileSize"].Long,
@@ -218,7 +218,7 @@ namespace MoonLauncher.Content
                 if (string.IsNullOrEmpty(pid) || string.IsNullOrEmpty(fid)) continue;
                 info.CfFiles.Add(new ModpackCfEntry { ProjectId = pid, FileId = fid, Required = f["required"].BoolOr(true) });
             }
-            var ov = (j["overrides"].Str ?? "overrides").Replace('\\', '/').Trim('/');
+            var ov = Platform.ToManifestPath(j["overrides"].Str ?? "overrides").Trim('/');
             CheckRelative(ov, "overrides", true);
             info.OverridePrefixes.Add(info.Root + ov + "/");
             CheckOverrides(zip, info);
@@ -232,7 +232,7 @@ namespace MoonLauncher.Content
             int count = 0;
             foreach (var e in zip.Entries)
             {
-                var name = e.FullName.Replace('\\', '/');
+                var name = Platform.ToManifestPath(e.FullName);
                 foreach (var p in info.OverridePrefixes)
                 {
                     if (!name.StartsWith(p, StringComparison.OrdinalIgnoreCase)) continue;
@@ -365,8 +365,8 @@ namespace MoonLauncher.Content
         /// <summary>版本文件夹里不能被整合包覆盖的东西</summary>
         static bool IsProtected(string gameDir, string full, string id)
         {
-            var rel = full.Substring(Path.GetFullPath(gameDir).TrimEnd('\\').Length).TrimStart('\\');
-            var first = rel.Split('\\')[0];
+            var rel = full.Substring(Path.GetFullPath(gameDir).TrimEnd(Platform.PathSeparator).Length).TrimStart(Platform.PathSeparator);
+            var first = rel.Split(Platform.PathSeparator)[0];
             return first.Equals(id + ".json", StringComparison.OrdinalIgnoreCase)
                 || first.Equals(id + ".jar", StringComparison.OrdinalIgnoreCase)
                 || first.Equals(id + "-natives", StringComparison.OrdinalIgnoreCase)
@@ -381,7 +381,7 @@ namespace MoonLauncher.Content
                 foreach (var prefix in info.OverridePrefixes)
                     foreach (var e in zip.Entries)
                     {
-                        var name = e.FullName.Replace('\\', '/');
+                        var name = Platform.ToManifestPath(e.FullName);
                         if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
                         var rel = name.Substring(prefix.Length);
                         if (rel.Length == 0 || name.EndsWith("/")) continue;
@@ -544,7 +544,7 @@ namespace MoonLauncher.Content
 
             try
             {
-                foreach (var g in placed.GroupBy(p => Path.GetDirectoryName(p.path), StringComparer.OrdinalIgnoreCase))
+                foreach (var g in placed.GroupBy(p => Path.GetDirectoryName(p.path), Util.PathComparer))
                 {
                     var idx = ContentIndex.Load(g.Key);
                     foreach (var (file, path) in g) idx.Set(Path.GetFileName(path), file);

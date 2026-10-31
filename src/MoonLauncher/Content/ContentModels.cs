@@ -170,12 +170,7 @@ namespace MoonLauncher.Content
         }
 
         /// <summary>在 UI 线程上执行并等它完成（没有 UI 时直接执行），让调用方 await 之后看到的就是新状态</summary>
-        public static Task OnUiAsync(Action a)
-        {
-            var d = TaskManager.Dispatcher;
-            if (d == null || d.CheckAccess()) { a(); return Task.CompletedTask; }
-            return d.InvokeAsync(a).Task;
-        }
+        public static Task OnUiAsync(Action a) => TaskManager.OnUiAsync(a);
 
         public static JNode StrArr(IEnumerable<string> items)
         {

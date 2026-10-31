@@ -4,10 +4,26 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Threading;
 
 namespace MoonLauncher.Core
 {
+    /// <summary>
+    /// UI 线程调度抽象。
+    /// 业务层只认这个接口，不引用任何 UI 框架（WPF / Avalonia 各自的 Dispatcher）。
+    /// 由启动代码（App）实现并注入；没有注入时（单元测试、纯后端进程）全部同步执行。
+    /// </summary>
+    public interface IUiDispatcher
+    {
+        /// <summary>当前线程是否就是 UI 线程</summary>
+        bool IsOnUiThread { get; }
+
+        /// <summary>异步投递到 UI 线程，不等待</summary>
+        void Post(Action action);
+
+        /// <summary>投递到 UI 线程并等它执行完</summary>
+        Task InvokeAsync(Action action);
+    }
+
     public enum TaskState { Running, Paused, Done, Failed, Canceled }
 
     /// <summary>一个后台任务（安装版本、下载 Mod、导入整合包……），界面上的任务列表直接绑定它</summary>
@@ -92,7 +108,9 @@ namespace MoonLauncher.Core
     public static class TaskManager
     {
         public static ObservableCollection<LauncherTask> Tasks { get; } = new ObservableCollection<LauncherTask>();
-        public static Dispatcher Dispatcher { get; set; }
+
+        /// <summary>UI 线程调度器，由启动代码注入；为 null 时所有回调就地在调用线程执行</summary>
+        public static IUiDispatcher Ui { get; set; }
 
         /// <summary>任务结束（成功/失败/取消）时触发，在 UI 线程上</summary>
         public static event Action<LauncherTask> Finished;
@@ -148,8 +166,17 @@ namespace MoonLauncher.Core
 
         public static void OnUi(Action a)
         {
-            if (Dispatcher == null || Dispatcher.CheckAccess()) a();
-            else Dispatcher.BeginInvoke(a);
+            if (a == null) return;
+            if (Ui == null || Ui.IsOnUiThread) a();
+            else Ui.Post(a);
+        }
+
+        /// <summary>在 UI 线程上执行并等它完成（没有 UI 时直接执行）</summary>
+        public static Task OnUiAsync(Action a)
+        {
+            if (a == null) return Task.CompletedTask;
+            if (Ui == null || Ui.IsOnUiThread) { a(); return Task.CompletedTask; }
+            return Ui.InvokeAsync(a);
         }
 
         public static void ClearFinished()

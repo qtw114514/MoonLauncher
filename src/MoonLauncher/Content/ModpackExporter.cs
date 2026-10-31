@@ -34,7 +34,7 @@ namespace MoonLauncher.Content
             if (inst == null) throw new ArgumentNullException(nameof(inst));
             if (string.IsNullOrEmpty(outFile)) throw new ArgumentNullException(nameof(outFile));
             var ct = task?.Token ?? CancellationToken.None;
-            var gameDir = Path.GetFullPath(inst.GameDir).TrimEnd('\\');
+            var gameDir = Path.GetFullPath(inst.GameDir).TrimEnd(Platform.PathSeparator);
             if (!Directory.Exists(gameDir)) throw new DirectoryNotFoundException("游戏目录不存在：" + gameDir);
 
             // 1. 收集文件
@@ -53,7 +53,7 @@ namespace MoonLauncher.Content
             int done = 0;
             await Task.Run(() => Parallel.ForEach(candidates, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount }, rel =>
             {
-                var full = Path.Combine(gameDir, rel.Replace('/', '\\'));
+                var full = Path.Combine(gameDir, Platform.FromManifestPath(rel));
                 try
                 {
                     var h = (Util.Sha1File(full), Util.Sha512File(full), new FileInfo(full).Length);
@@ -134,7 +134,7 @@ namespace MoonLauncher.Content
                         {
                             ct.ThrowIfCancellationRequested();
                             var rel = overrides[i];
-                            var full = Path.Combine(gameDir, rel.Replace('/', '\\'));
+                            var full = Path.Combine(gameDir, Platform.FromManifestPath(rel));
                             try
                             {
                                 var entry = zip.CreateEntry("overrides/" + rel, NoCompress(rel) ? CompressionLevel.NoCompression : CompressionLevel.Optimal);

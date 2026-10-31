@@ -9,8 +9,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using MoonLauncher.Core;
 
 namespace MoonLauncher.Content
@@ -24,7 +22,7 @@ namespace MoonLauncher.Content
         string _filePath;
         bool _enabled;
         ContentFile _update;
-        ImageSource _icon;
+        Bitmap32 _icon;
         bool _iconTried;
 
         public string FilePath
@@ -54,12 +52,12 @@ namespace MoonLauncher.Content
 
         public byte[] IconBytes { get; set; }
 
-        /// <summary>第一次访问时解码并冻结（可跨线程使用）；没有图标返回 null</summary>
-        public ImageSource Icon
+        /// <summary>第一次访问时解码（结果为 BGRA32 像素，界面层负责转成自己的图像类型）；没有图标返回 null</summary>
+        public Bitmap32 IconPixels
         {
             get
             {
-                if (!_iconTried) { _iconTried = true; _icon = DecodeIcon(IconBytes); }
+                if (!_iconTried) { _iconTried = true; _icon = Imaging.Decode(IconBytes, 64); }
                 return _icon;
             }
         }
@@ -102,24 +100,6 @@ namespace MoonLauncher.Content
             ModId = o.ModId; Name = o.Name; Version = o.Version; Description = o.Description; Authors = o.Authors;
             Loader = o.Loader; Size = o.Size; Modified = o.Modified; LoadError = o.LoadError; IconBytes = o.IconBytes;
             _iconTried = false; _icon = null;
-        }
-
-        static ImageSource DecodeIcon(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0) return null;
-            try
-            {
-                var bi = new BitmapImage();
-                bi.BeginInit();
-                bi.CacheOption = BitmapCacheOption.OnLoad;
-                bi.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                bi.DecodePixelWidth = 64;
-                bi.StreamSource = new MemoryStream(bytes);
-                bi.EndInit();
-                bi.Freeze();
-                return bi;
-            }
-            catch { return null; }
         }
 
         public override string ToString() => $"{DisplayName} {Version} ({FileName})";
@@ -344,7 +324,7 @@ namespace MoonLauncher.Content
 
         static byte[] ReadEntryBytes(ZipArchive zip, string path)
         {
-            path = path.Replace('\\', '/').TrimStart('/');
+            path = Platform.ToManifestPath(path).TrimStart('/');
             var e = zip.GetEntry(path) ?? zip.Entries.FirstOrDefault(x => string.Equals(x.FullName, path, StringComparison.OrdinalIgnoreCase));
             if (e == null || e.Length <= 0 || e.Length > 4 * 1024 * 1024) return null;
             using (var s = e.Open())
@@ -543,7 +523,7 @@ namespace MoonLauncher.Content
                 if (File.Exists(final)) RecycleBin.Delete(final); // 同名的旧禁用文件
                 File.Move(target, final);
             }
-            if (!string.Equals(old, final, StringComparison.OrdinalIgnoreCase) && !string.Equals(old, target, StringComparison.OrdinalIgnoreCase) && File.Exists(old))
+            if (!string.Equals(old, final, Util.PathComparison) && !string.Equals(old, target, Util.PathComparison) && File.Exists(old))
             {
                 try { RecycleBin.Delete(old); }
                 catch (Exception ex) { Log.Warn($"删除旧版本失败 {old}：{ex.Message}"); }
