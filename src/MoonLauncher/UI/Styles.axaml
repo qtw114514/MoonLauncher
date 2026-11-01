@@ -205,20 +205,20 @@
     <!-- ================= 文字 ================= -->
     <Style Selector="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
     </Style>
 
     <Style Selector="TextBlock.h1">
         <Setter Property="FontSize" Value="{StaticResource Font.H1}"/>
         <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style Selector="TextBlock.h2">
         <Setter Property="FontSize" Value="{StaticResource Font.H2}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
         <Setter Property="Margin" Value="{StaticResource Margin.TextBottom}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
@@ -226,19 +226,19 @@
     <Style Selector="TextBlock.h3">
         <Setter Property="FontSize" Value="{StaticResource Font.H3}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
     </Style>
 
     <Style Selector="TextBlock.body">
         <Setter Property="FontSize" Value="{StaticResource Font.Body}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="LineHeight" Value="{StaticResource LineHeight.Body}"/>
     </Style>
 
     <Style Selector="TextBlock.sub">
         <Setter Property="FontSize" Value="{StaticResource Font.Caption}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text3}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text3}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="LineHeight" Value="{StaticResource LineHeight.Caption}"/>
     </Style>
@@ -251,9 +251,9 @@
 
     <!-- ================= 卡片 ================= -->
     <Style Selector="Border.cardbox">
-        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderGradient}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Card}"/>
         <Setter Property="Margin" Value="{StaticResource Margin.CardBottom}"/>
@@ -264,25 +264,25 @@
     </Style>
 
     <Style Selector="Border.taskrow">
-        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Container}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Container}"/>
         <Setter Property="Margin" Value="{StaticResource Margin.ItemBottom}"/>
     </Style>
 
     <Style Selector="Border.navpill">
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.NavShell}"/>
     </Style>
 
     <Style Selector="Border.dialogborder">
-        <Setter Property="Background" Value="{StaticResource DialogSurface}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="Background" Value="{DynamicResource DialogSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderGradient}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Dialog}"/>
         <Setter Property="BoxShadow" Value="{StaticResource Shadow.Dialog}"/>
@@ -295,9 +295,9 @@
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Control}"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -305,13 +305,13 @@
     </Style>
 
     <Style Selector="Button:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource LineStrong}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
     </Style>
 
     <Style Selector="Button:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentSoft2}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoft2}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
     </Style>
 
     <Style Selector="Button:disabled">
@@ -320,47 +320,47 @@
 
     <!-- 主按钮 -->
     <Style Selector="Button.primary">
-        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
-        <Setter Property="Background" Value="{StaticResource Accent}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+        <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Button.PrimaryHeight}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentHover}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AccentHover}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentHover}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}"/>
     </Style>
 
     <Style Selector="Button.primary:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentPressed}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AccentPressed}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentPressed}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}"/>
     </Style>
 
     <!-- 危险操作 -->
     <Style Selector="Button.dangerbutton">
-        <Setter Property="Foreground" Value="{StaticResource Danger}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Danger}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Danger}"/>
     </Style>
 
     <Style Selector="Button.dangerbutton:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource DangerSoft}"/>
+        <Setter Property="Background" Value="{DynamicResource DangerSoft}"/>
     </Style>
 
     <Style Selector="Button.dangerbutton:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource Danger}"/>
+        <Setter Property="Background" Value="{DynamicResource Danger}"/>
     </Style>
 
     <!-- 无边框按钮 -->
     <Style Selector="Button.ghost">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.TaskAction}"/>
     </Style>
 
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <!-- 顶栏图标按钮 -->
@@ -370,7 +370,7 @@
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
@@ -379,12 +379,12 @@
     </Style>
 
     <Style Selector="Button.titleicon:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <!-- ================= 顶部导航 ================= -->
     <Style Selector="RadioButton.topnav">
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.Body}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Cursor" Value="Hand"/>
@@ -409,28 +409,28 @@
     </Style>
 
     <Style Selector="RadioButton.topnav:pointerover /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <Style Selector="RadioButton.topnav:checked /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource Accent}"/>
     </Style>
 
     <Style Selector="RadioButton.topnav:checked">
-        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
     </Style>
 
     <Style Selector="RadioButton.topnav:checked:pointerover /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource AccentHover}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentHover}"/>
     </Style>
 
     <Style Selector="RadioButton.topnav:checked:pointerover">
-        <Setter Property="Foreground" Value="{StaticResource OnAccentHover}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnAccentHover}"/>
     </Style>
 
     <!-- ================= 侧栏导航 ================= -->
     <Style Selector="RadioButton.sidenav">
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,0,0,2"/>
@@ -455,29 +455,29 @@
     </Style>
 
     <Style Selector="RadioButton.sidenav:pointerover /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <Style Selector="RadioButton.sidenav:checked /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource AccentSoft}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
     </Style>
 
     <Style Selector="RadioButton.sidenav:checked">
-        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <!-- ================= 胶囊筛选 ================= -->
     <Style Selector="RadioButton.pill">
-        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,0,6,6"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Control}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}"/>
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -496,22 +496,22 @@
     </Style>
 
     <Style Selector="RadioButton.pill:pointerover /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <Style Selector="RadioButton.pill:checked /template/ Border#b">
-        <Setter Property="Background" Value="{StaticResource Accent}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
     </Style>
 
     <Style Selector="RadioButton.pill:checked">
-        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
     </Style>
 
     <!-- ================= 开关 ================= -->
     <Style Selector="CheckBox.switch">
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="Margin" Value="0,4"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
@@ -521,24 +521,24 @@
     <Style Selector="TextBox">
         <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
-        <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Text}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Input}"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Input.Height}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="SelectionBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/>
     </Style>
 
     <Style Selector="ComboBox">
         <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
         <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Input}"/>
@@ -554,7 +554,7 @@
     </Style>
 
     <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
     </Style>
 
     <!-- ================= 列表 ================= -->
@@ -569,28 +569,28 @@
         <Setter Property="Margin" Value="{StaticResource Margin.ItemBottom}"/>
         <Setter Property="Padding" Value="{StaticResource Padding.Container}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Container}"/>
-        <Setter Property="Background" Value="{StaticResource Card}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
     </Style>
 
     <Style Selector="ListBox.cardlist ListBoxItem:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource CardHover}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource LineStrong}"/>
+        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
     </Style>
 
     <Style Selector="ListBox.cardlist ListBoxItem:selected /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentSoft}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
     </Style>
 
     <!-- ================= 进度条 ================= -->
     <Style Selector="ProgressBar">
         <Setter Property="Height" Value="6"/>
         <Setter Property="MinHeight" Value="6"/>
-        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
-        <Setter Property="Background" Value="{StaticResource Line}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource Line}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
     </Style>
@@ -601,19 +601,19 @@
     </Style>
 
     <Style Selector="ScrollBar /template/ Thumb">
-        <Setter Property="Background" Value="{StaticResource ScrollThumb}"/>
+        <Setter Property="Background" Value="{DynamicResource ScrollThumb}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
     </Style>
 
     <Style Selector="ScrollBar /template/ Thumb:pointerover">
-        <Setter Property="Background" Value="{StaticResource ScrollThumbHover}"/>
+        <Setter Property="Background" Value="{DynamicResource ScrollThumbHover}"/>
     </Style>
 
     <!-- ================= 其他 ================= -->
     <Style Selector="ToolTip">
-        <Setter Property="Background" Value="{StaticResource DialogSurface}"/>
-        <Setter Property="Foreground" Value="{StaticResource Text}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="Background" Value="{DynamicResource DialogSurface}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderGradient}"/>
         <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
         <Setter Property="Padding" Value="9,5"/>
@@ -621,7 +621,7 @@
     </Style>
 
     <Style Selector="Slider">
-        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
     </Style>
