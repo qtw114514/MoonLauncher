@@ -26,6 +26,7 @@ namespace MoonLauncher.UI.Pages
         bool _refreshing;
         bool _subscribed;
         bool _launching;
+        bool _autoStarted;
         LauncherTask _activeOperation;
         TerracottaState _state;
 
@@ -43,6 +44,21 @@ namespace MoonLauncher.UI.Pages
             RefreshAccounts();
             RefreshInstances();
             RenderState(TerracottaService.Current);
+            _ = AutoEnsureTerracottaAsync();
+        }
+
+        /// <summary>打开联机页时自动安装并启动陶瓦服务（静默，不弹对话框）；失败时保留重试按钮，下次进入再试。</summary>
+        async Task AutoEnsureTerracottaAsync()
+        {
+            if (_autoStarted) return;
+            if (TerracottaService.Current.IsAvailable) { _autoStarted = true; return; }
+            if (_activeOperation != null && _activeOperation.IsActive) return;
+            bool ok = await RunOperationAsync("安装并启动 Terracotta | 陶瓦联机", async t =>
+            {
+                await TerracottaService.EnsureInstalledAsync(t, t.Token);
+                await TerracottaService.StartAsync(t, t.Token);
+            }, quiet: true);
+            if (ok) _autoStarted = true;
         }
 
         void Page_Loaded(object sender, RoutedEventArgs e)
@@ -370,10 +386,10 @@ namespace MoonLauncher.UI.Pages
         }
 
         // ---------- TaskManager 中的陶瓦长任务 ----------
-        Task<bool> RunOperationAsync(string title, Func<LauncherTask, Task> operation)
-            => RunValueOperationAsync(title, async t => { await operation(t); return true; });
+        Task<bool> RunOperationAsync(string title, Func<LauncherTask, Task> operation, bool quiet = false)
+            => RunValueOperationAsync(title, async t => { await operation(t); return true; }, quiet);
 
-        async Task<T> RunValueOperationAsync<T>(string title, Func<LauncherTask, Task<T>> operation)
+        async Task<T> RunValueOperationAsync<T>(string title, Func<LauncherTask, Task<T>> operation, bool quiet = false)
         {
             if (_activeOperation != null && _activeOperation.IsActive)
             {
@@ -399,7 +415,9 @@ namespace MoonLauncher.UI.Pages
             }
             catch (Exception ex)
             {
-                if (IsLoaded) await Dialogs.Alert(title + "失败", TaskManager.Flatten(ex));
+                // quiet：自动流程失败不弹对话框，只用轻提示，界面保留重试入口。
+                if (IsLoaded && quiet) Dialogs.Toast(title + "失败：" + TaskManager.Flatten(ex), MainWindow.ToastKind.Error);
+                else if (IsLoaded) await Dialogs.Alert(title + "失败", TaskManager.Flatten(ex));
                 return default;
             }
             finally
