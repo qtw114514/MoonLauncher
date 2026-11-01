@@ -9,28 +9,35 @@
     <DockPanel Margin="22,18,22,10">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
             <TextBlock x:Name="Header" Text="Mod" Style="{StaticResource H1}"/>
-            <TextBlock Text="搜索社区资源，查看详情与适配文件后再安装。" Style="{StaticResource Sub}" Margin="0,2,0,8"/>
-            <WrapPanel>
-                <RadioButton x:Name="SrcAll" GroupName="src" Style="{StaticResource Pill}" Content="全部" Visibility="Collapsed" Checked="Source_Checked"/>
-                <RadioButton x:Name="SrcModrinth" GroupName="src" Style="{StaticResource Pill}" Content="Modrinth" Checked="Source_Checked"/>
-                <RadioButton x:Name="SrcCurse" GroupName="src" Style="{StaticResource Pill}" Content="CurseForge" Checked="Source_Checked"/>
-            </WrapPanel>
+            <TextBlock Text="搜索社区资源，查看详情与适配文件后再安装。" Style="{StaticResource Sub}" Margin="0,2,0,0"/>
         </StackPanel>
-
-        <Border DockPanel.Dock="Top" Style="{StaticResource TaskRow}" Margin="0,0,0,10">
-            <StackPanel>
-                <StackPanel x:Name="TargetPanel" Orientation="Horizontal">
-                    <TextBlock Text="安装到" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox x:Name="Target" Width="200" SelectionChanged="Target_Changed"/>
-                </StackPanel>
-                <TextBlock x:Name="TargetHint" Style="{StaticResource Sub}" Margin="0,4,0,0"
-                           Text="资源将安装到所选实例；目标独立于当前启动实例。"/>
-            </StackPanel>
-        </Border>
 
         <Border DockPanel.Dock="Top" Style="{StaticResource CardBox}" Margin="0,0,0,10">
             <StackPanel>
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid x:Name="TargetPanel" Grid.Column="0" Margin="0,0,16,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="安装到" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="Target" Grid.Column="1" SelectionChanged="Target_Changed"/>
+                    </Grid>
+                    <WrapPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <RadioButton x:Name="SrcAll" GroupName="src" Style="{StaticResource Pill}" Content="全部" Visibility="Collapsed" Checked="Source_Checked"/>
+                        <RadioButton x:Name="SrcModrinth" GroupName="src" Style="{StaticResource Pill}" Content="Modrinth" Checked="Source_Checked"/>
+                        <RadioButton x:Name="SrcCurse" GroupName="src" Style="{StaticResource Pill}" Content="CurseForge" Checked="Source_Checked"/>
+                    </WrapPanel>
+                </Grid>
+                <TextBlock x:Name="TargetHint" Style="{StaticResource Sub}" Margin="0,4,0,0"
+                           Text="资源将安装到所选实例；目标独立于当前启动实例。"/>
+
+                <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MinWidth="0"/>
                         <ColumnDefinition Width="Auto"/>
