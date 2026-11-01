@@ -4,128 +4,242 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="280"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*" MinWidth="0"/>
         </Grid.ColumnDefinitions>
 
-        <!-- 左栏：账号 + 启动 -->
-        <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
-            <DockPanel Margin="22,26,22,22">
-                <StackPanel DockPanel.Dock="Top" HorizontalAlignment="Center">
-                    <Border Width="84" Height="84" CornerRadius="14" Background="{DynamicResource AccentSoft}" HorizontalAlignment="Center" ClipToBounds="True">
-                        <Grid>
-                            <TextBlock x:Name="AvatarFallback" Text="👤" FontFamily="{StaticResource Icons}" FontSize="34" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Avatar" Stretch="Fill" RenderOptions.BitmapInterpolationMode="None"/>
-                        </Grid>
-                    </Border>
-                    <TextBlock x:Name="PlayerName" Text="未登录" Classes="h1" HorizontalAlignment="Center" Margin="0,14,0,2" TextTrimming="CharacterEllipsis" MaxWidth="230"/>
-                    <TextBlock x:Name="AccountType" Text="点击下方添加账号" Classes="sub" HorizontalAlignment="Center"/>
-                    <Button Classes="ghost" Margin="0,8,0,0" HorizontalAlignment="Center" Click="Accounts_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⇄" Classes="icon" FontSize="12" Margin="0,1,6,0"/>
-                            <TextBlock Text="切换 / 管理账号"/>
+        <!-- 左栏只承载启动上下文：账户、当前实例、启动按钮固定，实例列表只滚动自身。 -->
+        <Grid Margin="0,16,0,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Classes="cardbox" Padding="12">
+                <StackPanel>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Border Width="48" Height="48" CornerRadius="12"
+                                Background="{DynamicResource AccentSoft}" ClipToBounds="True">
+                            <Grid>
+                                <TextBlock Name="AvatarFallback" Text="&#xE77B;"
+                                           FontFamily="{StaticResource Icons}" FontSize="24"
+                                           Foreground="{DynamicResource Accent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Image Name="Avatar" Stretch="Fill"
+                                       RenderOptions.BitmapInterpolationMode="None"/>
+                            </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Name="PlayerName" Text="未登录" Classes="h2" Margin="0"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Name="AccountType" Text="添加账户后即可启动" Classes="sub"
+                                       Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                    <Button Classes="ghost" MinHeight="40" Margin="0,8,0,0" Click="Accounts_Click"
+                            HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                            <TextBlock Text="&#xE8AB;" Classes="icon" FontSize="12"/>
+                            <TextBlock Text="切换 / 管理账户"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
+            </Border>
 
-                <StackPanel DockPanel.Dock="Bottom">
-                    <Button x:Name="LaunchButton" Classes="primary" Height="68" Click="Launch_Click" Padding="0"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                        <StackPanel HorizontalAlignment="Center">
-                            <TextBlock x:Name="LaunchText" Text="启动游戏" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White"/>
-                            <TextBlock x:Name="LaunchSub" Text="未选择版本" FontSize="12" HorizontalAlignment="Center" Foreground="#DDFFFFFF" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220"/>
+            <Border Name="InstanceCard" Grid.Row="1" Classes="cardbox" Padding="12">
+                <StackPanel>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Border Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentSoft}">
+                            <TextBlock Text="&#xE7FC;" FontFamily="{StaticResource Icons}" FontSize="21"
+                                       Foreground="{DynamicResource Accent}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="当前实例" Classes="sub"/>
+                            <TextBlock Name="InstanceName" Text="尚未安装实例" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-                    </Button>
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="10"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Button Content="版本选择" HorizontalAlignment="Stretch" Click="Versions_Click"/>
-                        <Button Grid.Column="2" Content="版本设置" HorizontalAlignment="Stretch" Click="VersionSettings_Click"/>
+                    </Grid>
+                    <TextBlock Name="InstanceDesc" Text="去资源页安装一个版本即可开始。" Classes="sub"
+                               Margin="0,8,0,4" MaxHeight="38"/>
+                    <Grid ColumnDefinitions="*,*,*">
+                        <Button Content="切换" Classes="ghost" MinHeight="40" Padding="4" Click="Versions_Click"/>
+                        <Button Grid.Column="1" Content="设置" Classes="ghost" MinHeight="40" Padding="4" Click="VersionSettings_Click"/>
+                        <Button Grid.Column="2" Content="Mod" Classes="ghost" MinHeight="40" Padding="4" Click="ManageMods_Click"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Content="打开目录" Classes="ghost" MinHeight="40" Padding="4" Click="OpenGameDir_Click"/>
+                        <Button Grid.Column="1" Content="下载 Mod" Classes="ghost" MinHeight="40" Padding="4" Click="DownloadMods_Click"/>
                     </Grid>
                 </StackPanel>
+            </Border>
 
-                <!-- 启动进度 -->
-                <StackPanel x:Name="LaunchProgressPanel" VerticalAlignment="Center" IsVisible="False">
-                    <TextBlock x:Name="LaunchStep" Text="正在启动…" Classes="body" HorizontalAlignment="Center" TextAlignment="Center"/>
-                    <ProgressBar x:Name="LaunchBar" Maximum="1" Margin="0,10,0,6"/>
-                    <Button Content="取消启动" Classes="ghost" HorizontalAlignment="Center" Click="CancelLaunch_Click"/>
+            <Button Name="LaunchButton" Grid.Row="2" Classes="primary" MinHeight="66"
+                    Click="Launch_Click" Padding="8,6" HorizontalAlignment="Stretch">
+                <StackPanel HorizontalAlignment="Center" MaxWidth="240">
+                    <TextBlock Name="LaunchText" Text="启动游戏" FontSize="17" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Foreground="{DynamicResource OnAccent}"/>
+                    <TextBlock Name="LaunchSub" Text="未选择实例" FontSize="11" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource OnAccent}" Opacity="0.85"
+                               Margin="0,3,0,0" TextTrimming="CharacterEllipsis" MaxWidth="190"/>
                 </StackPanel>
-            </DockPanel>
-        </Border>
+            </Button>
 
-        <!-- 右侧：主页内容 -->
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="22,22,22,10">
-                <!-- 自定义主页 -->
-                <Border x:Name="HomeCard" Classes="cardbox" IsVisible="False">
-                    <StackPanel>
-                        <Grid>
-                            <TextBlock Text="主页" Classes="h2"/>
-                            <Button Content="打开原网页" Classes="ghost" HorizontalAlignment="Right" Click="OpenHome_Click"/>
-                        </Grid>
-                        <TextBlock x:Name="HomeHint" Text="当前平台不内嵌网页，点「打开原网页」在系统浏览器里查看（Avalonia 没有 WPF 的 WebBrowser）" Classes="sub" Margin="0,10,0,0" IsVisible="False"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- 游戏运行中 -->
-                <Border x:Name="RunningCard" Classes="cardbox" IsVisible="False">
-                    <StackPanel>
-                        <Grid>
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="9" Height="9" Fill="{DynamicResource Ok}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock x:Name="RunningTitle" Text="游戏运行中" Classes="h2" Margin="0"/>
+            <!-- 实例列表：只在自身内部滚动，不挤压上方启动按钮。 -->
+            <Grid Grid.Row="3" Margin="0,8,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="实例列表" Classes="sub" Foreground="{DynamicResource Accent}"
+                           FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <StackPanel Name="InstanceEmpty" Grid.Row="1" VerticalAlignment="Center" IsVisible="False">
+                    <TextBlock Text="当前游戏目录还没有实例，去资源页安装一个版本即可开始。"
+                               Classes="sub" TextWrapping="Wrap"/>
+                    <Button Content="去下载" Classes="ghost" MinHeight="40"
+                            HorizontalAlignment="Center" Click="GoDownload_Click"/>
+                </StackPanel>
+                <ListBox Name="InstanceList" Grid.Row="1" Classes="cardlist" MaxHeight="200"
+                         SelectionChanged="InstanceList_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" FontSize="13"
+                                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                           ToolTip.Tip="{Binding Id}"/>
+                                <TextBlock Text="{Binding Desc}" Classes="sub"
+                                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                           ToolTip.Tip="{Binding Desc}"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="打开游戏目录" Classes="ghost" Click="OpenGameDir_Click"/>
-                                <Button Content="结束游戏" Classes="dangerbutton" Padding="12,5" Margin="6,0,0,0" Click="KillGame_Click"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Grid>
+
+        <!-- 右栏：状态、进度和新闻始终优先于发现内容。 -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" Padding="0,16,4,16">
+            <StackPanel>
+                <Grid Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                        <TextBlock Name="Greeting" Text="欢迎回来" Classes="h1"/>
+                        <TextBlock Text="状态优先，发现随后。准备回到你的方块世界。" Classes="sub" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="{DynamicResource AccentSoft}" CornerRadius="6"
+                            Padding="8,3" VerticalAlignment="Top" Margin="10,0,0,0">
+                        <TextBlock Text="启动台" Foreground="{DynamicResource Text}" FontSize="11"/>
+                    </Border>
+                </Grid>
+
+                <Border Name="StatusCard" Classes="cardbox" Padding="14,12">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Border Width="38" Height="38" CornerRadius="19"
+                                Background="{DynamicResource AccentSoft}" VerticalAlignment="Top">
+                            <TextBlock Name="StatusIcon" Text="&#xE73E;" FontFamily="{StaticResource Icons}"
+                                       FontSize="17" Foreground="{DynamicResource Ok}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <TextBlock Name="StatusTitle" Text="正在检查启动环境" Classes="h2" Margin="0" TextWrapping="Wrap"/>
+                            <TextBlock Name="StatusDescription" Text="正在读取当前账户与实例。" Classes="sub"
+                                       Margin="0,3,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Name="LaunchProgressPanel" Classes="cardbox" IsVisible="False">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Name="LaunchStep" Text="正在启动…" Classes="h2" Margin="0"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <Button Grid.Column="1" Content="取消启动" Classes="ghost" MinHeight="40"
+                                    Margin="12,-6,-6,-6" Click="CancelLaunch_Click"/>
+                        </Grid>
+                        <ProgressBar Name="LaunchBar" Maximum="1" Margin="0,12,0,4"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Name="RunningCard" Classes="cardbox" IsVisible="False">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="9" Height="9" Fill="{DynamicResource Ok}"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Name="RunningTitle" Text="游戏运行中" Classes="h2" Margin="0"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                                <Button Content="打开目录" Classes="ghost" MinHeight="40" Click="OpenGameDir_Click"/>
+                                <Button Content="结束游戏" Classes="dangerbutton" Padding="12,5"
+                                        Margin="6,0,0,0" Click="KillGame_Click"/>
                             </StackPanel>
                         </Grid>
-                        <TextBox x:Name="GameLog" Margin="0,12,0,0" Height="190" IsReadOnly="True" FontFamily="Consolas, Microsoft YaHei UI" FontSize="11.5"
-                                 VerticalContentAlignment="Top" TextWrapping="NoWrap" Background="#FAFBFD"/>
+                        <TextBox Name="GameLog" Margin="0,12,0,0" Height="190" IsReadOnly="True"
+                                 FontFamily="{StaticResource FontFamily.Mono}" FontSize="11.5"
+                                 VerticalContentAlignment="Top" TextWrapping="NoWrap"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 Background="{DynamicResource Card}"/>
                     </StackPanel>
                 </Border>
 
-                <!-- 欢迎 -->
-                <Border Classes="cardbox">
+                <!-- Hero：Minecraft 官网社区 RSS，只展示真实抓取结果；失败给明确错误与重试，绝不编造。 -->
+                <Border Name="NewsCard" Classes="cardbox" Padding="0">
                     <StackPanel>
-                        <TextBlock x:Name="Greeting" Text="欢迎回来" Classes="h2"/>
-                        <TextBlock Classes="body" Text="选择左边的版本，点“启动游戏”就能开玩。没有版本？去「下载」页装一个，原版、Forge、NeoForge、Fabric、Quilt 都能一键装。"/>
-                        <WrapPanel Margin="0,14,0,0">
-                            <Button x:Name="LatestRelease" Classes="primary" Margin="0,0,10,8" Click="InstallLatest_Click" IsVisible="False"/>
-                            <Button x:Name="LatestSnapshot" Margin="0,0,10,8" Click="InstallLatest_Click" IsVisible="False"/>
-                            <Button Content="浏览全部版本" Classes="ghost" Margin="0,0,0,8" Click="GoDownload_Click"/>
-                        </WrapPanel>
+                        <Grid Name="NewsHero" Height="{StaticResource Size.News.HeroHeight}" IsVisible="False"
+                              Cursor="Hand" PointerPressed="NewsHero_Click">
+                            <Border Background="{DynamicResource AccentSoft}">
+                                <TextBlock Text="&#xE946;" Classes="icon" FontSize="{StaticResource Size.Icon.Lg}"
+                                           Foreground="{DynamicResource Accent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Image Name="NewsHeroImage" Stretch="UniformToFill"/>
+                            <Rectangle Fill="{DynamicResource HeroOverlay}" IsHitTestVisible="False"/>
+                            <StackPanel VerticalAlignment="Bottom" Margin="{StaticResource Margin.Hero}">
+                                <TextBlock Name="NewsHeroDate" Classes="sub" Foreground="{DynamicResource Text2}"/>
+                                <TextBlock Name="NewsHeroTitle" FontSize="{StaticResource Font.H2}" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Text}" TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis" MaxHeight="46"/>
+                                <TextBlock Name="NewsHeroDesc" Classes="sub" Foreground="{DynamicResource Text2}"
+                                           TextTrimming="CharacterEllipsis" Margin="{StaticResource Margin.TextTop}"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Margin="20">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel>
+                                    <TextBlock Text="MINECRAFT · 官方新闻" Classes="sub"
+                                               Foreground="{DynamicResource Accent}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="来自 Minecraft 官网社区 RSS" Classes="body" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="来源" Classes="ghost" MinHeight="40"
+                                        Margin="0,-7,0,0" ToolTip.Tip="打开 minecraft.net 官方新闻源"
+                                        Click="NewsSource_Click"/>
+                            </Grid>
+
+                            <TextBlock Name="NewsLoading" Text="正在加载官方新闻…" Classes="sub" Margin="0,14,0,0"/>
+                            <StackPanel Name="NewsError" IsVisible="False" Margin="0,14,0,0">
+                                <TextBlock Name="NewsErrorText" Classes="body" TextWrapping="Wrap"/>
+                                <Button Content="重试" Classes="ghost" MinHeight="40" HorizontalAlignment="Left"
+                                        Margin="-8,8,0,-6" Click="NewsRetry_Click"/>
+                            </StackPanel>
+                            <StackPanel Name="NewsItems" IsVisible="False" Margin="0,8,0,0"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <!-- 去中心化说明 -->
-                <Border Classes="cardbox">
+                <!-- 自定义主页：Avalonia 没有内嵌浏览器，改为在系统浏览器里打开。 -->
+                <Border Name="HomeCard" Classes="cardbox" IsVisible="False">
                     <StackPanel>
-                        <TextBlock Text="这个启动器没有服务器" Classes="h2"/>
-                        <TextBlock Classes="body">
-                            <Run Text="• 游戏、加载器、Mod 全部直接从官方源和公益镜像下载（Mojang / BMCLAPI / Modrinth / CurseForge / MCIM），哪个能连用哪个。"/>
-                            <LineBreak/>
-                            <Run Text="• 版本列表实时从上游获取，启动器本身就算很久不更新，也能装到最新版本。"/>
-                            <LineBreak/>
-                            <Run Text="• 启动器更新从多个地址拉取签名清单，签名对得上才会更新；任何人都能做镜像，社区也能接手发版。"/>
-                            <LineBreak/>
-                            <Run Text="• 不收集任何数据，账号令牌只加密保存在你这台电脑上。"/>
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
-
-                <!-- 当前版本摘要 -->
-                <Border x:Name="InstanceCard" Classes="cardbox" IsVisible="False">
-                    <StackPanel>
-                        <TextBlock Text="当前版本" Classes="h2"/>
-                        <TextBlock x:Name="InstanceDesc" Classes="body"/>
-                        <WrapPanel Margin="0,10,0,0">
-                            <Button Content="打开游戏目录" Margin="0,0,8,6" Click="OpenGameDir_Click"/>
-                            <Button Content="管理 Mod" Margin="0,0,8,6" Click="ManageMods_Click"/>
-                            <Button Content="下载 Mod" Margin="0,0,8,6" Click="DownloadMods_Click"/>
-                        </WrapPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="自定义主页" Classes="h2"/>
+                            <Button Grid.Column="1" Content="打开原网页" Classes="ghost" MinHeight="40"
+                                    HorizontalAlignment="Right" Margin="0,-7,0,0" Click="OpenHome_Click"/>
+                        </Grid>
+                        <TextBlock Name="HomeHint" Text="当前平台不内嵌网页，点「打开原网页」在系统浏览器里查看。"
+                                   Classes="sub" Margin="0,10,0,0" IsVisible="False"/>
                     </StackPanel>
                 </Border>
             </StackPanel>

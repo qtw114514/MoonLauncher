@@ -44,6 +44,7 @@ namespace MoonLauncher.UI.Pages
             RefreshVersion();
             RefreshLaunchState();
             if (!_latestLoaded) _ = LoadLatestAsync();
+            if (!_newsLoaded && !_newsLoading) _ = LoadNewsAsync();
         }
 
         /// <summary>首次使用只串联现有账号和下载页面，不让 Java、内存等高级选项挡住新手。</summary>
@@ -77,6 +78,19 @@ namespace MoonLauncher.UI.Pages
             LaunchButton.IsEnabled = !running && !starting;
             LaunchText.Text = running ? "游戏运行中" : starting ? "正在启动…" : _lastLaunchError != null ? "重试启动" : "启动游戏";
             if (running) RunningCard.IsVisible = true;
+
+            // 状态卡：把“差什么”直接说清楚，而不是让用户自己排查
+            var acc = AccountStore.Selected;
+            var inst = SelectedInstance();
+            string title, desc;
+            if (running) { title = "游戏正在运行"; desc = "需要修改变量时先结束游戏。"; }
+            else if (starting) { title = "正在启动游戏"; desc = "首次启动需要准备资源文件，可能需要几分钟。"; }
+            else if (acc == null) { title = "还没有登录账户"; desc = "添加一个账户后即可启动游戏。"; }
+            else if (inst == null) { title = "还没有安装版本"; desc = "去资源页挑一个版本安装，原版与常见加载器都支持。"; }
+            else if (_lastLaunchError != null) { title = "上次启动失败"; desc = _lastLaunchError; }
+            else { title = "准备就绪"; desc = $"将以 {acc.Name} 启动 {inst.Id}。"; }
+            StatusTitle.Text = title;
+            StatusDescription.Text = desc;
         }
 
         // ---------- 账号 ----------
@@ -167,14 +181,43 @@ namespace MoonLauncher.UI.Pages
             if (inst == null)
             {
                 LaunchSub.Text = "还没有安装任何版本";
+                InstanceName.Text = "尚未安装实例";
                 InstanceCard.IsVisible = true;
-                InstanceDesc.Text = $"尚未安装版本\n游戏目录：{GameRepo.Current.Root}\n点击“浏览全部版本”开始安装。";
+                InstanceDesc.Text = $"尚未安装版本\n游戏目录：{GameRepo.Current.Root}\n去资源页安装一个版本即可开始。";
+                RefreshInstances();
                 RefreshLaunchState();
                 return;
             }
             LaunchSub.Text = inst.Id;
+            InstanceName.Text = inst.Id;
             InstanceCard.IsVisible = true;
-            InstanceDesc.Text = $"{inst.Id}\n{inst.Description}\n游戏目录：{inst.GameDir}" + (inst.Isolated ? "（已开启版本隔离）" : "");
+            InstanceDesc.Text = $"{inst.Description}\n游戏目录：{inst.GameDir}" + (inst.Isolated ? "（已开启版本隔离）" : "");
+            RefreshInstances();
+            RefreshLaunchState();
+        }
+
+        /// <summary>刷新左下角的实例列表；只列有效实例，按目录修改时间倒序。</summary>
+        public void RefreshInstances()
+        {
+            if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post((Action)RefreshInstances); return; }
+            var items = GameRepo.Current.ListInstances()
+                .Where(i => i.IsValid)
+                .OrderByDescending(i => Directory_LastWrite(i.Dir))
+                .ToList();
+            InstanceList.ItemsSource = items;
+            bool empty = items.Count == 0;
+            InstanceEmpty.IsVisible = empty;
+            InstanceList.IsVisible = !empty;
+            var cur = SelectedInstance();
+            if (cur != null) InstanceList.SelectedItem = items.FirstOrDefault(i => i.Id == cur.Id);
+        }
+
+        void InstanceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (InstanceList.SelectedItem is not Instance inst) return;
+            if (Settings.SelectedVersion == inst.Id) return;
+            Settings.SelectedVersion = inst.Id;
+            RefreshVersion();
             RefreshLaunchState();
         }
 
@@ -212,25 +255,9 @@ namespace MoonLauncher.UI.Pages
         {
             try
             {
-                var list = await Task.Run(() => VersionList.GetMinecraftAsync());
+                // 只做缓存预热：最新版本的快捷入口在新版资源页里，不在启动台
+                await Task.Run(() => VersionList.GetMinecraftAsync());
                 _latestLoaded = true;
-                var rel = list.FirstOrDefault(v => v.Type == "release");
-                var snap = list.FirstOrDefault(v => v.Type == "snapshot" && !v.IsAprilFools);
-                var repo = GameRepo.Current;
-                if (rel != null)
-                {
-                    LatestRelease.Content = repo.HasVersion(rel.Id) ? $"最新正式版 {rel.Id}（已安装）" : $"安装最新正式版 {rel.Id}";
-                    LatestRelease.Tag = rel.Id;
-                    LatestRelease.IsEnabled = !repo.HasVersion(rel.Id);
-                    LatestRelease.IsVisible = true;
-                }
-                if (snap != null && list.IndexOf(snap) < list.IndexOf(rel))
-                {
-                    LatestSnapshot.Content = $"最新快照 {snap.Id}";
-                    LatestSnapshot.Tag = snap.Id;
-                    LatestSnapshot.IsEnabled = !repo.HasVersion(snap.Id);
-                    LatestSnapshot.IsVisible = true;
-                }
             }
             catch (Exception ex) { Log.Warn("获取最新版本失败：" + ex.Message); }
         }
@@ -439,5 +466,132 @@ namespace MoonLauncher.UI.Pages
         }
 
         void KillGame_Click(object sender, RoutedEventArgs e) => _session?.Kill();
+
+        // ---------- 官方新闻 ----------
+        bool _newsLoading, _newsLoaded;
+        string _heroLink, _heroImageUrl;
+
+        async Task LoadNewsAsync()
+        {
+            if (_newsLoading) return;
+            _newsLoading = true;
+            try
+            {
+                NewsLoading.IsVisible = true;
+                NewsError.IsVisible = false;
+                NewsItems.IsVisible = false;
+                NewsHero.IsVisible = false;
+                NewsHeroImage.Source = null;
+                _heroLink = null;
+                _heroImageUrl = null;
+
+                MinecraftNews.Result result;
+                try { result = await Task.Run(() => MinecraftNews.LoadAsync()); }
+                catch (Exception ex) { result = new MinecraftNews.Result { Error = "加载官方新闻失败：" + ex.Message }; }
+
+                NewsLoading.IsVisible = false;
+                if (result.Error != null)
+                {
+                    NewsErrorText.Text = result.Error;
+                    NewsError.IsVisible = true;
+                    return;
+                }
+
+                NewsItems.Children.Clear();
+                if (result.FromCache)
+                {
+                    NewsItems.Children.Add(new TextBlock
+                    {
+                        Text = "暂时连不上官网，以下为本地缓存（1 小时内）内容。",
+                        Classes = { "sub" },
+                        Margin = new Thickness(0, 0, 0, 6),
+                    });
+                }
+
+                // 首条新闻：顶部大图横幅（标题/日期/摘要压在深蓝黑渐变承托上），点击打开原文。
+                if (result.Items.Count > 0)
+                {
+                    var hero = result.Items[0];
+                    NewsHeroDate.Text = hero.Date;
+                    NewsHeroTitle.Text = hero.Title;
+                    NewsHeroDesc.Text = hero.Description;
+                    _heroLink = hero.Link;
+                    ToolTip.SetTip(NewsHero, string.IsNullOrEmpty(hero.Link) ? null : hero.Link + "（点击打开原文）");
+                    NewsHero.IsVisible = true;
+                    if (!string.IsNullOrEmpty(hero.ImageUrl))
+                    {
+                        _heroImageUrl = hero.ImageUrl;
+                        _ = LoadHeroImageAsync(hero.ImageUrl);
+                    }
+                }
+
+                bool first = true;
+                foreach (var item in result.Items.Skip(1))
+                {
+                    if (!first)
+                        NewsItems.Children.Add(new Border { Height = 1, Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 4, 0, 4), IsHitTestVisible = false });
+                    AddNewsItem(item);
+                    first = false;
+                }
+
+                NewsItems.IsVisible = true;
+                _newsLoaded = true;
+            }
+            catch (Exception ex) { Log.Warn("更新官方新闻界面失败：" + ex.Message); }
+            finally { _newsLoading = false; }
+        }
+
+        /// <summary>后台下载横幅图（磁盘 + 内存缓存）；失败时保留图标兜底，不崩。</summary>
+        async Task LoadHeroImageAsync(string url)
+        {
+            try
+            {
+                var src = await RemoteImage.LoadAsync(url, 960);
+                if (src != null && _heroImageUrl == url) NewsHeroImage.Source = src;
+            }
+            catch (Exception ex) { Log.Warn("加载新闻头图失败：" + ex.Message); }
+        }
+
+        void AddNewsItem(MinecraftNews.Item item)
+        {
+            var panel = new StackPanel { Spacing = 2 };
+            panel.Children.Add(new TextBlock { Text = item.Date, Classes = { "sub" } });
+            panel.Children.Add(new TextBlock
+            {
+                Text = item.Title,
+                FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            });
+            if (!string.IsNullOrEmpty(item.Description))
+                panel.Children.Add(new TextBlock
+                {
+                    Text = item.Description,
+                    Classes = { "sub" },
+                    TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+                    MaxHeight = 36,
+                });
+
+            var button = new Button
+            {
+                Content = panel,
+                Classes = { "ghost" },
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+                Padding = new Thickness(0, 6),
+                Background = Avalonia.Media.Brushes.Transparent,
+            };
+            var link = item.Link;
+            button.Click += (s, e) => { if (!string.IsNullOrEmpty(link)) Util.OpenUrl(link); };
+            NewsItems.Children.Add(button);
+        }
+
+        void NewsHero_Click(object sender, Avalonia.Input.PointerPressedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_heroLink)) Util.OpenUrl(_heroLink);
+        }
+
+        void NewsSource_Click(object sender, RoutedEventArgs e) => Util.OpenUrl(MinecraftNews.SourceUrl);
+
+        void NewsRetry_Click(object sender, RoutedEventArgs e) => _ = LoadNewsAsync();
     }
 }
