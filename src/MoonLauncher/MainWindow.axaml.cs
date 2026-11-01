@@ -19,8 +19,8 @@ namespace MoonLauncher
 {
     /// <summary>
     /// 主窗口（Avalonia 版）。
-    /// WPF 的自绘标题栏（WindowChrome）换成了系统标题栏 + 顶部导航条：
-    /// 这样三个平台的窗口按钮、缩放、全屏都由系统处理，不用各自适配。
+    /// WPF 分支用 WindowChrome 自绘标题栏；这里改用扩展客户区 + 自绘顶栏，
+    /// macOS 保留系统红绿灯，Windows / Linux 自己画最小化、最大化、关闭。
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -42,6 +42,9 @@ namespace MoonLauncher
         {
             InitializeComponent();
             Current = this;
+
+            // macOS 用系统红绿灯，不另画窗口按钮；复制粘贴到左上角会和品牌区抢位置
+            WindowButtons.IsVisible = !OperatingSystem.IsMacOS();
 
             VersionTag.Text = "v" + AppInfo.VersionString;
             TryLoadIcon();
@@ -190,6 +193,28 @@ namespace MoonLauncher
             TaskLayer.IsVisible = show;
             NoTasks.IsVisible = TaskManager.Tasks.Count == 0;
         }
+
+        // ---------- 顶栏拖动与窗口按钮 ----------
+        void TitleBar_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e)
+        {
+            // 只响应标题栏空白处的左键拖动；按钮自己的点击不能被吞掉
+            if (e.Source is Button || e.Source is RadioButton) return;
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+            if (e.ClickCount == 2) { ToggleMaximize(); return; }
+            BeginMoveDrag(e);
+        }
+
+        void TaskScrim_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e) => ToggleTasks(false);
+
+        void Min_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+            WindowState = WindowState.Minimized;
+
+        void Max_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => ToggleMaximize();
+
+        void Close_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();
+
+        void ToggleMaximize() =>
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
         void UpdateTaskBadge()
         {

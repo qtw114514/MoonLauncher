@@ -40,7 +40,7 @@ namespace MoonLauncher
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 desktop.Exit += (s, e) => Settings.SaveNow();
                 // 自更新装好后要求退出当前进程，由界面层决定怎么退
-                Updater.ExitRequested += desktop.Shutdown;
+                Updater.ExitRequested += () => desktop.Shutdown();
                 var win = new MainWindow();
                 desktop.MainWindow = win;
                 if (desktop.Args != null) MainWindow.StartupPages = desktop.Args;

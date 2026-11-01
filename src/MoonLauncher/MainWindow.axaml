@@ -3,48 +3,92 @@
         x:Class="MoonLauncher.MainWindow"
         Title="MoonLauncher" Width="980" Height="620" MinWidth="840" MinHeight="540"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource Bg}"
-        FontFamily="Microsoft YaHei UI, Segoe UI, PingFang SC, Noto Sans CJK SC, sans-serif"
-        Foreground="{DynamicResource Text}">
+        Background="{StaticResource Bg}"
+        FontFamily="{StaticResource UiFont}"
+        Foreground="{StaticResource Text}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Grid RowDefinitions="52,*">
+    <Grid RowDefinitions="68,*" ClipToBounds="True">
 
-        <!-- ===== 顶部：品牌 + 导航 ===== -->
-        <Border Grid.Row="0" Background="{DynamicResource TitleBrush}">
-            <Grid>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Image Name="AppIcon" Width="26" Height="26" VerticalAlignment="Center"/>
-                    <TextBlock Text="MoonLauncher" Foreground="White" FontSize="15" FontWeight="SemiBold"
-                               VerticalAlignment="Center" Margin="9,0,0,0"/>
-                    <Border Background="#33FFFFFF" CornerRadius="4" Padding="5,1" Margin="8,2,0,0" VerticalAlignment="Center">
-                        <TextBlock Name="VersionTag" Foreground="White" FontSize="10.5"/>
+        <!-- 背景氛围光：蓝主光 + 靛蓝辅光 -->
+        <Rectangle Grid.Row="1" Fill="{StaticResource GlowGreen}" IsHitTestVisible="False"/>
+        <Rectangle Grid.Row="1" Fill="{StaticResource GlowTeal}" IsHitTestVisible="False"/>
+
+        <!-- ===== 顶栏：品牌 + 主导航胶囊 + 任务与窗口按钮 ===== -->
+        <Border Grid.Row="0" Background="{StaticResource TitleBrush}"
+                BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1"
+                PointerPressed="TitleBar_PointerPressed">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.ColumnSpan="3" Height="{StaticResource Size.Highlight.Height}"
+                        VerticalAlignment="Top" Background="{StaticResource TopHighlight}"
+                        IsHitTestVisible="False"/>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="{StaticResource Margin.Brand}" Spacing="9">
+                    <Image Name="AppIcon" Width="{StaticResource Size.Brand.Icon}"
+                           Height="{StaticResource Size.Brand.Icon}"
+                           RenderOptions.BitmapInterpolationMode="None"/>
+                    <TextBlock Text="MoonLauncher" Foreground="{StaticResource Text}"
+                               FontSize="{StaticResource Font.H3}" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <Border Background="{StaticResource Card}" CornerRadius="{StaticResource Radius.Small}"
+                            Padding="{StaticResource Padding.Badge}" VerticalAlignment="Center">
+                        <TextBlock Name="VersionTag" Foreground="{StaticResource Text2}"
+                                   FontSize="{StaticResource Font.Micro}"/>
                     </Border>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <RadioButton Name="NavLaunch" GroupName="nav" Classes="topnav" Content="启动" IsChecked="True" Checked="Nav_Checked"/>
-                    <RadioButton Name="NavDownload" GroupName="nav" Classes="topnav" Content="下载" Checked="Nav_Checked"/>
-                    <RadioButton Name="NavSettings" GroupName="nav" Classes="topnav" Content="设置" Checked="Nav_Checked"/>
-                    <RadioButton Name="NavMore" GroupName="nav" Classes="topnav" Content="更多" Checked="Nav_Checked"/>
-                </StackPanel>
+                <Border Grid.Column="1" Classes="navpill" HorizontalAlignment="Center"
+                        VerticalAlignment="Center" MinWidth="{StaticResource Size.Nav.GroupWidth}">
+                    <UniformGrid Rows="1">
+                        <RadioButton Name="NavLaunch" GroupName="nav" Classes="topnav"
+                                     Content="启动" IsChecked="True" Checked="Nav_Checked"/>
+                        <RadioButton Name="NavDownload" GroupName="nav" Classes="topnav"
+                                     Content="资源" Checked="Nav_Checked"/>
+                        <RadioButton Name="NavSettings" GroupName="nav" Classes="topnav"
+                                     Content="设置" Checked="Nav_Checked"/>
+                        <RadioButton Name="NavMore" GroupName="nav" Classes="topnav"
+                                     Content="更多" Checked="Nav_Checked"/>
+                    </UniformGrid>
+                </Border>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
-                    <Button Name="TasksButton" Classes="topnav" Click="Tasks_Click">
-                        <TextBlock Text="任务" FontSize="13"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center" Margin="{StaticResource Margin.WindowButtons}" Spacing="2">
+                    <Button Name="TasksButton" Classes="titleicon" Click="Tasks_Click" ToolTip.Tip="下载任务">
+                        <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.BodySmall}"/>
                     </Button>
-                    <TextBlock Name="TaskCount" Foreground="#DDFFFFFF" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                    <TextBlock Name="TaskCount" Foreground="{StaticResource Text2}"
+                               FontSize="{StaticResource Font.Caption}"
+                               VerticalAlignment="Center" Margin="2,0,6,0"/>
+
+                    <!-- 自绘窗口按钮：macOS 保留系统红绿灯，这里按平台隐藏 -->
+                    <StackPanel Name="WindowButtons" Orientation="Horizontal" Spacing="2" IsVisible="False">
+                        <Button Classes="titleicon" Click="Min_Click" ToolTip.Tip="最小化">
+                            <TextBlock Text="&#xE921;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                        </Button>
+                        <Button Name="MaxButton" Classes="titleicon" Click="Max_Click" ToolTip.Tip="最大化">
+                            <TextBlock Text="&#xE922;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                        </Button>
+                        <Button Classes="titleicon" Click="Close_Click" ToolTip.Tip="关闭">
+                            <TextBlock Text="&#xE8BB;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- ===== 页面 ===== -->
-        <ContentControl Name="PageHost" Grid.Row="1"/>
+        <ContentControl Name="PageHost" Grid.Row="1" Focusable="False"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
         <!-- ===== 任务抽屉 ===== -->
         <Grid Name="TaskLayer" Grid.Row="1" IsVisible="False">
-            <Border Background="#22101828"/>
-            <Border HorizontalAlignment="Right" Width="380" Background="{DynamicResource Card}"
-                    BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
+            <Border Background="{StaticResource Scrim}" PointerPressed="TaskScrim_PointerPressed"/>
+            <Border HorizontalAlignment="Right" Width="{StaticResource Size.Task.DrawerWidth}"
+                    Background="{StaticResource DialogSurface}"
+                    BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0">
                 <DockPanel>
                     <Grid DockPanel.Dock="Top" Margin="18,14,12,8" ColumnDefinitions="*,Auto">
                         <TextBlock Text="任务" Classes="h1" VerticalAlignment="Center"/>
@@ -59,7 +103,7 @@
                         <ItemsControl Name="TaskList" Margin="14,0,14,14">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="{DynamicResource Bg}" CornerRadius="9" Padding="12,10" Margin="0,0,0,8">
+                                    <Border Classes="taskrow">
                                         <StackPanel>
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
@@ -70,7 +114,8 @@
                                                          Value="{Binding Progress, Mode=OneWay}"
                                                          IsIndeterminate="{Binding Indeterminate, Mode=OneWay}"
                                                          IsVisible="{Binding IsActive}"/>
-                                            <TextBlock Text="{Binding Detail}" Classes="sub" MaxHeight="120" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Detail}" Classes="sub"
+                                                       MaxHeight="{StaticResource Size.Task.DetailMaxHeight}" Margin="0,2,0,0"/>
                                             <Grid Margin="0,4,0,0" ColumnDefinitions="*,Auto">
                                                 <TextBlock Classes="sub" VerticalAlignment="Center">
                                                     <Run Text="{Binding ProgressText, Mode=OneWay}"/>
@@ -100,13 +145,15 @@
 
         <!-- ===== Toast ===== -->
         <Border Name="ToastBox" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                Margin="0,0,0,26" Background="#EE1F2633" CornerRadius="18" Padding="18,9"
+                Margin="{StaticResource Margin.Toast}" Background="#EE1F2633"
+                CornerRadius="{StaticResource Radius.Pill}" Padding="{StaticResource Padding.Toast}"
                 IsVisible="False" IsHitTestVisible="False" MaxWidth="600">
-            <TextBlock Name="ToastText" Foreground="White" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center"/>
+            <TextBlock Name="ToastText" Foreground="White" FontSize="{StaticResource Font.BodySmall}"
+                       TextWrapping="Wrap" VerticalAlignment="Center"/>
         </Border>
 
         <!-- ===== 对话框层 ===== -->
-        <Grid Name="DialogLayer" Grid.RowSpan="2" IsVisible="False" Background="#73101828">
+        <Grid Name="DialogLayer" Grid.RowSpan="2" IsVisible="False" Background="{StaticResource Scrim}">
             <ContentControl Name="DialogHost" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Grid>
     </Grid>

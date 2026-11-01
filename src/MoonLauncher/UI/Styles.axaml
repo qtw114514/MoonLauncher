@@ -1,211 +1,563 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <Styles.Resources>
-        <!-- ===== 颜色（Accent 系列在运行时按主题色替换，见 UI/Theme.cs） ===== -->
+        <!-- ===== 设计令牌（与 WPF 分支一致，换色只需改这里） ===== -->
         <Color x:Key="AccentColor">#2F7BF5</Color>
-        <SolidColorBrush x:Key="Accent" Color="#2F7BF5"/>
-        <SolidColorBrush x:Key="AccentHover" Color="#4A8DF7"/>
-        <SolidColorBrush x:Key="AccentPressed" Color="#2468D6"/>
-        <SolidColorBrush x:Key="AccentSoft" Color="#E6EFFE"/>
-        <SolidColorBrush x:Key="AccentSoft2" Color="#D3E3FD"/>
+        <Color x:Key="AccentHoverColor">#5493F7</Color>
+        <Color x:Key="AccentPressedColor">#2560BF</Color>
+        <Color x:Key="AccentSoftColor">#11274A</Color>
+        <Color x:Key="AccentSoft2Color">#163667</Color>
+        <Color x:Key="OnAccentColor">#0A1524</Color>
+        <Color x:Key="OnAccentHoverColor">#0A1524</Color>
+        <Color x:Key="OnAccentPressedColor">#FFFFFF</Color>
+        <Color x:Key="SelectionGlowColor">#592F7BF5</Color>
 
-        <SolidColorBrush x:Key="Bg" Color="#EEF2F8"/>
-        <SolidColorBrush x:Key="Card" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="CardHover" Color="#F7F9FC"/>
-        <SolidColorBrush x:Key="Line" Color="#E3E8F0"/>
-        <SolidColorBrush x:Key="Text" Color="#1F2633"/>
-        <SolidColorBrush x:Key="Text2" Color="#5B6474"/>
-        <SolidColorBrush x:Key="Text3" Color="#8E97A6"/>
-        <SolidColorBrush x:Key="Danger" Color="#E5484D"/>
-        <SolidColorBrush x:Key="DangerSoft" Color="#FDECEC"/>
-        <SolidColorBrush x:Key="Ok" Color="#22A06B"/>
-        <SolidColorBrush x:Key="OkSoft" Color="#E3F6EE"/>
-        <SolidColorBrush x:Key="Warn" Color="#E08A00"/>
-        <SolidColorBrush x:Key="WarnSoft" Color="#FFF4E0"/>
-        <SolidColorBrush x:Key="TitleBrush" Color="#2F7BF5"/>
+        <Color x:Key="BackgroundColor">#0A1524</Color>
+        <Color x:Key="CardColor">#13FFFFFF</Color>
+        <Color x:Key="CardHoverColor">#1FFFFFFF</Color>
+        <Color x:Key="SurfaceElevatedColor">#26FFFFFF</Color>
+        <Color x:Key="DialogSurfaceColor">#F20E1C30</Color>
+        <Color x:Key="ScrimColor">#990A1424</Color>
+        <Color x:Key="LineColor">#22FFFFFF</Color>
+        <Color x:Key="LineStrongColor">#40FFFFFF</Color>
+        <Color x:Key="ControlBorderColor">#59FFFFFF</Color>
+        <Color x:Key="TextColor">#EFF4FB</Color>
+        <Color x:Key="Text2Color">#9DB2CE</Color>
+        <Color x:Key="Text3Color">#7E93B0</Color>
+        <Color x:Key="TextDisabledColor">#64788F</Color>
+        <Color x:Key="DangerColor">#FF5A5F</Color>
+        <Color x:Key="OnDangerColor">#0A1524</Color>
+        <Color x:Key="DangerSoftColor">#33FF5A5F</Color>
+        <Color x:Key="OkColor">#34C77B</Color>
+        <Color x:Key="OnOkColor">#0A1524</Color>
+        <Color x:Key="OkSoftColor">#3334C77B</Color>
+        <Color x:Key="WarnColor">#FFB020</Color>
+        <Color x:Key="OnWarningColor">#0A1524</Color>
+        <Color x:Key="WarnSoftColor">#33FFB020</Color>
+        <Color x:Key="FocusColor">#7FB2FF</Color>
+        <Color x:Key="HighlightTopColor">#17FFFFFF</Color>
+        <Color x:Key="ScrollThumbColor">#59FFFFFF</Color>
+        <Color x:Key="ScrollThumbHoverColor">#80FFFFFF</Color>
 
-        <!-- 图标字体：WPF 版用 Windows 的 Segoe MDL2 Assets（独占），这里改成各平台都有的回退链。
-             macOS/Linux 上个别码位会缺字形，页面重写时建议逐步换成 PathIcon。 -->
-        <FontFamily x:Key="Icons">Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, Segoe MDL2 Assets, Apple Symbols, sans-serif</FontFamily>
+        <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}"/>
+        <SolidColorBrush x:Key="AccentHover" Color="{StaticResource AccentHoverColor}"/>
+        <SolidColorBrush x:Key="AccentPressed" Color="{StaticResource AccentPressedColor}"/>
+        <SolidColorBrush x:Key="AccentSoft" Color="{StaticResource AccentSoftColor}"/>
+        <SolidColorBrush x:Key="AccentSoft2" Color="{StaticResource AccentSoft2Color}"/>
+        <SolidColorBrush x:Key="OnAccent" Color="{StaticResource OnAccentColor}"/>
+        <SolidColorBrush x:Key="OnAccentHover" Color="{StaticResource OnAccentHoverColor}"/>
+        <SolidColorBrush x:Key="OnAccentPressed" Color="{StaticResource OnAccentPressedColor}"/>
+        <SolidColorBrush x:Key="SelectionGlow" Color="{StaticResource SelectionGlowColor}"/>
+
+        <SolidColorBrush x:Key="Bg" Color="{StaticResource BackgroundColor}"/>
+        <SolidColorBrush x:Key="Card" Color="{StaticResource CardColor}"/>
+        <SolidColorBrush x:Key="CardHover" Color="{StaticResource CardHoverColor}"/>
+        <SolidColorBrush x:Key="SurfaceElevated" Color="{StaticResource SurfaceElevatedColor}"/>
+        <SolidColorBrush x:Key="DialogSurface" Color="{StaticResource DialogSurfaceColor}"/>
+        <SolidColorBrush x:Key="Scrim" Color="{StaticResource ScrimColor}"/>
+        <SolidColorBrush x:Key="Line" Color="{StaticResource LineColor}"/>
+        <SolidColorBrush x:Key="LineStrong" Color="{StaticResource LineStrongColor}"/>
+        <SolidColorBrush x:Key="ControlBorder" Color="{StaticResource ControlBorderColor}"/>
+        <SolidColorBrush x:Key="Text" Color="{StaticResource TextColor}"/>
+        <SolidColorBrush x:Key="Text2" Color="{StaticResource Text2Color}"/>
+        <SolidColorBrush x:Key="Text3" Color="{StaticResource Text3Color}"/>
+        <SolidColorBrush x:Key="TextDisabled" Color="{StaticResource TextDisabledColor}"/>
+        <SolidColorBrush x:Key="Danger" Color="{StaticResource DangerColor}"/>
+        <SolidColorBrush x:Key="OnDanger" Color="{StaticResource OnDangerColor}"/>
+        <SolidColorBrush x:Key="DangerSoft" Color="{StaticResource DangerSoftColor}"/>
+        <SolidColorBrush x:Key="Ok" Color="{StaticResource OkColor}"/>
+        <SolidColorBrush x:Key="OnOk" Color="{StaticResource OnOkColor}"/>
+        <SolidColorBrush x:Key="OkSoft" Color="{StaticResource OkSoftColor}"/>
+        <SolidColorBrush x:Key="Warn" Color="{StaticResource WarnColor}"/>
+        <SolidColorBrush x:Key="OnWarning" Color="{StaticResource OnWarningColor}"/>
+        <SolidColorBrush x:Key="WarnSoft" Color="{StaticResource WarnSoftColor}"/>
+        <SolidColorBrush x:Key="Focus" Color="{StaticResource FocusColor}"/>
+        <SolidColorBrush x:Key="ScrollThumb" Color="{StaticResource ScrollThumbColor}"/>
+        <SolidColorBrush x:Key="ScrollThumbHover" Color="{StaticResource ScrollThumbHoverColor}"/>
+
+        <!-- 边框渐变：卡片与对话框的高光描边 -->
+        <LinearGradientBrush x:Key="BorderGradient" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#E6FFFFFF" Offset="0"/>
+            <GradientStop Color="#80FFFFFF" Offset="0.45"/>
+            <GradientStop Color="#4D9FB4D6" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="TopHighlight" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Color="#17FFFFFF" Offset="0"/>
+            <GradientStop Color="#00000000" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- 背景氛围光：蓝主光 + 靛蓝辅光（键名沿用 WPF 版，页面无需改） -->
+        <RadialGradientBrush x:Key="GlowGreen" RadiusX="0.8" RadiusY="0.8" Center="15%,5%" GradientOrigin="15%,5%">
+            <GradientStop Color="#332F7BF5" Offset="0"/>
+            <GradientStop Color="#002F7BF5" Offset="1"/>
+        </RadialGradientBrush>
+
+        <RadialGradientBrush x:Key="GlowTeal" RadiusX="0.7" RadiusY="0.7" Center="90%,80%" GradientOrigin="90%,80%">
+            <GradientStop Color="#262052C4" Offset="0"/>
+            <GradientStop Color="#002052C4" Offset="1"/>
+        </RadialGradientBrush>
+
+        <!-- 新闻头图承托：深蓝黑纵向渐变，上透明下实 -->
+        <LinearGradientBrush x:Key="HeroOverlay" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Color="#00000000" Offset="0"/>
+            <GradientStop Color="#730A1524" Offset="0.45"/>
+            <GradientStop Color="#F20A1524" Offset="1"/>
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="TitleBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#F2102545" Offset="0"/>
+            <GradientStop Color="#F20C1A2E" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- 图标字体：WPF 版独占的 Segoe MDL2 Assets 在 macOS/Linux 上不可用，
+             这里给出各平台都有的回退链。个别码位可能缺字形，新界面优先用 PathIcon。 -->
+        <FontFamily x:Key="Icons">Segoe MDL2 Assets, Segoe UI Symbol, Apple Symbols, Noto Sans Symbols, sans-serif</FontFamily>
+        <FontFamily x:Key="UiFont">Inter, Segoe UI, Microsoft YaHei UI, PingFang SC, Noto Sans CJK SC, sans-serif</FontFamily>
+        <FontFamily x:Key="FontFamily.Mono">Consolas, SF Mono, Menlo, Noto Sans Mono CJK SC, monospace</FontFamily>
 
         <CornerRadius x:Key="R">10</CornerRadius>
+        <CornerRadius x:Key="Radius.Window">22</CornerRadius>
+        <CornerRadius x:Key="Radius.Dialog">22</CornerRadius>
+        <CornerRadius x:Key="Radius.Card">18</CornerRadius>
+        <CornerRadius x:Key="Radius.Container">13</CornerRadius>
+        <CornerRadius x:Key="Radius.Control">10</CornerRadius>
+        <CornerRadius x:Key="Radius.Small">8</CornerRadius>
+        <CornerRadius x:Key="Radius.Pill">999</CornerRadius>
+
+        <sys:Double x:Key="Space.1">4</sys:Double>
+        <sys:Double x:Key="Space.2">8</sys:Double>
+        <sys:Double x:Key="Space.3">12</sys:Double>
+        <sys:Double x:Key="Space.4">16</sys:Double>
+        <sys:Double x:Key="Space.5">20</sys:Double>
+        <sys:Double x:Key="Space.6">24</sys:Double>
+        <sys:Double x:Key="Space.8">32</sys:Double>
+        <sys:Double x:Key="Space.10">40</sys:Double>
+        <sys:Double x:Key="Size.Hit.Min">40</sys:Double>
+        <sys:Double x:Key="Size.Button.PrimaryHeight">44</sys:Double>
+        <sys:Double x:Key="Size.Nav.Height">40</sys:Double>
+        <sys:Double x:Key="Size.Nav.MinWidth">78</sys:Double>
+        <sys:Double x:Key="Size.Nav.GroupWidth">430</sys:Double>
+        <sys:Double x:Key="Size.TopBar.Height">68</sys:Double>
+        <sys:Double x:Key="Size.Highlight.Height">16</sys:Double>
+        <sys:Double x:Key="Size.Input.Height">40</sys:Double>
+        <sys:Double x:Key="Size.List.Row">52</sys:Double>
+        <sys:Double x:Key="Size.Icon.Sm">14</sys:Double>
+        <sys:Double x:Key="Size.Icon.Md">18</sys:Double>
+        <sys:Double x:Key="Size.Icon.Lg">24</sys:Double>
+        <sys:Double x:Key="Size.Brand.Icon">28</sys:Double>
+        <sys:Double x:Key="Size.Dialog.MinWidth">420</sys:Double>
+        <sys:Double x:Key="Size.Dialog.MaxWidth">720</sys:Double>
+        <sys:Double x:Key="Size.Task.DetailMaxHeight">120</sys:Double>
+        <sys:Double x:Key="Size.Task.DrawerWidth">400</sys:Double>
+        <sys:Double x:Key="Size.News.HeroHeight">200</sys:Double>
+        <sys:Double x:Key="Size.Switch.Width">40</sys:Double>
+        <sys:Double x:Key="Size.Switch.Height">22</sys:Double>
+        <sys:Double x:Key="Size.Switch.Knob">16</sys:Double>
+        <sys:Double x:Key="Size.ScrollBar">8</sys:Double>
+        <sys:Double x:Key="Size.Progress.IndeterminateWidth">72</sys:Double>
+
+        <sys:Double x:Key="Font.Display">34</sys:Double>
+        <sys:Double x:Key="Font.H1">21</sys:Double>
+        <sys:Double x:Key="Font.H2">17</sys:Double>
+        <sys:Double x:Key="Font.H3">15</sys:Double>
+        <sys:Double x:Key="Font.Body">14</sys:Double>
+        <sys:Double x:Key="Font.BodySmall">13</sys:Double>
+        <sys:Double x:Key="Font.Caption">12</sys:Double>
+        <sys:Double x:Key="Font.Micro">11</sys:Double>
+        <sys:Double x:Key="LineHeight.Body">22</sys:Double>
+        <sys:Double x:Key="LineHeight.Caption">18</sys:Double>
+
+        <Thickness x:Key="Margin.Page">20,18,20,12</Thickness>
+        <Thickness x:Key="Margin.SectionBottom">0,0,0,24</Thickness>
+        <Thickness x:Key="Margin.CardBottom">0,0,0,16</Thickness>
+        <Thickness x:Key="Margin.ItemBottom">0,0,0,8</Thickness>
+        <Thickness x:Key="Margin.ItemRight">0,0,8,0</Thickness>
+        <Thickness x:Key="Margin.IconRight">0,0,8,0</Thickness>
+        <Thickness x:Key="Margin.TextTop">0,4,0,0</Thickness>
+        <Thickness x:Key="Margin.TextBottom">0,0,0,8</Thickness>
+        <Thickness x:Key="Margin.HeaderBottom">0,0,0,16</Thickness>
+        <Thickness x:Key="Margin.ActionsTop">0,8,0,0</Thickness>
+        <Thickness x:Key="Margin.NavItem">2</Thickness>
+        <Thickness x:Key="Margin.Brand">16,0,8,0</Thickness>
+        <Thickness x:Key="Margin.WindowButtons">0,0,8,0</Thickness>
+        <Thickness x:Key="Margin.Toast">0,0,0,24</Thickness>
+        <Thickness x:Key="Margin.Empty">24,48,24,48</Thickness>
+        <Thickness x:Key="Margin.Hero">16,12</Thickness>
+        <Thickness x:Key="Padding.Card">16</Thickness>
+        <Thickness x:Key="Padding.Container">12</Thickness>
+        <Thickness x:Key="Padding.Control">12,7</Thickness>
+        <Thickness x:Key="Padding.Input">12,6</Thickness>
+        <Thickness x:Key="Padding.Nav">12,6</Thickness>
+        <Thickness x:Key="Padding.NavShell">4</Thickness>
+        <Thickness x:Key="Padding.Badge">6,1</Thickness>
+        <Thickness x:Key="Padding.Toast">18,9</Thickness>
+        <Thickness x:Key="Padding.TaskAction">8,4</Thickness>
+        <Thickness x:Key="Border.Thin">1</Thickness>
+
+        <!-- 卡片阴影：Avalonia 用 BoxShadow，比 WPF 的位图 Effect 便宜 -->
+        <BoxShadows x:Key="Shadow.Card">0 6 32 0 #47000000</BoxShadows>
+        <BoxShadows x:Key="Shadow.Dialog">0 12 64 0 #73000000</BoxShadows>
     </Styles.Resources>
 
-    <!-- ===== 文字 ===== -->
+    <!-- ================= 文字 ================= -->
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    </Style>
+
     <Style Selector="TextBlock.h1">
-        <Setter Property="FontSize" Value="19"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.H1}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
     <Style Selector="TextBlock.h2">
-        <Setter Property="FontSize" Value="14.5"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.H2}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
-        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Margin" Value="{StaticResource Margin.TextBottom}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style Selector="TextBlock.h3">
+        <Setter Property="FontSize" Value="{StaticResource Font.H3}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
     </Style>
 
     <Style Selector="TextBlock.body">
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="LineHeight" Value="22"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.Body}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="LineHeight" Value="{StaticResource LineHeight.Body}"/>
     </Style>
 
     <Style Selector="TextBlock.sub">
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text3}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.Caption}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text3}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="LineHeight" Value="{StaticResource LineHeight.Caption}"/>
     </Style>
 
     <Style Selector="TextBlock.icon">
         <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
-        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontSize" Value="{StaticResource Size.Icon.Sm}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
-    <!-- ===== 卡片 ===== -->
+    <!-- ================= 卡片 ================= -->
     <Style Selector="Border.cardbox">
-        <Setter Property="Background" Value="{DynamicResource Card}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="12"/>
-        <Setter Property="Padding" Value="18,16"/>
-        <Setter Property="Margin" Value="0,0,0,12"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Card}"/>
+        <Setter Property="Margin" Value="{StaticResource Margin.CardBottom}"/>
     </Style>
 
-    <!-- ===== 按钮 ===== -->
+    <Style Selector="Border.cardbox.elevated">
+        <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}"/>
+    </Style>
+
+    <Style Selector="Border.taskrow">
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Container}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Container}"/>
+        <Setter Property="Margin" Value="{StaticResource Margin.ItemBottom}"/>
+    </Style>
+
+    <Style Selector="Border.navpill">
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.NavShell}"/>
+    </Style>
+
+    <Style Selector="Border.dialogborder">
+        <Setter Property="Background" Value="{StaticResource DialogSurface}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Dialog}"/>
+        <Setter Property="BoxShadow" Value="{StaticResource Shadow.Dialog}"/>
+    </Style>
+
+    <!-- ================= 按钮 ================= -->
     <Style Selector="Button">
-        <Setter Property="Background" Value="{DynamicResource Card}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="12,6"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <!-- WPF 的 Button 默认内容居中；Avalonia 继承 ContentControl 的 Left，需要显式对齐 -->
+        <Setter Property="Padding" Value="{StaticResource Padding.Control}"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
 
     <Style Selector="Button:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LineStrong}"/>
     </Style>
 
+    <Style Selector="Button:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentSoft2}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+    </Style>
+
+    <Style Selector="Button:disabled">
+        <Setter Property="Opacity" Value="0.45"/>
+    </Style>
+
+    <!-- 主按钮 -->
     <Style Selector="Button.primary">
-        <Setter Property="Background" Value="{DynamicResource Accent}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
+        <Setter Property="Background" Value="{StaticResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Button.PrimaryHeight}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentHover}"/>
+        <Setter Property="Background" Value="{StaticResource AccentHover}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentHover}"/>
     </Style>
 
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentPressed}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentPressed}"/>
+    </Style>
+
+    <!-- 危险操作 -->
+    <Style Selector="Button.dangerbutton">
+        <Setter Property="Foreground" Value="{StaticResource Danger}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Danger}"/>
+    </Style>
+
+    <Style Selector="Button.dangerbutton:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DangerSoft}"/>
+    </Style>
+
+    <Style Selector="Button.dangerbutton:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Danger}"/>
+    </Style>
+
+    <!-- 无边框按钮 -->
     <Style Selector="Button.ghost">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.TaskAction}"/>
     </Style>
 
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
     </Style>
 
-    <Style Selector="Button.dangerbutton">
-        <Setter Property="Background" Value="{DynamicResource DangerSoft}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Danger}"/>
-        <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+    <!-- 顶栏图标按钮 -->
+    <Style Selector="Button.titleicon">
+        <Setter Property="Width" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="Height" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
 
-    <!-- ===== 顶部导航（RadioButton） ===== -->
+    <Style Selector="Button.titleicon:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+    </Style>
+
+    <!-- ================= 顶部导航 ================= -->
     <Style Selector="RadioButton.topnav">
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.Body}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="{StaticResource Margin.NavItem}"/>
+        <Setter Property="MinWidth" Value="{StaticResource Size.Nav.MinWidth}"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Nav.Height}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Nav}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="Root" Background="Transparent" CornerRadius="8" Padding="14,6" Margin="2,0">
+                <Border Name="b" Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
                     <ContentPresenter Content="{TemplateBinding Content}"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
             </ControlTemplate>
         </Setter>
-        <Setter Property="Foreground" Value="#CCFFFFFF"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="RadioButton.topnav:pointerover">
-        <Setter Property="Foreground" Value="White"/>
+    <Style Selector="RadioButton.topnav:pointerover /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+    </Style>
+
+    <Style Selector="RadioButton.topnav:checked /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource Accent}"/>
     </Style>
 
     <Style Selector="RadioButton.topnav:checked">
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
     </Style>
 
-    <Style Selector="RadioButton.topnav:checked /template/ Border#Root">
-        <Setter Property="Background" Value="#33FFFFFF"/>
+    <Style Selector="RadioButton.topnav:checked:pointerover /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource AccentHover}"/>
     </Style>
 
-    <!-- ===== 侧栏导航 ===== -->
+    <Style Selector="RadioButton.topnav:checked:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource OnAccentHover}"/>
+    </Style>
+
+    <!-- ================= 侧栏导航 ================= -->
     <Style Selector="RadioButton.sidenav">
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,0,2"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Container}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="Root" Background="Transparent" CornerRadius="8" Padding="10,7" Margin="0,1">
+                <Border Name="b" Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
                     <ContentPresenter Content="{TemplateBinding Content}"
-                                      HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="Center"/>
                 </Border>
             </ControlTemplate>
         </Setter>
-        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="RadioButton.sidenav:pointerover /template/ Border#Root">
-        <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+    <Style Selector="RadioButton.sidenav:pointerover /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+    </Style>
+
+    <Style Selector="RadioButton.sidenav:checked /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource AccentSoft}"/>
     </Style>
 
     <Style Selector="RadioButton.sidenav:checked">
-        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <Style Selector="RadioButton.sidenav:checked /template/ Border#Root">
-        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
-    </Style>
-
-    <!-- ===== 胶囊筛选 ===== -->
+    <!-- ================= 胶囊筛选 ================= -->
     <Style Selector="RadioButton.pill">
+        <Setter Property="Foreground" Value="{StaticResource Text2}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Control}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="Root" Background="Transparent" BorderBrush="{DynamicResource Line}"
-                        BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,6,6">
+                <Border Name="b" Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
                     <ContentPresenter Content="{TemplateBinding Content}"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
             </ControlTemplate>
         </Setter>
-        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
-        <Setter Property="FontSize" Value="12.5"/>
-        <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="RadioButton.pill:checked /template/ Border#Root">
-        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+    <Style Selector="RadioButton.pill:pointerover /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+    </Style>
+
+    <Style Selector="RadioButton.pill:checked /template/ Border#b">
+        <Setter Property="Background" Value="{StaticResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
     </Style>
 
     <Style Selector="RadioButton.pill:checked">
-        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="Foreground" Value="{StaticResource OnAccent}"/>
     </Style>
 
-    <!-- ===== 列表 ===== -->
+    <!-- ================= 开关 ================= -->
+    <Style Selector="CheckBox.switch">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="Margin" Value="0,4"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
+    </Style>
+
+    <!-- ================= 输入 ================= -->
+    <Style Selector="TextBox">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Input}"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Input.Height}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource Accent}"/>
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Input}"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Input.Height}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+    </Style>
+
+    <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+    </Style>
+
+    <!-- ================= 列表 ================= -->
     <Style Selector="ListBox.cardlist">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -213,33 +565,65 @@
     </Style>
 
     <Style Selector="ListBox.cardlist ListBoxItem">
-        <Setter Property="CornerRadius" Value="9"/>
-        <Setter Property="Padding" Value="12,9"/>
-        <Setter Property="Margin" Value="0,0,0,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="{StaticResource Margin.ItemBottom}"/>
+        <Setter Property="Padding" Value="{StaticResource Padding.Container}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Container}"/>
+        <Setter Property="Background" Value="{StaticResource Card}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+
+    <Style Selector="ListBox.cardlist ListBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CardHover}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LineStrong}"/>
     </Style>
 
     <Style Selector="ListBox.cardlist ListBoxItem:selected /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+        <Setter Property="Background" Value="{StaticResource AccentSoft}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
     </Style>
 
-    <!-- ===== 输入 ===== -->
-    <Style Selector="TextBox">
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="10,6"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="MinHeight" Value="32"/>
-    </Style>
-
-    <Style Selector="ComboBox">
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="MinHeight" Value="32"/>
-        <Setter Property="FontSize" Value="13"/>
-    </Style>
-
-    <!-- ===== 进度条 ===== -->
+    <!-- ================= 进度条 ================= -->
     <Style Selector="ProgressBar">
-        <Setter Property="MinHeight" Value="4"/>
-        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        <Setter Property="Height" Value="6"/>
+        <Setter Property="MinHeight" Value="6"/>
+        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{StaticResource Line}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+    </Style>
+
+    <!-- ================= 滚动条 ================= -->
+    <Style Selector="ScrollBar">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="ScrollBar /template/ Thumb">
+        <Setter Property="Background" Value="{StaticResource ScrollThumb}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+    </Style>
+
+    <Style Selector="ScrollBar /template/ Thumb:pointerover">
+        <Setter Property="Background" Value="{StaticResource ScrollThumbHover}"/>
+    </Style>
+
+    <!-- ================= 其他 ================= -->
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DialogSurface}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}"/>
+        <Setter Property="BorderThickness" Value="{StaticResource Border.Thin}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
+        <Setter Property="Padding" Value="9,5"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.Caption}"/>
+    </Style>
+
+    <Style Selector="Slider">
+        <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="MinHeight" Value="{StaticResource Size.Hit.Min}"/>
     </Style>
 
 </Styles>
