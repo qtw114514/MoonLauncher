@@ -77,8 +77,8 @@
             </StackPanel>
         </Border>
 
-        <!-- 下载任务抽屉：留在当前页，右侧滑出；点遮罩、Esc 或关闭按钮收起；只有“查看全部任务”才进入更多域。 -->
-        <Grid x:Name="TaskDrawerLayer" Grid.RowSpan="2" Visibility="Collapsed">
+        <!-- 下载任务抽屉：留在当前页，右侧滑出；只占内容区，不遮挡顶部标题栏；点遮罩、Esc 或关闭按钮收起；只有“查看全部任务”才进入更多域。 -->
+        <Grid x:Name="TaskDrawerLayer" Grid.Row="1" Visibility="Collapsed">
             <Border Background="{DynamicResource Scrim}" MouseDown="TaskDrawerScrim_MouseDown"/>
             <Border x:Name="TaskDrawerPanel" HorizontalAlignment="Right" Width="{StaticResource Size.Task.DrawerWidth}"
                     Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
