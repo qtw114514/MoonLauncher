@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, '..', 'src', 'OpenLauncher', 'Assets')
+OUT = os.path.join(HERE, '..', 'src', 'MoonLauncher', 'Assets')
 os.makedirs(OUT, exist_ok=True)
 
 N = 32  # 像素画布

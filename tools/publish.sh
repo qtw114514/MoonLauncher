@@ -1,19 +1,36 @@
 #!/bin/sh
-# 跨平台发布脚本（macOS / Linux 用；Windows 用 build.ps1）
+# 跨平台发布脚本（macOS / Linux 开发机用）
 #
-#   sh tools/publish.sh linux-x64                自包含单文件
-#   sh tools/publish.sh osx-x64                  生成 dist/MoonLauncher.app
-#   sh tools/publish.sh osx-arm64                Apple Silicon
-#   sh tools/publish.sh linux-x64 --fd           框架依赖（需要目标机装 .NET 8）
+#   sh tools/publish.sh linux-x64          自包含单文件 → dist/linux-x64/MoonLauncher
+#   sh tools/publish.sh osx-arm64          Apple Silicon → dist/osx-arm64/MoonLauncher.app
+#   sh tools/publish.sh osx-x64            Intel Mac → dist/osx-x64/MoonLauncher.app
+#   sh tools/publish.sh linux-x64 --fd     框架依赖（需要目标机装 .NET 8）
 #
+# 每个 RID 输出到各自的子目录，多平台产物不会互相覆盖或混淆。
 # RID 可选：linux-x64 / linux-arm64 / osx-x64 / osx-arm64 / win-x64
 set -e
 
-RID="${1:?用法: sh tools/publish.sh <rid> [--fd]}"
+if [ -z "$1" ]; then
+    echo "用法: sh tools/publish.sh <rid> [--fd]" >&2
+    echo "可选: linux-x64 / linux-arm64 / osx-x64 / osx-arm64 / win-x64" >&2
+    exit 1
+fi
+
+RID="$1"
 FD="$2"
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CSPROJ="$ROOT/src/MoonLauncher/MoonLauncher.csproj"
-OUT="$ROOT/.publish/$RID"
+BUILD="$ROOT/.publish/$RID"
+OUT="$ROOT/dist/$RID"
+
+case "$RID" in
+    linux-x64|linux-arm64|osx-x64|osx-arm64|win-x64) ;;
+    *)
+        echo "不支持的 RID：$RID" >&2
+        echo "可选：linux-x64 / linux-arm64 / osx-x64 / osx-arm64 / win-x64" >&2
+        exit 1
+        ;;
+esac
 
 if [ "$FD" = "--fd" ]; then
     SC="false"
@@ -30,27 +47,37 @@ if [ -z "$DOTNET" ]; then
     exit 1
 fi
 
-rm -rf "$OUT"
+# 版本号唯一来源是 csproj 的 <Version>，打包脚本不再各自硬编码
+VERSION=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' "$CSPROJ" | head -1)
+if [ -z "$VERSION" ]; then
+    echo "无法从 $CSPROJ 读取 <Version>" >&2
+    exit 1
+fi
+
+rm -rf "$BUILD" "$OUT"
 "$DOTNET" publish "$CSPROJ" -c Release -r "$RID" --self-contained "$SC" \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
-    -nologo -o "$OUT"
+    -p:Version="$VERSION" \
+    -nologo -o "$BUILD"
 
-mkdir -p "$ROOT/dist"
+mkdir -p "$OUT"
 
 case "$RID" in
     osx-*)
         # macOS 的原生 dylib 无法压进单文件，组装成 .app（Finder 里就是一个应用）
-        sh "$ROOT/tools/make-macos-app.sh" "$OUT" "$ROOT/dist/MoonLauncher.app"
-        echo "已输出 dist/MoonLauncher.app"
+        sh "$ROOT/tools/make-macos-app.sh" "$BUILD" "$OUT/MoonLauncher.app" "$VERSION"
+        echo "已输出 dist/$RID/MoonLauncher.app 版本 $VERSION"
         ;;
     win-*)
-        cp "$OUT/MoonLauncher.exe" "$ROOT/dist/"
-        echo "已输出 dist/MoonLauncher.exe"
+        cp "$BUILD/MoonLauncher.exe" "$OUT/"
+        echo "已输出 dist/$RID/MoonLauncher.exe 版本 $VERSION"
         ;;
     *)
-        cp "$OUT/MoonLauncher" "$ROOT/dist/"
-        echo "已输出 dist/MoonLauncher"
+        cp "$BUILD/MoonLauncher" "$OUT/"
+        echo "已输出 dist/$RID/MoonLauncher 版本 $VERSION"
         ;;
 esac
 
-ls -lh "$ROOT/dist" | tail -3
+echo
+echo "dist/ 下的产物："
+find "$ROOT/dist" -maxdepth 2 -mindepth 1 | sed "s|$ROOT/||" | sort

@@ -41,7 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <!-- icon.icns 是 macOS 打包专用，由 tools/make-macos-app.sh 直接拷进 .app，
+         不嵌进程序集（否则三个平台的产物都白白多背一份） -->
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\icon.icns" />
     <!-- 中文名映射表：运行时要按固定名字取嵌入流，不能当普通资源 -->
     <EmbeddedResource Include="Assets\zh-names.json" LogicalName="zh-names.json" />
   </ItemGroup>
