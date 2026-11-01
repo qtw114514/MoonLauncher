@@ -163,6 +163,8 @@ namespace MoonLauncher.Accounts
         public string UserProperties { get; set; } = "{}";
         /// <summary>额外的 JVM 参数（外置登录的 -javaagent 等），每项是一个独立参数，不要再拆分</summary>
         public List<string> ExtraJvmArgs { get; set; } = new List<string>();
+        /// <summary>本次启动是否占用了 LocalSkinServer（退出游戏时要配对 Release）</summary>
+        public bool UsesLocalSkinServer { get; set; }
     }
 
     /// <summary>

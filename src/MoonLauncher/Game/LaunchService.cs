@@ -174,20 +174,28 @@ namespace MoonLauncher.Game
             task.Report(0.75, "登录账号…");
             var auth = await AccountService.PrepareAsync(account, task, ct).ConfigureAwait(false);
 
-            task.Report(0.85, "解压原生库…");
-            var natives = inst.NativesDir;
-            GameFiles.ExtractNatives(repo, info, natives, java.Arch);
-            Directory.CreateDirectory(inst.GameDir);
-            var assetsRoot = GameFiles.PrepareLegacyAssets(repo, info, inst.GameDir);
-            EnsureDefaultLanguage(inst, info);
+            try
+            {
+                task.Report(0.85, "解压原生库…");
+                var natives = inst.NativesDir;
+                GameFiles.ExtractNatives(repo, info, natives, java.Arch);
+                Directory.CreateDirectory(inst.GameDir);
+                var assetsRoot = GameFiles.PrepareLegacyAssets(repo, info, inst.GameDir);
+                EnsureDefaultLanguage(inst, info);
 
-            task.Report(0.9, "生成启动参数…");
-            var (jvm, mainClass, game) = BuildArguments(inst, info, java, auth, natives, assetsRoot, serverOverride);
+                task.Report(0.9, "生成启动参数…");
+                var (jvm, mainClass, game) = BuildArguments(inst, info, java, auth, natives, assetsRoot, serverOverride);
 
-            ct.ThrowIfCancellationRequested();
-            task.Report(0.95, "启动游戏…");
-            var session = Start(inst, java, jvm, mainClass, game);
-            return session;
+                ct.ThrowIfCancellationRequested();
+                task.Report(0.95, "启动游戏…");
+                return Start(inst, java, jvm, mainClass, game, auth.UsesLocalSkinServer);
+            }
+            catch
+            {
+                // 登录后、进程启动前失败：Exited 不会触发，这里归还皮肤服务器引用
+                if (auth.UsesLocalSkinServer) Accounts.LocalSkinServer.Release();
+                throw;
+            }
         }
 
         /// <summary>第一次启动（还没有 options.txt）时默认简体中文</summary>
@@ -366,7 +374,7 @@ namespace MoonLauncher.Game
             return (jvm, info.MainClass, game);
         }
 
-        static GameSession Start(Instance inst, JavaInfo java, List<string> jvm, string mainClass, List<string> game)
+        static GameSession Start(Instance inst, JavaInfo java, List<string> jvm, string mainClass, List<string> game, bool usesSkinServer)
         {
             var all = new List<string>(jvm) { mainClass };
             all.AddRange(game);
@@ -425,7 +433,7 @@ namespace MoonLauncher.Game
                 int code = 0;
                 try { proc.WaitForExit(); code = proc.ExitCode; } catch { }
                 lock (Running) Running.Remove(session);
-                Accounts.LocalSkinServer.StopAll();
+                if (usesSkinServer) Accounts.LocalSkinServer.Release(); // 与 Acquire 配对；还有其他游戏在用时服务器继续运行
                 Log.Info($"游戏退出，退出码 {code}");
                 session.RaiseExit(code);
                 // 释放进程句柄（句柄攒到 GC 前可能耗尽）；GameSession.Process 无人再读
@@ -440,6 +448,7 @@ namespace MoonLauncher.Game
             catch
             {
                 lock (Running) Running.Remove(session);
+                if (usesSkinServer) Accounts.LocalSkinServer.Release(); // 进程没起来，Exited 不会触发，这里配对归还
                 Util.TryDelete(argFile);
                 throw;
             }
@@ -496,29 +505,37 @@ namespace MoonLauncher.Game
             bool forgeOld = inst.Loaders.Any(l => l.Type == LoaderType.Forge) && Util.CompareVersion(info.McVersion, "1.17") < 0;
             var java = await JavaManager.EnsureAsync(info.JavaMajor, info.JavaComponent, forgeOld, task, 0, 0.5).ConfigureAwait(false);
             var auth = await AccountService.PrepareAsync(account, task, task.Token).ConfigureAwait(false);
-            GameFiles.ExtractNatives(inst.Repo, info, inst.NativesDir, java.Arch);
-            var assetsRoot = GameFiles.PrepareLegacyAssets(inst.Repo, info, inst.GameDir);
-            var (jvm, main, game) = BuildArguments(inst, info, java, auth, inst.NativesDir, assetsRoot);
-            var all = new List<string>(jvm) { main };
-            all.AddRange(game);
-            var javaExe = java.JavaExePath;
-            var sb = new StringBuilder();
-            sb.AppendLine("@echo off");
-            sb.AppendLine("chcp 65001 >nul");
-            sb.AppendLine($"rem 由 {Branding.AppName} 导出：{inst.Id}（包含账号令牌，不要发给别人）");
-            sb.AppendLine($"cd /d \"{inst.GameDir}\"");
-            if (java.Major >= 9)
+            try
             {
-                // cmd 一行最多 8191 字符，模组版本的 classpath 远超这个长度：参数放进同名 .args 文件
-                var argPath = Path.ChangeExtension(path, ".args");
-                File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), PlatformEncoding.SystemDefault);
-                sb.AppendLine($"\"{javaExe}\" @\"{Path.GetFileName(argPath)}\"".Replace("@\"", "@\"%~dp0"));
+                GameFiles.ExtractNatives(inst.Repo, info, inst.NativesDir, java.Arch);
+                var assetsRoot = GameFiles.PrepareLegacyAssets(inst.Repo, info, inst.GameDir);
+                var (jvm, main, game) = BuildArguments(inst, info, java, auth, inst.NativesDir, assetsRoot);
+                var all = new List<string>(jvm) { main };
+                all.AddRange(game);
+                var javaExe = java.JavaExePath;
+                var sb = new StringBuilder();
+                sb.AppendLine("@echo off");
+                sb.AppendLine("chcp 65001 >nul");
+                sb.AppendLine($"rem 由 {Branding.AppName} 导出：{inst.Id}（包含账号令牌，不要发给别人）");
+                sb.AppendLine($"cd /d \"{inst.GameDir}\"");
+                if (java.Major >= 9)
+                {
+                    // cmd 一行最多 8191 字符，模组版本的 classpath 远超这个长度：参数放进同名 .args 文件
+                    var argPath = Path.ChangeExtension(path, ".args");
+                    File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), PlatformEncoding.SystemDefault);
+                    sb.AppendLine($"\"{javaExe}\" @\"{Path.GetFileName(argPath)}\"".Replace("@\"", "@\"%~dp0"));
+                }
+                else
+                    sb.AppendLine("\"" + javaExe + "\" " + string.Join(" ", all.Select(a => Util.QuoteArg(a).Replace("%", "%%"))));
+                sb.AppendLine("pause");
+                File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false)); // 配合 chcp 65001；.args 仍用本地代码页，java 启动器按它读
+                return path;
             }
-            else
-                sb.AppendLine("\"" + javaExe + "\" " + string.Join(" ", all.Select(a => Util.QuoteArg(a).Replace("%", "%%"))));
-            sb.AppendLine("pause");
-            File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false)); // 配合 chcp 65001；.args 仍用本地代码页，java 启动器按它读
-            return path;
+            finally
+            {
+                // 导出脚本不会启动游戏进程，归还 PrepareAsync 里 Acquire 的皮肤服务器引用
+                if (auth.UsesLocalSkinServer) Accounts.LocalSkinServer.Release();
+            }
         }
     }
 }

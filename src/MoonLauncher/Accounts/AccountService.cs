@@ -46,7 +46,8 @@ namespace MoonLauncher.Accounts
                     try
                     {
                         var jar = await AuthlibInjector.EnsureJarAsync(task, ct).ConfigureAwait(false);
-                        var api = LocalSkinServer.Start(acc);
+                        var api = LocalSkinServer.Acquire(acc);
+                        auth.UsesLocalSkinServer = true;
                         auth.ExtraJvmArgs = new List<string>
                         {
                             $"-javaagent:{jar}={api}",
@@ -55,7 +56,7 @@ namespace MoonLauncher.Accounts
                     }
                     catch (Exception ex) when (!(ex is OperationCanceledException && ct.IsCancellationRequested))
                     {
-                        LocalSkinServer.StopAll();
+                        LocalSkinServer.Release();
                         Log.Warn("准备离线皮肤失败，按无皮肤启动：" + AccountUtil.Short(ex));
                     }
                 }
