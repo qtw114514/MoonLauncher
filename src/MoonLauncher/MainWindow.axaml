@@ -47,6 +47,8 @@
                                      Content="启动" IsChecked="True" Checked="Nav_Checked"/>
                         <RadioButton Name="NavDownload" GroupName="nav" Classes="topnav"
                                      Content="资源" Checked="Nav_Checked"/>
+                        <RadioButton Name="NavMultiplayer" GroupName="nav" Classes="topnav"
+                                     Content="联机" Checked="Nav_Checked"/>
                         <RadioButton Name="NavSettings" GroupName="nav" Classes="topnav"
                                      Content="设置" Checked="Nav_Checked"/>
                         <RadioButton Name="NavMore" GroupName="nav" Classes="topnav"
@@ -84,62 +86,26 @@
                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
         <!-- ===== 任务抽屉 ===== -->
-        <Grid Name="TaskLayer" Grid.Row="1" IsVisible="False">
+        <!-- ===== 任务抽屉：复用 TasksPage，任务界面只维护一份 ===== -->
+        <Grid Name="TaskLayer" Grid.RowSpan="2" IsVisible="False">
             <Border Background="{StaticResource Scrim}" PointerPressed="TaskScrim_PointerPressed"/>
             <Border HorizontalAlignment="Right" Width="{StaticResource Size.Task.DrawerWidth}"
-                    Background="{StaticResource DialogSurface}"
+                    Background="{StaticResource Bg}"
                     BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0">
-                <DockPanel>
-                    <Grid DockPanel.Dock="Top" Margin="18,14,12,8" ColumnDefinitions="*,Auto">
-                        <TextBlock Text="任务" Classes="h1" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Classes="ghost" Content="清除已完成" Click="ClearTasks_Click"/>
-                            <Button Classes="ghost" Content="关闭" Click="Tasks_Click"/>
-                        </StackPanel>
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Margin="14,6" ColumnDefinitions="*,Auto">
+                        <Button Content="查看全部任务" Classes="ghost" MinHeight="40" Padding="8,4"
+                                ToolTip.Tip="在独立页面打开完整下载任务视图"
+                                Click="TaskDrawerViewAll_Click"/>
+                        <Button Grid.Column="1" Classes="titleicon" Click="Tasks_Click" ToolTip.Tip="关闭">
+                            <TextBlock Text="&#xE8BB;" FontFamily="{StaticResource Icons}"
+                                       FontSize="{StaticResource Font.Micro}"/>
+                        </Button>
                     </Grid>
-                    <TextBlock Name="NoTasks" Text="暂时没有任务" Classes="sub"
-                               HorizontalAlignment="Center" Margin="0,40,0,0"/>
-                    <ScrollViewer>
-                        <ItemsControl Name="TaskList" Margin="14,0,14,14">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Classes="taskrow">
-                                        <StackPanel>
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                                                           TextTrimming="CharacterEllipsis" Margin="0,0,70,0"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="sub"/>
-                                            </Grid>
-                                            <ProgressBar Margin="0,8,0,6" Maximum="1"
-                                                         Value="{Binding Progress, Mode=OneWay}"
-                                                         IsIndeterminate="{Binding Indeterminate, Mode=OneWay}"
-                                                         IsVisible="{Binding IsActive}"/>
-                                            <TextBlock Text="{Binding Detail}" Classes="sub"
-                                                       MaxHeight="{StaticResource Size.Task.DetailMaxHeight}" Margin="0,2,0,0"/>
-                                            <Grid Margin="0,4,0,0" ColumnDefinitions="*,Auto">
-                                                <TextBlock Classes="sub" VerticalAlignment="Center">
-                                                    <Run Text="{Binding ProgressText, Mode=OneWay}"/>
-                                                    <Run Text="  "/>
-                                                    <Run Text="{Binding SpeedText, Mode=OneWay}"/>
-                                                </TextBlock>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                    <Button Content="暂停" Classes="ghost" Padding="6,2" Margin="3,0"
-                                                            IsVisible="{Binding CanPause}" Click="PauseTask_Click"/>
-                                                    <Button Content="继续" Classes="ghost" Padding="6,2" Margin="3,0"
-                                                            IsVisible="{Binding CanResume}" Click="ResumeTask_Click"/>
-                                                    <Button Content="重试" Classes="ghost" Padding="6,2" Margin="3,0"
-                                                            IsVisible="{Binding CanRetry}" Click="RetryTask_Click"/>
-                                                    <Button Content="取消" Classes="ghost" Padding="6,2" Margin="3,0"
-                                                            IsVisible="{Binding CanCancel}" Click="CancelTask_Click"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </DockPanel>
+                    <Border Grid.Row="1" Height="1" Background="{StaticResource Line}"
+                            VerticalAlignment="Top"/>
+                    <ContentControl Name="TaskDrawerHost" Grid.Row="1" Margin="0,1,0,0"/>
+                </Grid>
             </Border>
         </Grid>
 

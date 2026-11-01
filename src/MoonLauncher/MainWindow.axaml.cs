@@ -35,6 +35,7 @@ namespace MoonLauncher
 
         public LaunchPage LaunchPage { get; private set; }
         public DownloadPage DownloadPage { get; private set; }
+        public MultiplayerPage MultiplayerPage { get; private set; }
         public SettingsPage SettingsPage { get; private set; }
         public MorePage MorePage { get; private set; }
 
@@ -49,7 +50,6 @@ namespace MoonLauncher
             VersionTag.Text = "v" + AppInfo.VersionString;
             TryLoadIcon();
 
-            TaskList.ItemsSource = TaskManager.Tasks;
             TaskManager.Tasks.CollectionChanged += (s, e) => UpdateTaskBadge();
             TaskManager.Added += t =>
             {
@@ -60,11 +60,13 @@ namespace MoonLauncher
 
             LaunchPage = new LaunchPage();
             DownloadPage = new DownloadPage();
+            MultiplayerPage = new MultiplayerPage();
             SettingsPage = new SettingsPage();
             MorePage = new MorePage();
 
             _stacks[NavLaunch] = new Stack<Control>(new Control[] { LaunchPage });
             _stacks[NavDownload] = new Stack<Control>(new Control[] { DownloadPage });
+            _stacks[NavMultiplayer] = new Stack<Control>(new Control[] { MultiplayerPage });
             _stacks[NavSettings] = new Stack<Control>(new Control[] { SettingsPage });
             _stacks[NavMore] = new Stack<Control>(new Control[] { MorePage });
 
@@ -133,9 +135,13 @@ namespace MoonLauncher
 
         public void GoTab(string name, Control sub = null)
         {
+            // 任务中心不属于五个主标签，直接推到当前页堆上
+            if (name == "tasks") { Push(sub ?? new TasksPage()); return; }
+
             var rb = name switch
             {
                 "download" => NavDownload,
+                "multiplayer" => NavMultiplayer,
                 "settings" => NavSettings,
                 "more" => NavMore,
                 _ => NavLaunch,
@@ -172,26 +178,32 @@ namespace MoonLauncher
         }
 
         // ---------- 任务抽屉 ----------
+        TasksPage _drawerTasks;
+
         void Tasks_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => ToggleTasks(!TaskLayer.IsVisible);
 
-        void ClearTasks_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => TaskManager.ClearFinished();
+        void TaskScrim_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e) => ToggleTasks(false);
 
-        static LauncherTask TaskOf(object sender) => (sender as Control)?.DataContext as LauncherTask;
-
-        void CancelTask_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => TaskOf(sender)?.Cancel();
-        void PauseTask_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => TaskOf(sender)?.Pause();
-        void ResumeTask_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) => TaskOf(sender)?.Resume();
-
-        void RetryTask_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        void TaskDrawerViewAll_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            var task = TaskOf(sender);
-            if (task != null && task.CanRetry) TaskManager.Retry(task);
+            ToggleTasks(false);
+            Push(new TasksPage());
         }
 
         public void ToggleTasks(bool show)
         {
-            TaskLayer.IsVisible = show;
-            NoTasks.IsVisible = TaskManager.Tasks.Count == 0;
+            if (show)
+            {
+                if (TaskLayer.IsVisible) return;
+                if (_drawerTasks == null) _drawerTasks = new TasksPage();
+                TaskDrawerHost.Content = _drawerTasks;
+                TaskLayer.IsVisible = true;
+                _drawerTasks.OnShown();
+            }
+            else
+            {
+                TaskLayer.IsVisible = false;
+            }
         }
 
         // ---------- 顶栏拖动与窗口按钮 ----------
@@ -203,8 +215,6 @@ namespace MoonLauncher
             if (e.ClickCount == 2) { ToggleMaximize(); return; }
             BeginMoveDrag(e);
         }
-
-        void TaskScrim_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e) => ToggleTasks(false);
 
         void Min_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
             WindowState = WindowState.Minimized;
@@ -220,7 +230,6 @@ namespace MoonLauncher
         {
             int running = TaskManager.Tasks.Count(t => t.IsActive);
             TaskCount.Text = running > 0 ? running.ToString() : "";
-            NoTasks.IsVisible = TaskManager.Tasks.Count == 0;
         }
 
         void OnTaskFinished(LauncherTask t)

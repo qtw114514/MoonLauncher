@@ -50,9 +50,10 @@ namespace MoonLauncher.Core
         /// <summary>0~1；小于 0 表示不确定进度</summary>
         public double Progress { get => _progress; set { _progress = Math.Max(-1, Math.Min(1, value)); On(); On(nameof(ProgressText)); On(nameof(Indeterminate)); } }
         public long Speed { get => _speed; set { _speed = value; On(); On(nameof(SpeedText)); } }
-        public TaskState State { get => _state; set { _state = value; On(); On(nameof(IsActive)); On(nameof(StateText)); On(nameof(CanRetry)); On(nameof(CanPause)); On(nameof(CanResume)); On(nameof(CanCancel)); } }
+        public TaskState State { get => _state; set { _state = value; On(); On(nameof(IsActive)); On(nameof(IsFailed)); On(nameof(StateText)); On(nameof(CanRetry)); On(nameof(CanPause)); On(nameof(CanResume)); On(nameof(CanCancel)); } }
 
         public bool IsActive => State == TaskState.Running || State == TaskState.Paused;
+        public bool IsFailed => State == TaskState.Failed;
         public bool CanRetry => (State == TaskState.Failed || State == TaskState.Canceled) && RetryFactory != null;
         public bool CanPause => State == TaskState.Running;
         public bool CanResume => State == TaskState.Paused;

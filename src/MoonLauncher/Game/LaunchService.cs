@@ -144,7 +144,7 @@ namespace MoonLauncher.Game
             return Settings.MemoryAuto ? AutoMemory(inst, java) : Settings.MemoryMb;
         }
 
-        public static async Task<GameSession> LaunchAsync(Instance inst, Account account, LauncherTask task)
+        public static async Task<GameSession> LaunchAsync(Instance inst, Account account, LauncherTask task, string serverOverride = null)
         {
             var ct = task.Token;
             if (account == null) throw new Exception("还没有添加账号，先去添加一个吧（离线账号也行）");
@@ -182,7 +182,7 @@ namespace MoonLauncher.Game
             EnsureDefaultLanguage(inst, info);
 
             task.Report(0.9, "生成启动参数…");
-            var (jvm, mainClass, game) = BuildArguments(inst, info, java, auth, natives, assetsRoot);
+            var (jvm, mainClass, game) = BuildArguments(inst, info, java, auth, natives, assetsRoot, serverOverride);
 
             ct.ThrowIfCancellationRequested();
             task.Report(0.95, "启动游戏…");
@@ -205,13 +205,14 @@ namespace MoonLauncher.Game
             catch (Exception ex) { Log.Warn("写入默认语言失败：" + ex.Message); }
         }
 
-        static (List<string> jvm, string mainClass, List<string> game) BuildArguments(Instance inst, VersionInfo info, JavaInfo java, LaunchAuth auth, string natives, string assetsRoot)
+        static (List<string> jvm, string mainClass, List<string> game) BuildArguments(Instance inst, VersionInfo info, JavaInfo java, LaunchAuth auth, string natives, string assetsRoot, string serverOverride = null)
         {
             var repo = inst.Repo;
             var s = inst.Settings;
             int width = s["width"].IntOr(Settings.WindowWidth), height = s["height"].IntOr(Settings.WindowHeight);
             bool fullscreen = s["fullscreen"].BoolOr(Settings.Fullscreen);
-            var server = s["server"].Str;
+            // 一键进服传的地址只在本次启动生效，不写回实例配置
+            var server = serverOverride ?? s["server"].Str;
 
             var features = new Dictionary<string, bool>
             {

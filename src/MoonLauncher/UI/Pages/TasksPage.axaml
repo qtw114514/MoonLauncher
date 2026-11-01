@@ -1,0 +1,103 @@
+<UserControl x:Class="MoonLauncher.UI.Pages.TasksPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="clr-namespace:MoonLauncher.UI.Pages">
+    <UserControl.Resources>
+        <pages:TaskRetryVisibilityConverter x:Key="RetryVis"/>
+    </UserControl.Resources>
+
+    <Grid Margin="{StaticResource Margin.Page}" RowDefinitions="Auto,Auto,*">
+        <Grid Margin="{StaticResource Margin.HeaderBottom}" ColumnDefinitions="*,Auto">
+            <StackPanel>
+                <TextBlock Text="下载任务" Classes="h1"/>
+                <TextBlock Text="查看活动与历史任务，恢复下载或排查失败原因。" Classes="sub"
+                           Margin="{StaticResource Margin.TextTop}"/>
+            </StackPanel>
+            <Button Name="ClearFinishedButton" Grid.Column="1" Content="清除已结束"
+                    VerticalAlignment="Center" Click="ClearTasks_Click"/>
+        </Grid>
+
+        <WrapPanel Grid.Row="1" Margin="{StaticResource Margin.HeaderBottom}">
+            <RadioButton Name="ActiveFilter" GroupName="taskFilter" Classes="pill"
+                         IsChecked="True" Checked="Filter_Checked">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="活动"/>
+                    <TextBlock Name="ActiveCountText" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton Name="HistoryFilter" GroupName="taskFilter" Classes="pill" Checked="Filter_Checked">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="历史"/>
+                    <TextBlock Name="HistoryCountText" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+        </WrapPanel>
+
+        <Grid Grid.Row="2">
+            <ListBox Name="TaskList" Classes="cardlist">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{Binding Title}" Classes="h3" TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap" Margin="{StaticResource Margin.ItemRight}"
+                                           ToolTip.Tip="{Binding Title}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="sub"/>
+                            </Grid>
+                            <ProgressBar Margin="{StaticResource Margin.ActionsTop}" Maximum="1"
+                                         Value="{Binding Progress, Mode=OneWay}"
+                                         IsIndeterminate="{Binding Indeterminate, Mode=OneWay}"
+                                         IsVisible="{Binding IsActive}"/>
+                            <TextBlock Text="{Binding Detail}" Classes="sub"
+                                       MaxHeight="{StaticResource Size.Task.DetailMaxHeight}"
+                                       Margin="{StaticResource Margin.TextTop}"/>
+                            <WrapPanel Margin="{StaticResource Margin.TextTop}">
+                                <TextBlock Text="{Binding ProgressText, Mode=OneWay}" Classes="sub"
+                                           Margin="{StaticResource Margin.ItemRight}"/>
+                                <TextBlock Text="{Binding SpeedText, Mode=OneWay}" Classes="sub"
+                                           Margin="{StaticResource Margin.ItemRight}"/>
+                                <TextBlock Text="{Binding Started}" Classes="sub"/>
+                            </WrapPanel>
+                            <WrapPanel Margin="{StaticResource Margin.ActionsTop}">
+                                <Button Content="暂停" Classes="ghost" Padding="{StaticResource Padding.TaskAction}"
+                                        IsVisible="{Binding CanPause}" Click="PauseTask_Click"/>
+                                <Button Content="继续" Classes="ghost" Padding="{StaticResource Padding.TaskAction}"
+                                        IsVisible="{Binding CanResume}" Click="ResumeTask_Click"/>
+                                <Button Content="取消" Classes="ghost" Padding="{StaticResource Padding.TaskAction}"
+                                        IsVisible="{Binding CanCancel}" Click="CancelTask_Click"/>
+                                <Button Content="重试" Classes="ghost" Padding="{StaticResource Padding.TaskAction}"
+                                        Click="RetryTask_Click">
+                                    <Button.IsVisible>
+                                        <MultiBinding Converter="{StaticResource RetryVis}">
+                                            <Binding Path="CanRetry"/>
+                                            <Binding Path="Title"/>
+                                        </MultiBinding>
+                                    </Button.IsVisible>
+                                </Button>
+                                <Button Name="FailedDetails" Content="失败详情" Classes="ghost"
+                                        Padding="{StaticResource Padding.TaskAction}"
+                                        IsVisible="{Binding IsFailed}" Click="TaskDetails_Click"/>
+                                <Button Name="FailedCopy" Content="复制诊断" Classes="ghost"
+                                        Padding="{StaticResource Padding.TaskAction}"
+                                        IsVisible="{Binding IsFailed}" Click="CopyTask_Click"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Border Name="EmptyState" Classes="cardbox" VerticalAlignment="Center"
+                    Margin="{StaticResource Margin.Empty}" IsVisible="False">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE9D5;" Classes="icon" FontSize="{StaticResource Size.Icon.Lg}"
+                               Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
+                    <TextBlock Name="EmptyTitle" Text="暂时没有任务" Classes="h2"
+                               HorizontalAlignment="Center" Margin="{StaticResource Margin.ActionsTop}"/>
+                    <TextBlock Name="EmptyText" Classes="body" TextAlignment="Center"/>
+                    <Button Content="浏览资源" Classes="primary" HorizontalAlignment="Center"
+                            Margin="{StaticResource Margin.ActionsTop}" Click="BrowseResources_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

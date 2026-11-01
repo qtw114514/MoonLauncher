@@ -279,7 +279,7 @@ namespace MoonLauncher.UI.Pages
         // ---------- 启动 ----------
         void Launch_Click(object sender, RoutedEventArgs e) => _ = LaunchAsync();
 
-        public async Task LaunchAsync(Instance inst = null)
+        public async Task LaunchAsync(Instance inst = null, string serverOverride = null)
         {
             if (_launchBusy || (_launchTask != null && _launchTask.IsActive)) return;
             if (_session != null && !_session.HasExited)
@@ -321,7 +321,7 @@ namespace MoonLauncher.UI.Pages
                 var tcs = new TaskCompletionSource<GameSession>();
                 _launchTask = TaskManager.Start($"启动 {inst.Id}", async t =>
                 {
-                    try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t)); }
+                    try { tcs.TrySetResult(await LaunchService.LaunchAsync(inst, acc, t, serverOverride)); }
                     catch (Exception ex) { tcs.TrySetException(ex); throw; }
                 }, canRetry: false); // 启动由首页重新建立会话和日志订阅，不能重放旧的 TaskCompletionSource
                 _launchTask.PropertyChanged += (s, e2) => Dispatcher.UIThread.Post((Action)(() =>
@@ -345,7 +345,7 @@ namespace MoonLauncher.UI.Pages
                 {
                     actions.Add(new ErrorDialogAction("重新登录", () =>
                     {
-                        afterError = async () => { if (await AccountDialogs.ReloginAsync(acc)) await LaunchAsync(inst); };
+                        afterError = async () => { if (await AccountDialogs.ReloginAsync(acc)) await LaunchAsync(inst, serverOverride); };
                         return Task.CompletedTask;
                     }, primary: true));
                 }
@@ -365,7 +365,7 @@ namespace MoonLauncher.UI.Pages
                 }
                 actions.Add(new ErrorDialogAction("重试", () =>
                 {
-                    afterError = () => LaunchAsync(inst);
+                    afterError = () => LaunchAsync(inst, serverOverride);
                     return Task.CompletedTask;
                 }, primary: auth?.NeedsRelogin != true));
                 await ErrorDialog.ShowAsync("启动失败", _lastLaunchError,

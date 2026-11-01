@@ -1,0 +1,204 @@
+<UserControl x:Class="MoonLauncher.UI.Pages.MultiplayerPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20,16,20,12" MaxWidth="980">
+            <TextBlock Text="联机" Classes="h1"/>
+            <TextBlock Text="连接已有的业务服务器，或通过 Terracotta 官方进程进行点对点联机。"
+                       Classes="sub" Margin="0,3,0,12"/>
+
+            <Border Classes="cardbox">
+                <StackPanel>
+                    <TextBlock Text="启动选项" Classes="h2"/>
+                    <Grid Margin="0,0,0,8" ColumnDefinitions="72,*,Auto">
+                        <TextBlock Text="账户" VerticalAlignment="Center"/>
+                        <ComboBox Name="AccountBox" Grid.Column="1" HorizontalAlignment="Stretch"
+                                  SelectionChanged="AccountBox_SelectionChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="2" Content="管理" Margin="8,0,0,0" Click="ManageAccounts_Click"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="72,*,Auto">
+                        <TextBlock Text="实例" VerticalAlignment="Center"/>
+                        <ComboBox Name="InstanceBox" Grid.Column="1" HorizontalAlignment="Stretch"
+                                  SelectionChanged="InstanceBox_SelectionChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Id}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="2" Content="刷新" Margin="8,0,0,0" Click="RefreshInstances_Click"/>
+                    </Grid>
+                    <TextBlock Text="两个标签共用这里的账户和实例；陶瓦房间使用当前账户的玩家名。"
+                               Classes="sub" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <WrapPanel Margin="0,0,0,8">
+                <RadioButton Name="ServerTab" GroupName="multiplayerTab" Classes="pill"
+                             Content="服务器" IsChecked="True" Checked="Tab_Checked"/>
+                <RadioButton Name="P2PTab" GroupName="multiplayerTab" Classes="pill"
+                             Content="房间 P2P" Checked="Tab_Checked"/>
+            </WrapPanel>
+
+            <StackPanel Name="ServerPanel">
+                <Border Classes="cardbox">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8" ColumnDefinitions="*,Auto">
+                            <TextBlock Text="我的服务器" Classes="h2" Margin="0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="新增" Classes="primary" Padding="12,5" Click="AddServer_Click"/>
+                                <Button Content="修改" Padding="12,5" Margin="6,0,0,0" Click="EditServer_Click"/>
+                                <Button Content="删除" Classes="dangerbutton" Padding="12,5"
+                                        Margin="6,0,0,0" Click="DeleteServer_Click"/>
+                            </StackPanel>
+                        </Grid>
+                        <ListBox Name="ServerList" Classes="cardlist" Height="190"
+                                 SelectionChanged="ServerList_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Address}" Classes="sub"
+                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Name="ServerEmpty" Text="还没有保存的服务器，点击“新增”添加名称和地址。"
+                                   Classes="sub" HorizontalAlignment="Center" Margin="0,12"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="cardbox">
+                    <StackPanel>
+                        <TextBlock Text="一键进服" Classes="h2"/>
+                        <TextBlock Name="ServerLaunchDetail" Text="请先选择一个服务器" Classes="body"/>
+                        <Button Name="ServerLaunchButton" Content="启动游戏并尝试进入服务器" Classes="primary"
+                                HorizontalAlignment="Left" Margin="0,12,0,0" Click="LaunchServer_Click"/>
+                        <TextBlock Text="服务器地址仅作为本次启动的内存覆盖，不写入实例配置。启动成功不等于已经成功进入服务器，请以游戏内结果为准。"
+                                   Classes="sub" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Name="P2PPanel" IsVisible="False">
+                <Border Classes="cardbox" Background="{DynamicResource AccentSoft}">
+                    <StackPanel>
+                        <TextBlock Text="Terracotta | 陶瓦联机 · Burning_TNT / 基于 EasyTier"
+                                   Classes="h2" Foreground="{DynamicResource Accent}"/>
+                        <TextBlock Text="本页只调用 Terracotta 官方本地 HTTP API，不实现或模拟 P2P。官方程序采用 AGPLv3 or later 及打包 / IPC 例外。"
+                                   Classes="body"/>
+                        <Button Content="打开 Terracotta 项目与许可说明" Classes="ghost"
+                                HorizontalAlignment="Left" Margin="-8,6,0,-4" Click="TerracottaProject_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*">
+                    <Border Classes="cardbox" Margin="0,0,6,12">
+                        <StackPanel>
+                            <TextBlock Text="创建房间" Classes="h2"/>
+                            <TextBlock Text="房主需先在 Minecraft 中进入单人存档，并“对局域网开放”，然后再创建房间。房间码只显示官方返回值。"
+                                       Classes="body"/>
+                            <Button Name="HostButton" Content="我已开放局域网，创建房间" Classes="primary"
+                                    HorizontalAlignment="Left" Margin="0,12,0,0" Click="Host_Click"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="cardbox" Margin="6,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="加入房间" Classes="h2"/>
+                            <TextBox Name="JoinRoomBox" Tag="U/XXXX-XXXX-XXXX-XXXX"
+                                     FontFamily="{StaticResource FontFamily.Mono}"/>
+                            <Button Name="JoinButton" Content="使用邀请码加入" Classes="primary"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0" Click="Join_Click"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Classes="cardbox">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Name="P2PStateTitle" Text="尚未连接" Classes="h2"/>
+                                <TextBlock Name="P2PStateDetail" Classes="body"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                <Button Content="查看日志" Classes="ghost" Click="Log_Click"/>
+                                <Button Name="ResetButton" Content="重置 / 关闭房间" Classes="dangerbutton"
+                                        Margin="6,0,0,0" Click="Reset_Click"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <ProgressBar Name="P2PBusyBar" IsIndeterminate="True" Margin="0,10,0,0" IsVisible="False"/>
+                        <Grid Name="P2PBusyPanel" Margin="0,8,0,0" IsVisible="False">
+                            <TextBlock Name="P2PBusyText" Classes="sub" VerticalAlignment="Center" Margin="0,0,90,0"/>
+                            <Button Content="取消操作" Classes="ghost" HorizontalAlignment="Right"
+                                    Click="CancelOperation_Click"/>
+                        </Grid>
+
+                        <StackPanel Name="UnavailablePanel" Margin="0,10,0,0" IsVisible="False">
+                            <WrapPanel>
+                                <Button Name="InstallRetryButton" Content="安装 / 重试陶瓦服务" Classes="primary"
+                                        Margin="0,0,8,6" Click="InstallRetry_Click"/>
+                                <Button Content="获取官方日志" Margin="0,0,8,6" Click="Log_Click"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <Grid Name="InvitationPanel" Margin="0,12,0,0" IsVisible="False" ColumnDefinitions="*,Auto">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="官方邀请码" Classes="sub"/>
+                                <TextBlock Name="InvitationCode" FontFamily="{StaticResource FontFamily.Mono}"
+                                           FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Name="CopyInvitationButton" Grid.Column="1" Content="复制邀请码"
+                                    Margin="10,0,0,0" Click="CopyInvitation_Click"/>
+                        </Grid>
+
+                        <Border Name="GuestLaunchPanel" Background="{DynamicResource OkSoft}" CornerRadius="8"
+                                Padding="12,10" Margin="0,12,0,0" IsVisible="False">
+                            <StackPanel>
+                                <TextBlock Text="官方 guest-ok 已就绪" Foreground="{DynamicResource Ok}"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="进入地址（仅来自官方 url）" Classes="sub" Margin="0,4,0,2"/>
+                                <TextBlock Name="GuestServerUrl" FontFamily="{StaticResource FontFamily.Mono}"
+                                           TextWrapping="Wrap"/>
+                                <Button Name="GuestLaunchButton" Content="使用此地址一键进服" Classes="primary"
+                                        HorizontalAlignment="Left" Margin="0,10,0,0" Click="LaunchGuest_Click"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="成员（仅显示官方就绪状态返回的列表）" Classes="sub" Margin="0,14,0,6"/>
+                        <ListBox Name="MemberList" Classes="cardlist" Height="150">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding MachineId}" Classes="sub"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Margin="10,0,0,0">
+                                            <TextBlock Text="{Binding Kind}" Foreground="{DynamicResource Accent}"
+                                                       FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding Vendor}" Classes="sub"
+                                                       HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Name="MemberHint" Classes="sub" HorizontalAlignment="Center" Margin="0,10"
+                                   Text="尚无官方成员列表"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
