@@ -57,6 +57,10 @@ namespace MoonLauncher.Core
         public static StringComparison PathComparison =>
             Platform.IsWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
+        /// <summary>路径集合去重 / 字典键用的比较器，规则同 <see cref="PathComparison"/></summary>
+        public static StringComparer PathComparer =>
+            Platform.IsWindows ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
         public static void EnsureParent(string path)
         {
             var d = Path.GetDirectoryName(LP(path));
@@ -152,7 +156,12 @@ namespace MoonLauncher.Core
         /// 只在 Windows（导出 .bat、拼给 cmd 的字符串）使用；
         /// 跨平台启动游戏请用 ProcessStartInfo.ArgumentList 逐个传参，不要拼字符串。
         /// </summary>
-        public static string QuoteArg(string a)
+        /// <summary>把一个参数包成命令行能安全传递的形式（Windows 与 Unix 的引号规则不同）</summary>
+        public static string QuoteArg(string a) =>
+            Platform.IsWindows ? QuoteArgWindows(a) : QuoteArgUnix(a);
+
+        /// <summary>Windows 规则：双引号包裹，连续反斜杠按 MSVCRT 规则转义</summary>
+        static string QuoteArgWindows(string a)
         {
             if (string.IsNullOrEmpty(a)) return "\"\"";
             if (a.IndexOfAny(new[] { ' ', '\t', '"' }) < 0) return a;
@@ -169,8 +178,19 @@ namespace MoonLauncher.Core
             return sb.ToString();
         }
 
-        /// <summary>简单地按空格切分参数（支持双引号）</summary>
-        public static List<string> SplitArgs(string s)
+        /// <summary>Unix 规则：单引号包裹，内部的单引号写成 '\''</summary>
+        static string QuoteArgUnix(string a)
+        {
+            if (string.IsNullOrEmpty(a)) return "''";
+            if (a.IndexOfAny(new[] { ' ', '\t', '"', '\'', '\\', '$', '`' }) < 0) return a;
+            return "'" + a.Replace("'", "'\\''") + "'";
+        }
+
+        /// <summary>按空格切分参数；Windows 上认双引号，Unix 上还认单引号与反斜杠转义</summary>
+        public static List<string> SplitArgs(string s) =>
+            Platform.IsWindows ? SplitArgsWindows(s) : SplitArgsUnix(s);
+
+        static List<string> SplitArgsWindows(string s)
         {
             var list = new List<string>();
             if (string.IsNullOrWhiteSpace(s)) return list;
@@ -180,6 +200,29 @@ namespace MoonLauncher.Core
             {
                 if (c == '"') { inQ = !inQ; has = true; continue; }
                 if (!inQ && char.IsWhiteSpace(c))
+                {
+                    if (has || cur.Length > 0) { list.Add(cur.ToString()); cur.Clear(); has = false; }
+                    continue;
+                }
+                cur.Append(c);
+            }
+            if (has || cur.Length > 0) list.Add(cur.ToString());
+            return list;
+        }
+
+        static List<string> SplitArgsUnix(string s)
+        {
+            var list = new List<string>();
+            if (string.IsNullOrWhiteSpace(s)) return list;
+            var cur = new StringBuilder();
+            bool inSingle = false, inDouble = false, has = false;
+            for (int i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (!inSingle && c == '\\' && i + 1 < s.Length) { cur.Append(s[++i]); has = true; continue; }
+                if (!inDouble && c == '\'') { inSingle = !inSingle; has = true; continue; }
+                if (!inSingle && c == '"') { inDouble = !inDouble; has = true; continue; }
+                if (!inSingle && !inDouble && char.IsWhiteSpace(c))
                 {
                     if (has || cur.Length > 0) { list.Add(cur.ToString()); cur.Clear(); has = false; }
                     continue;

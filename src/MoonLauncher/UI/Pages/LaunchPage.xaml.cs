@@ -98,7 +98,7 @@ namespace MoonLauncher.UI.Pages
             try
             {
                 var head = await Skins.GetHeadAsync(acc, 64);
-                if (head != null && AccountStore.Selected == acc) { Avatar.Source = head; AvatarFallback.IsVisible = false; }
+                if (head != null && AccountStore.Selected == acc) { Avatar.Source = AvaloniaHost.ToBitmap(head); AvatarFallback.IsVisible = false; }
             }
             catch (Exception ex) { Log.Warn("获取头像失败：" + ex.Message); }
         }

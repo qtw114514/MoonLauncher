@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
 using MoonLauncher.Core;
 
 namespace MoonLauncher.Content
@@ -23,7 +22,7 @@ namespace MoonLauncher.Content
         string _filePath;
         bool _enabled;
         ContentFile _update;
-        Bitmap _icon;
+        Bitmap32 _icon;
         bool _iconTried;
 
         public string FilePath
@@ -53,12 +52,12 @@ namespace MoonLauncher.Content
 
         public byte[] IconBytes { get; set; }
 
-        /// <summary>第一次访问时解码（Avalonia Bitmap 可跨线程使用）；没有图标返回 null</summary>
-        public Bitmap Icon
+        /// <summary>第一次访问时解码（结果为 BGRA32 像素，界面层负责转成自己的图像类型）；没有图标返回 null</summary>
+        public Bitmap32 IconPixels
         {
             get
             {
-                if (!_iconTried) { _iconTried = true; _icon = DecodeIcon(IconBytes); }
+                if (!_iconTried) { _iconTried = true; _icon = Imaging.Decode(IconBytes, 64); }
                 return _icon;
             }
         }
@@ -101,16 +100,6 @@ namespace MoonLauncher.Content
             ModId = o.ModId; Name = o.Name; Version = o.Version; Description = o.Description; Authors = o.Authors;
             Loader = o.Loader; Size = o.Size; Modified = o.Modified; LoadError = o.LoadError; IconBytes = o.IconBytes;
             _iconTried = false; _icon = null;
-        }
-
-        static Bitmap DecodeIcon(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0) return null;
-            try
-            {
-                return UI.Theme.LoadImage(bytes, 64);
-            }
-            catch { return null; }
         }
 
         public override string ToString() => $"{DisplayName} {Version} ({FileName})";

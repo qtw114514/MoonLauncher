@@ -26,7 +26,7 @@ namespace MoonLauncher
             AppDomain.CurrentDomain.UnhandledException += (s, ex) => Log.Error("未处理的异常", ex.ExceptionObject as Exception);
             TaskScheduler.UnobservedTaskException += (s, ex) => { Log.Warn("未观察的任务异常：" + ex.Exception?.GetBaseException().Message); ex.SetObserved(); };
 
-            TaskManager.Dispatcher = Dispatcher.UIThread;
+            AvaloniaHost.Attach();
 
             Log.Info($"{Branding.AppName} {AppInfo.VersionString} 启动，系统 {Platform.OsDescription}，数据目录 {Paths.DataDir}");
             Updater.CleanupOld();
@@ -39,6 +39,8 @@ namespace MoonLauncher
             {
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 desktop.Exit += (s, e) => Settings.SaveNow();
+                // 自更新装好后要求退出当前进程，由界面层决定怎么退
+                Updater.ExitRequested += desktop.Shutdown;
                 var win = new MainWindow();
                 desktop.MainWindow = win;
                 if (desktop.Args != null) MainWindow.StartupPages = desktop.Args;
