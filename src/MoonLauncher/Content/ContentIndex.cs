@@ -125,13 +125,14 @@ namespace MoonLauncher.Content
             if (string.IsNullOrWhiteSpace(relative)) return null;
             try
             {
-                var rel = relative.Replace('/', '\\').TrimStart('\\');
+                var rel = relative.Replace('\\', '/').TrimStart('/');
                 if (rel.Length == 0 || Path.IsPathRooted(rel) || rel.Contains(":")) return null;
-                foreach (var part in rel.Split('\\'))
+                foreach (var part in rel.Split('/'))
                     if (part == ".." || part.Trim().Length == 0 && part.Length > 0) return null;
-                var root = Path.GetFullPath(baseDir).TrimEnd('\\') + "\\";
-                var full = Path.GetFullPath(Path.Combine(root, rel));
-                if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase) || full.Length <= root.Length) return null;
+                var sep = Path.DirectorySeparatorChar;
+                var root = Path.GetFullPath(baseDir).TrimEnd(sep) + sep;
+                var full = Path.GetFullPath(Path.Combine(root, Platform.FromManifestPath(rel)));
+                if (!full.StartsWith(root, Util.PathComparison) || full.Length <= root.Length) return null;
                 return full;
             }
             catch { return null; }
@@ -141,8 +142,8 @@ namespace MoonLauncher.Content
         /// <summary>取路径最后一段并替换掉非法字符（不会因为奇怪的字符抛异常）</summary>
         public static string SafeName(string fileName)
         {
-            var raw = (fileName ?? "").Replace('/', '\\');
-            var i = raw.LastIndexOf('\\');
+            var raw = (fileName ?? "").Replace('\\', '/');
+            var i = raw.LastIndexOf('/');
             return Util.SafeFileName(i >= 0 ? raw.Substring(i + 1) : raw);
         }
 

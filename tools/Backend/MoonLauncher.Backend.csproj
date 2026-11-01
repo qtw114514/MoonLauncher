@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    解耦守卫：只编译后端（Core / Game / Accounts / Content / Update / Multiplayer），
+    不引用 Avalonia，也不启用 UseAvalonia。
+
+    存在的意义是把"后端不许依赖界面框架"从一句约定变成一道编译闸门：
+    谁在业务层引入 Avalonia.* / Bitmap / Dispatcher，这里立刻编译失败。
+    跨平台分支移植时，这个项目对应"可以在 macOS / Linux 上编译的那部分"。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>MoonLauncher.Backend</AssemblyName>
+    <RootNamespace>MoonLauncher</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS0618;CS8073;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\MoonLauncher\Branding.cs" Link="Branding.cs" />
+    <Compile Include="..\..\src\MoonLauncher\Core\**\*.cs" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Game\**\*.cs" Link="Game\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Accounts\**\*.cs" Link="Accounts\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Content\**\*.cs" Link="Content\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Update\**\*.cs" Link="Update\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonLauncher\Multiplayer\**\*.cs" Link="Multiplayer\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- 与主项目保持一致：这几个包在 .NET Core 上移出了 BCL -->
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

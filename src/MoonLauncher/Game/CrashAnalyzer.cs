@@ -941,7 +941,7 @@ namespace MoonLauncher.Game
         {
             try
             {
-                f = f.Trim().Trim('\'', '"').Replace('/', '\\');
+                f = Platform.FromManifestPath(f.Trim().Trim('\'', '"'));
                 if (Path.IsPathRooted(f)) return f;
                 var gameDir = c.Inst?.GameDir;
                 if (gameDir == null) return f;
@@ -1366,7 +1366,7 @@ namespace MoonLauncher.Game
                     if (offset < read) offset++;
                 }
                 try { return new UTF8Encoding(false, true).GetString(buf, offset, read - offset); }
-                catch (DecoderFallbackException) { return Encoding.Default.GetString(buf, offset, read - offset); }
+                catch (DecoderFallbackException) { return Platform.LegacyAnsiEncoding.GetString(buf, offset, read - offset); }
             }
         }
     }

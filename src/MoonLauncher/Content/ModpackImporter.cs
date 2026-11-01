@@ -365,8 +365,8 @@ namespace MoonLauncher.Content
         /// <summary>版本文件夹里不能被整合包覆盖的东西</summary>
         static bool IsProtected(string gameDir, string full, string id)
         {
-            var rel = full.Substring(Path.GetFullPath(gameDir).TrimEnd('\\').Length).TrimStart('\\');
-            var first = rel.Split('\\')[0];
+            var rel = full.Substring(Path.GetFullPath(gameDir).TrimEnd(Platform.PathSeparator).Length).TrimStart(Platform.PathSeparator);
+            var first = rel.Split(Platform.PathSeparator)[0];
             return first.Equals(id + ".json", StringComparison.OrdinalIgnoreCase)
                 || first.Equals(id + ".jar", StringComparison.OrdinalIgnoreCase)
                 || first.Equals(id + "-natives", StringComparison.OrdinalIgnoreCase)

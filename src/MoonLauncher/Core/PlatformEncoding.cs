@@ -5,6 +5,19 @@ namespace MoonLauncher.Core
     public static partial class Platform
     {
         static Encoding _ansi;
+        static bool _codePagesRegistered;
+
+        /// <summary>
+        /// .NET Core 默认只带 UTF-8，GBK(936) 这类代码页要显式注册提供器，
+        /// 否则 GetEncoding(936) 会抛异常、被下面的 catch 吞掉，GBK 回退静默失效。
+        /// </summary>
+        static void EnsureCodePages()
+        {
+            if (_codePagesRegistered) return;
+            _codePagesRegistered = true;
+            try { Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); }
+            catch { }
+        }
 
         /// <summary>
         /// 系统 ANSI 代码页编码。.NET Core 的 Encoding.Default 恒为 UTF-8，
@@ -16,6 +29,7 @@ namespace MoonLauncher.Core
             {
                 if (_ansi != null) return _ansi;
                 if (!IsWindows) return _ansi = new UTF8Encoding(false);
+                EnsureCodePages();
                 try { return _ansi = Encoding.GetEncoding(936); }
                 catch { return _ansi = new UTF8Encoding(false); }
             }

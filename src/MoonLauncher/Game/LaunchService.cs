@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -120,8 +119,6 @@ namespace MoonLauncher.Game
             if (inst == null) return;
             lock (Running) Preparing.Remove(InstanceKey(inst));
         }
-
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool SetWindowText(IntPtr hWnd, string text);
 
         /// <summary>自动内存：按可用内存与 Mod 数量估算，单位 MB</summary>
         public static int AutoMemory(Instance inst, JavaInfo java)
@@ -475,7 +472,7 @@ namespace MoonLauncher.Game
                         {
                             if (!session.WindowShown) session.RaiseWindow();
                             if (string.IsNullOrEmpty(title)) break;
-                            SetWindowText(h, title.Replace("{version}", inst.Id).Replace("{name}", inst.Id));
+                            Platform.SetWindowTitle(h, title.Replace("{version}", inst.Id).Replace("{name}", inst.Id));
                         }
                     }
                     catch { }
@@ -520,7 +517,7 @@ namespace MoonLauncher.Game
             {
                 // cmd 一行最多 8191 字符，模组版本的 classpath 远超这个长度：参数放进同名 .args 文件
                 var argPath = Path.ChangeExtension(path, ".args");
-                File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), Encoding.Default);
+                File.WriteAllText(argPath, string.Join("\n", all.Select(ArgFileQuote)), Platform.ArgFileEncoding);
                 sb.AppendLine($"\"{javaExe}\" @\"{Path.GetFileName(argPath)}\"".Replace("@\"", "@\"%~dp0"));
             }
             else

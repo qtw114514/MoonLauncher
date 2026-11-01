@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 namespace MoonLauncher.Core
 {
@@ -246,6 +249,144 @@ namespace MoonLauncher.Core
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 ".local", "share", appName);
         }
+
+        // ================= 清单路径 =================
+        /// <summary>本机路径分隔符</summary>
+        public static readonly char PathSeparator = Path.DirectorySeparatorChar;
+
+        /// <summary>把清单里以 / 分隔的相对路径落成当前平台的本地路径</summary>
+        public static string FromManifestPath(string relative) =>
+            string.IsNullOrEmpty(relative) ? relative : relative.Replace('/', Path.DirectorySeparatorChar);
+
+        /// <summary>把本地路径转成清单里惯用的 / 分隔形式</summary>
+        public static string ToManifestPath(string path) =>
+            string.IsNullOrEmpty(path) ? path : path.Replace('\\', '/');
+
+        /// <summary>路径是否在某个目录之下（两边都应已是完整路径）</summary>
+        public static bool IsUnder(string path, string dir)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(dir)) return false;
+            var sep = Path.DirectorySeparatorChar;
+            var d = dir.TrimEnd(sep) + sep;
+            return path.StartsWith(d, Util.PathComparison);
+        }
+
+        /// <summary>
+        /// 解开符号链接 / 目录联接后的真实路径，用于判断两个路径是不是同一个目录。
+        /// 拿不到时返回 null，调用方自行回退到原路径。
+        /// </summary>
+        public static string RealPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            if (IsWindows) return WindowsRealPath(path);
+            // Unix 上不需要这层：调用方本来就是拿完整的真实路径，软链由文件系统自己解开
+            return null;
+        }
+
+        // ================= 窗口标题 =================
+        /// <summary>改游戏窗口标题；没有对应系统能力的平台什么也不做</summary>
+        public static void SetWindowTitle(IntPtr handle, string title)
+        {
+            if (!IsWindows || handle == IntPtr.Zero) return;
+            try { WindowsSetWindowText(handle, title); }
+            catch (Exception ex) { Log.Warn("改窗口标题失败: " + ex.Message); }
+        }
+
+        // ================= 注册表 =================
+        /// <summary>
+        /// 遍历注册表里若干根键下的指定值名，把字符串值交给回调。
+        /// 只有 Windows 有注册表；其他平台直接返回，不会调用回调。
+        /// 用回调是为了不让 Win32 类型漏进业务层。
+        /// </summary>
+        public static void VisitRegistryValues(
+            IEnumerable<string> roots,
+            IEnumerable<string> valueNames,
+            IEnumerable<string> skipSubKeys,
+            int maxDepth,
+            Action<string> onValue)
+        {
+            if (!IsWindows || onValue == null) return;
+            var skip = new HashSet<string>(skipSubKeys ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            var names = new List<string>(valueNames ?? Array.Empty<string>());
+            var hives = new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+            var views = Environment.Is64BitOperatingSystem
+                ? new[] { RegistryView.Registry64, RegistryView.Registry32 }
+                : new[] { RegistryView.Default };
+
+            foreach (var hive in hives)
+                foreach (var view in views)
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(hive, view))
+                            foreach (var root in roots ?? Array.Empty<string>())
+                                using (var k = baseKey.OpenSubKey(root))
+                                    if (k != null)
+                                    {
+                                        int budget = 2000;
+                                        WalkRegistry(k, 0, names, skip, maxDepth, ref budget, onValue);
+                                    }
+                    }
+                    catch (Exception ex) { Log.Warn($"读取注册表 {hive}/{view} 失败：{ex.Message}"); }
+                }
+        }
+
+        static void WalkRegistry(RegistryKey key, int depth, List<string> valueNames,
+            HashSet<string> skip, int maxDepth, ref int budget, Action<string> onValue)
+        {
+            if (--budget < 0) return;
+            foreach (var name in valueNames)
+            {
+                try
+                {
+                    if (key.GetValue(name) is string v && !string.IsNullOrWhiteSpace(v)) onValue(v);
+                }
+                catch { }
+            }
+            if (depth >= maxDepth) return;
+            string[] subs;
+            try { subs = key.GetSubKeyNames(); } catch { return; }
+            foreach (var s in subs)
+            {
+                if (skip.Contains(s)) continue;
+                try
+                {
+                    using (var sk = key.OpenSubKey(s))
+                        if (sk != null) WalkRegistry(sk, depth + 1, valueNames, skip, maxDepth, ref budget, onValue);
+                }
+                catch { }
+            }
+        }
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowTextW", CharSet = CharSet.Unicode)]
+        static extern bool WindowsSetWindowText(IntPtr hWnd, string text);
+
+        static string WindowsRealPath(string path)
+        {
+            try
+            {
+                // 0 = 只查询属性；7 = 允许读/写/删共享；3 = OPEN_EXISTING；0x02000000 = FILE_FLAG_BACKUP_SEMANTICS
+                using (var h = CreateFile(path, 0, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero))
+                {
+                    if (h.IsInvalid) return null;
+                    var sb = new StringBuilder(1024);
+                    var n = GetFinalPathNameByHandle(h, sb, (uint)sb.Capacity, 0);
+                    if (n == 0 || n >= sb.Capacity) return null;
+                    var s = sb.ToString();
+                    if (s.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) return @"\\" + s.Substring(8);
+                    if (s.StartsWith(@"\\?\")) return s.Substring(4);
+                    return s;
+                }
+            }
+            catch { return null; }
+        }
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes,
+            uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern uint GetFinalPathNameByHandle(SafeFileHandle hFile, StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
 
         // ================= 打开文件夹 / 网址 =================
         /// <summary>用系统文件管理器打开目录</summary>
