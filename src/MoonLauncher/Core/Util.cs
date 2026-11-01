@@ -22,6 +22,7 @@ namespace MoonLauncher.Core
                 return Hex(algo.ComputeHash(fs));
         }
 
+        public static string Sha1(byte[] data) { using (var a = SHA1.Create()) return Hex(a.ComputeHash(data)); }
         public static string Sha256(byte[] data) { using (var a = SHA256.Create()) return Hex(a.ComputeHash(data)); }
         public static string Hex(byte[] b)
         {

@@ -38,6 +38,13 @@ namespace MoonLauncher.Game
                 task?.Report(P(0.01), $"获取 Minecraft {req.McVersion} 的版本信息…");
                 var entry = await VersionList.FindAsync(req.McVersion, ct).ConfigureAwait(false);
                 var vanillaText = await Http.GetStringAsync(entry.Url, ct).ConfigureAwait(false);
+                // 这份 JSON 是后续所有下载（jar / 库 / 资源索引）的信任根，必须按官方清单里的 SHA-1 校验
+                if (!string.IsNullOrEmpty(entry.Sha1))
+                {
+                    var actual = Util.Sha1(System.Text.Encoding.UTF8.GetBytes(vanillaText));
+                    if (!string.Equals(actual, entry.Sha1, StringComparison.OrdinalIgnoreCase))
+                        throw new Exception($"版本 {req.McVersion} 的信息校验失败（SHA-1 不符），已中止安装，请重试");
+                }
                 var vanilla = JNode.Parse(vanillaText);
                 Directory.CreateDirectory(dir);
 
