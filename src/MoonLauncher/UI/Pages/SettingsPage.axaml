@@ -8,6 +8,10 @@
         </Grid.ColumnDefinitions>
         <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
             <StackPanel Margin="12,18,12,12">
+                <Button Classes="ghost" HorizontalAlignment="Left"
+                        Margin="-8,0,0,8" Click="Back_Click" ToolTip.Tip="返回更多">
+                    <TextBlock Text="&#xE72B;" Classes="icon"/>
+                </Button>
                 <TextBlock Text="设置" Classes="h2" Margin="12,0,0,2"/>
                 <TextBlock Text="更改自动保存" Classes="sub" Margin="12,0,0,12"/>
                 <RadioButton x:Name="CommonMode" GroupName="settingsMode" Classes="sidenav" Tag="⌂" Content="常用" IsChecked="True" Checked="Mode_Checked"/>
@@ -32,7 +36,7 @@
         </Border>
 
         <ScrollViewer x:Name="Scroller" Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="Body" Margin="22,18,22,10">
+            <StackPanel x:Name="Body" Margin="22,18,22,10" MaxWidth="980">
                 <StackPanel x:Name="CommonBody">
                     <!-- 基础启动 -->
                     <Border x:Name="SecLaunch" Classes="cardbox">

@@ -59,33 +59,107 @@ namespace MoonLauncher.UI.Pages
         void LoadFolders()
         {
             _loading = true;
-            var folders = Settings.GameFolders;
-            Folders.ItemsSource = folders;
-            Folders.SelectedItem = folders.FirstOrDefault(f => string.Equals(f.Path, Settings.SelectedGameFolder, StringComparison.OrdinalIgnoreCase)) ?? folders[0];
-            _loading = false;
+            try
+            {
+                var folders = Settings.GameFolders;
+                Folders.ItemsSource = folders;
+                Folders.SelectedItem = folders.FirstOrDefault(f => string.Equals(f.Path, Settings.SelectedGameFolder, StringComparison.OrdinalIgnoreCase))
+                                       ?? folders.FirstOrDefault();
+            }
+            finally { _loading = false; }
+            UpdateFolderDetails();
             _ = LoadVersionsAsync();
+        }
+
+        /// <summary>把当前选中的游戏目录同步到左侧按钮状态与右侧目录信息卡</summary>
+        void UpdateFolderDetails()
+        {
+            var f = Folders.SelectedItem as GameFolder;
+            bool selected = f != null;
+            OpenFolderBtn.IsEnabled = selected;
+            RenameFolderBtn.IsEnabled = selected;
+            RemoveFolderBtn.IsEnabled = selected;
+            FolderPath.Text = selected ? f.Path : "尚未选择游戏目录";
+            CurrentFolderName.Text = selected ? f.Name : "未选择游戏目录";
+            CurrentFolderPath.Text = selected
+                ? f.Path + (Directory.Exists(f.Path) ? "" : "（目录不存在，请检查或重新添加）")
+                : "添加或新建一个游戏目录后再选择版本。";
         }
 
         async Task LoadVersionsAsync()
         {
+            if (!(Folders.SelectedItem is GameFolder))
+            {
+                _all.Clear();
+                Versions.ItemsSource = null;
+                VersionStats.Text = "没有可用的游戏目录";
+                ShowEmpty("没有游戏目录", "先在左侧添加或新建游戏目录。", false);
+                return;
+            }
+
+            RefreshBtn.IsEnabled = false;
+            Versions.IsEnabled = false;
+            VersionStats.Text = "正在读取版本…";
+            ShowEmpty("正在读取版本", "请稍候。", false);
+            try
+            {
+                _all = await LoadVersionListAsync();
+                ApplyFilter();
+                var sel = Settings.SelectedVersion;
+                Versions.SelectedItem = _all.FirstOrDefault(i => i.Id == sel);
+            }
+            catch (Exception ex)
+            {
+                _all.Clear();
+                Versions.ItemsSource = null;
+                VersionStats.Text = "版本读取失败";
+                ShowEmpty("无法读取这个目录", ex.Message, false);
+            }
+            finally
+            {
+                RefreshBtn.IsEnabled = true;
+                Versions.IsEnabled = true;
+            }
+        }
+
+        static Task<List<InstanceItem>> LoadVersionListAsync()
+        {
             var repo = GameRepo.Current;
-            var items = await Task.Run(() => repo.ListInstances().Select(InstanceItem.From)
+            return Task.Run(() => repo.ListInstances().Select(InstanceItem.From)
                 .OrderByDescending(i => i.Instance.IsValid)
                 .ThenByDescending(i => SafeTime(i.Instance.Dir)).ToList());
-            _all = items;
-            ApplyFilter();
-            var sel = Settings.SelectedVersion;
-            Versions.SelectedItem = _all.FirstOrDefault(i => i.Id == sel);
         }
 
         static DateTime SafeTime(string d) { try { return Directory.GetLastWriteTime(d); } catch { return DateTime.MinValue; } }
 
+        /// <summary>空状态：把“为什么空”和“下一步做什么”直接写清楚</summary>
+        void ShowEmpty(string title, string text, bool download)
+        {
+            EmptyTitle.Text = title;
+            EmptyText.Text = text;
+            DownloadBtn.IsVisible = download;
+            Empty.IsVisible = true;
+        }
+
         void ApplyFilter()
         {
+            if (Versions == null) return;
             var q = (Search.Text ?? "").Trim();
-            var list = string.IsNullOrEmpty(q) ? _all : _all.Where(i => i.Id.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 || i.Desc.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            var list = string.IsNullOrEmpty(q)
+                ? _all
+                : _all.Where(i => i.Id.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0
+                                  || (i.Desc ?? "").IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
             Versions.ItemsSource = list;
-            Empty.IsVisible = _all.Count == 0 ? true : false;
+            if (_all.Count == 0)
+                ShowEmpty("这个目录里还没有版本", "可以导入整合包，或前往下载页安装一个版本。", true);
+            else if (list.Count == 0)
+                ShowEmpty("没有匹配的版本", "换一个关键词，或清空搜索条件。", false);
+            else
+                Empty.IsVisible = false;
+            int invalid = _all.Count(i => !i.Instance.IsValid);
+            VersionStats.Text = list.Count == _all.Count
+                ? $"共 {_all.Count} 个版本" + (invalid > 0 ? $" · {invalid} 个无效版本（可打开设置查看错误）" : "")
+                : $"找到 {list.Count} / {_all.Count} 个版本";
         }
 
         void Search_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
@@ -95,10 +169,13 @@ namespace MoonLauncher.UI.Pages
 
         void Folders_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            UpdateFolderDetails();
             if (_loading || !(Folders.SelectedItem is GameFolder f)) return;
             Settings.SelectedGameFolder = f.Path;
             _ = LoadVersionsAsync();
         }
+
+        void SelectItem_Click(object sender, RoutedEventArgs e) => Select(ItemOf(sender));
 
         void Select(InstanceItem item)
         {

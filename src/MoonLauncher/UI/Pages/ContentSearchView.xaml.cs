@@ -60,6 +60,11 @@ namespace MoonLauncher.UI.Pages
             Results.ItemsSource = _items;
             LoaderPanel.IsVisible = type == ContentType.Mod || type == ContentType.Modpack ? true : false;
             TargetPanel.IsVisible = type == ContentType.Modpack ? false : true;
+            TargetHint.Text = type == ContentType.Modpack
+                ? "整合包将创建独立的新实例，不选择既有目标实例。"
+                : type == ContentType.DataPack
+                    ? "资源将安装到所选实例；提交前还需选择一个已有存档。"
+                    : "资源将安装到所选实例；目标独立于当前启动实例。";
             SrcAll.IsVisible = type == ContentType.Mod ? true : false;
             _suppress = true;
             Sort.SelectedIndex = 0;

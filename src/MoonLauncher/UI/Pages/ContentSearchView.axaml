@@ -45,11 +45,17 @@
                     <ComboBoxItem Content="最新发布" Tag="newest"/>
                 </ComboBox>
             </StackPanel>
-            <StackPanel x:Name="TargetPanel" Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Text="安装到" Classes="sub" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="Target" Width="200" SelectionChanged="Target_Changed"/>
-            </StackPanel>
         </WrapPanel>
+
+        <!-- 目标实例与安装位置说明：独立于筛选行，避免长提示把 WrapPanel 挤乱 -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <StackPanel Name="TargetPanel" Orientation="Horizontal">
+                <TextBlock Text="安装到" Classes="sub" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox Name="Target" Width="200" SelectionChanged="Target_Changed"/>
+            </StackPanel>
+            <TextBlock Name="TargetHint" Classes="sub" Margin="0,4,0,0"
+                       Text="资源将安装到所选实例；目标独立于当前启动实例。"/>
+        </StackPanel>
 
         <Grid>
             <ListBox x:Name="Results" Classes="cardlist" PointerReleased="Results_MouseUp">

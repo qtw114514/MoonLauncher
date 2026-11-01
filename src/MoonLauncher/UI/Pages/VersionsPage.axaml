@@ -1,96 +1,137 @@
 <UserControl x:Class="MoonLauncher.UI.Pages.VersionsPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Margin="22,16,22,16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230"/>
-            <ColumnDefinition Width="16"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-
-        <StackPanel Orientation="Horizontal" Grid.ColumnSpan="3" Margin="0,0,0,12">
-            <Button Classes="ghost" Click="Back_Click" Margin="-8,0,6,0">
-                <TextBlock Text="←" Classes="icon"/>
+    <Grid Margin="{StaticResource Margin.Page}" RowDefinitions="Auto,*">
+        <Grid Margin="{StaticResource Margin.HeaderBottom}" ColumnDefinitions="Auto,*">
+            <Button Classes="ghost" Click="Back_Click" Margin="-8,0,8,0" VerticalAlignment="Top"
+                    ToolTip.Tip="返回启动页">
+                <TextBlock Text="&#xE72B;" Classes="icon"/>
             </Button>
-            <TextBlock Text="版本选择" Classes="h1" VerticalAlignment="Center"/>
-        </StackPanel>
-
-        <!-- 游戏目录 -->
-        <DockPanel Grid.Row="1">
-            <TextBlock DockPanel.Dock="Top" Text="游戏目录" Classes="sub" Margin="2,0,0,6"/>
-            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                <Button Content="添加已有的游戏目录" Click="AddFolder_Click" Margin="0,0,0,6"/>
-                <Button Content="新建空的游戏目录" Classes="ghost" Click="NewFolder_Click"/>
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="版本选择" Classes="h1"/>
+                <TextBlock Text="启动域 · 选择游戏目录与要启动的实例" Classes="sub"
+                           Margin="{StaticResource Margin.TextTop}"/>
             </StackPanel>
-            <ListBox x:Name="Folders" Classes="cardlist" SelectionChanged="Folders_SelectionChanged">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding Path}" Classes="sub" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-                <ListBox.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="打开文件夹" Click="OpenFolder_Click"/>
-                        <MenuItem Header="重命名" Click="RenameFolder_Click"/>
-                        <MenuItem Header="从列表移除（不删除文件）" Click="RemoveFolder_Click"/>
-                    </ContextMenu>
-                </ListBox.ContextMenu>
-            </ListBox>
-        </DockPanel>
+        </Grid>
 
-        <!-- 版本列表 -->
-        <DockPanel Grid.Row="1" Grid.Column="2">
-            <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-                <TextBox x:Name="Search" Tag="搜索版本" TextChanged="Search_TextChanged" Margin="0,0,190,0"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="刷新" Click="Refresh_Click" Margin="0,0,8,0"/>
-                    <Button Content="导入整合包" Click="ImportPack_Click" Classes="primary"/>
-                </StackPanel>
-            </Grid>
-            <Grid>
-                <StackPanel x:Name="Empty" VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="False">
-                    <TextBlock Text="这个目录里还没有版本" Classes="h2" HorizontalAlignment="Center"/>
-                    <Button Content="去下载一个" Classes="primary" HorizontalAlignment="Center" Margin="0,8,0,0" Click="GoDownload_Click"/>
-                </StackPanel>
-                <ListBox x:Name="Versions" Classes="cardlist" DoubleTapped="Versions_DoubleClick">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Width="38" Height="38" CornerRadius="8" Background="{Binding Badge}" Margin="0,0,12,0">
-                                    <TextBlock Text="{Binding BadgeText}" Foreground="White" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Id}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding Desc}" Classes="sub" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+        <Grid Grid.Row="1" ColumnDefinitions="224,16,*">
+            <!-- 主区：游戏目录库。所有目录操作均有显式按钮，右键菜单只是捷径。 -->
+            <Border Classes="cardbox" Margin="0" Padding="12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="2,0,0,8">
+                        <TextBlock Text="游戏目录" Classes="h2"/>
+                        <TextBlock Text="单击目录即可切换" Classes="sub"/>
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <TextBlock Name="FolderPath" Classes="sub" MaxHeight="54"
+                                   ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        <WrapPanel Margin="0,6,0,0">
+                            <Button Name="OpenFolderBtn" Content="打开" Classes="ghost" Padding="8,4"
+                                    Margin="0,0,4,4" Click="OpenFolder_Click"/>
+                            <Button Name="RenameFolderBtn" Content="重命名" Classes="ghost" Padding="8,4"
+                                    Margin="0,0,4,4" Click="RenameFolder_Click"/>
+                            <Button Name="RemoveFolderBtn" Content="移除" Classes="ghost" Padding="8,4"
+                                    Margin="0,0,0,4" Click="RemoveFolder_Click"/>
+                        </WrapPanel>
+                        <WrapPanel>
+                            <Button Content="添加目录" Click="AddFolder_Click" Padding="8,4" Margin="0,0,4,0"/>
+                            <Button Content="新建目录" Classes="ghost" Click="NewFolder_Click" Padding="8,4"/>
+                        </WrapPanel>
+                    </StackPanel>
+                    <ListBox Name="Folders" Classes="cardlist" SelectionChanged="Folders_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                               ToolTip.Tip="{Binding Name}"/>
+                                    <TextBlock Text="{Binding Path}" Classes="sub"
+                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                               ToolTip.Tip="{Binding Path}"/>
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Classes="ghost" ToolTip.Tip="启动" Click="LaunchItem_Click">
-                                        <TextBlock Text="▶" Classes="icon"/>
-                                    </Button>
-                                    <Button Classes="ghost" ToolTip.Tip="版本设置" Click="SettingsItem_Click">
-                                        <TextBlock Text="⚙" Classes="icon"/>
-                                    </Button>
-                                    <Button Classes="ghost" ToolTip.Tip="打开文件夹" Click="FolderItem_Click">
-                                        <TextBlock Text="📁" Classes="icon"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="打开文件夹" Click="OpenFolder_Click"/>
+                                <MenuItem Header="重命名" Click="RenameFolder_Click"/>
+                                <MenuItem Header="从列表移除（不删除文件）" Click="RemoveFolder_Click"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- 从区：当前目录的版本与操作。 -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto,*">
+
+                <Border Classes="cardbox" Padding="12" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Name="CurrentFolderName" Text="当前目录" Classes="h2"/>
+                        <TextBlock Name="CurrentFolderPath" Classes="sub"
+                                   ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="1" Margin="0,0,0,8" RowDefinitions="Auto,Auto">
+                    <TextBox Name="Search" Tag="搜索版本名称或描述" TextChanged="Search_TextChanged"/>
+                    <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                        <Button Name="RefreshBtn" Content="刷新版本" Click="Refresh_Click" Margin="0,0,8,0"/>
+                        <Button Content="导入整合包" Click="ImportPack_Click" Classes="primary"/>
+                    </WrapPanel>
+                </Grid>
+
+                <TextBlock Name="VersionStats" Grid.Row="2" Classes="sub" Margin="2,0,0,8"/>
+
+                <Grid Grid.Row="3">
+                    <Border Name="Empty" Classes="cardbox" VerticalAlignment="Center"
+                            Margin="{StaticResource Margin.Empty}" IsVisible="False">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Name="EmptyTitle" Text="这个目录里还没有版本" Classes="h2"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Name="EmptyText" Classes="body" TextAlignment="Center"/>
+                            <Button Name="DownloadBtn" Content="去下载一个" Classes="primary"
+                                    HorizontalAlignment="Center" Margin="{StaticResource Margin.ActionsTop}"
+                                    Click="GoDownload_Click"/>
+                        </StackPanel>
+                    </Border>
+                    <ListBox Name="Versions" Classes="cardlist" DoubleTapped="Versions_DoubleClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Border Width="38" Height="38" CornerRadius="8"
+                                            Background="{Binding Badge}" Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding BadgeText}" Foreground="{DynamicResource Text}"
+                                                   FontWeight="Bold" FontSize="13"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding Id}" FontWeight="SemiBold" FontSize="14"
+                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                   ToolTip.Tip="{Binding Id}"/>
+                                        <TextBlock Text="{Binding Desc}" Classes="sub"
+                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                   ToolTip.Tip="{Binding Desc}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Classes="ghost" Content="选择" Padding="8,4"
+                                                ToolTip.Tip="设为启动页当前版本" Click="SelectItem_Click"/>
+                                        <Button Classes="ghost" ToolTip.Tip="启动" Click="LaunchItem_Click">
+                                            <TextBlock Text="&#xE768;" Classes="icon"/>
+                                        </Button>
+                                        <Button Classes="ghost" ToolTip.Tip="版本设置" Click="SettingsItem_Click">
+                                            <TextBlock Text="&#xE713;" Classes="icon"/>
+                                        </Button>
+                                        <Button Classes="ghost" ToolTip.Tip="打开文件夹" Click="FolderItem_Click">
+                                            <TextBlock Text="&#xE838;" Classes="icon"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
             </Grid>
-        </DockPanel>
+        </Grid>
     </Grid>
 </UserControl>

@@ -31,6 +31,9 @@ namespace MoonLauncher.UI.Pages
             _loading = true;
             Loading.IsVisible = true;
             LoadingText.Text = "正在从官方获取版本列表…";
+            LoadingBar.IsVisible = true;
+            RetryVersions.IsVisible = false;
+            EmptyState.IsVisible = false;
             List.ItemsSource = null;
             try
             {
@@ -41,6 +44,8 @@ namespace MoonLauncher.UI.Pages
             catch (Exception ex)
             {
                 LoadingText.Text = "获取失败：" + ex.Message + "\n检查网络，或在 设置 → 下载 里换下载源后点刷新";
+                LoadingBar.IsVisible = false;
+                RetryVersions.IsVisible = true;
             }
             finally { _loading = false; }
         }
@@ -57,7 +62,9 @@ namespace MoonLauncher.UI.Pages
             else if (_filter == "fools") q = q.Where(v => v.IsAprilFools);
             var s = (Search.Text ?? "").Trim();
             if (s.Length > 0) q = q.Where(v => v.Id.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
-            List.ItemsSource = q.ToList();
+            var rows = q.ToList();
+            List.ItemsSource = rows;
+            EmptyState.IsVisible = rows.Count == 0;
         }
 
         void Filter_Changed(object sender, RoutedEventArgs e)
