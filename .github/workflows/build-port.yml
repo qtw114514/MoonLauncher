@@ -1,0 +1,67 @@
+# port 分支的编译闸门：net8.0 + Avalonia，三个桌面平台都要能编。
+# develop 是 net48 + WPF，构建方式完全不同，所以两边各有一份 workflow。
+name: build-port
+
+on:
+  push:
+    branches:
+      - port
+  pull_request:
+    branches:
+      - port
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: 编译启动器
+        run: dotnet build src/MoonLauncher/MoonLauncher.csproj -c Release -nologo -v m
+
+      # 解耦闸门：后端不得引用 Avalonia，否则这一步会红
+      - name: 编译后端（不含界面框架）
+        run: dotnet build tools/Backend/MoonLauncher.Backend.csproj -c Release -nologo -v m -warnaserror
+
+      - name: 编译发布工具
+        run: dotnet build tools/Release/MoonLauncher.Release.csproj -c Release -nologo -v m -warnaserror
+
+      # DynamicResource 悬空不会报错、只会静默失效，编译期查不出来，必须单独比对
+      - name: 检查 XAML 资源键
+        shell: bash
+        run: sh tools/check-xaml-keys.sh
+
+  selftest:
+    # 逐个实例化所有页面，确认 XAML 能在运行时真正加载（绑定、模板、资源整体校验）。
+    # 只有 Linux 上方便提供无头显示（xvfb），所以单独一个 job。
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: 安装无头显示依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libx11-6 libice6 libsm6 libfontconfig1
+
+      - name: 编译
+        run: dotnet build src/MoonLauncher/MoonLauncher.csproj -c Debug -nologo -v m
+
+      - name: 页面自检
+        run: xvfb-run -a dotnet src/MoonLauncher/bin/Debug/MoonLauncher.dll --selftest
