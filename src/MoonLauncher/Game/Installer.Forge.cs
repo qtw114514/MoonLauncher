@@ -265,7 +265,11 @@ namespace MoonLauncher.Game
                 var (code, output) = await RunJavaAsync(javaExe, cmd, repo.Root, ct).ConfigureAwait(false);
                 if (code != 0)
                 {
-                    var tail = string.Join("\n", output.Split('\n').Reverse().Take(15).Reverse());
+                    // 取最后 15 行。不用 Reverse().Take().Reverse()：
+                    // C# 13 起 string[] 可隐式转 Span<T>，.Reverse() 会匹配到
+                    // MemoryExtensions.Reverse(Span<T>)（返回 void），导致后续链式调用编译失败。
+                    var lines = output.Split('\n');
+                    var tail = string.Join("\n", lines.Skip(Math.Max(0, lines.Length - 15)));
                     throw new Exception($"安装步骤失败（{ShortProcessorName(jarName, args)}，退出码 {code}）：\n{tail}");
                 }
             }

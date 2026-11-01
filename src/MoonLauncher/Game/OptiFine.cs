@@ -151,7 +151,11 @@ namespace MoonLauncher.Game
             if (!File.Exists(javaExe)) javaExe = java.JavawPath;
             var (code, output) = await RunJava(javaExe, new List<string> { "-cp", ofJar, "optifine.Patcher", repo.VersionJar(versionId), ofJar, libPath }, repo.Root, ct).ConfigureAwait(false);
             if (code != 0 || !File.Exists(libPath))
-                throw new Exception("OptiFine 补丁生成失败：\n" + string.Join("\n", output.Split('\n').Reverse().Take(10).Reverse()));
+            {
+                // 同上：避免 string[].Reverse() 在 C# 13+ 匹配到 Span 的 void 重载
+                var lines = output.Split('\n');
+                throw new Exception("OptiFine 补丁生成失败：\n" + string.Join("\n", lines.Skip(Math.Max(0, lines.Length - 10))));
+            }
 
             // 改写版本 JSON
             var libs = JNode.Arr();
