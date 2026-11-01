@@ -16,9 +16,16 @@ namespace MoonLauncher.Update
     /// </summary>
     public static class UpdateCrypto
     {
+        /// <summary>
+        /// 载入 .NET XML 格式的密钥。
+        /// 不能用 RSACng：它是 Windows CNG 独占类型，在 macOS / Linux 上直接抛
+        /// PlatformNotSupportedException。RSA.Create() 会在各平台选原生实现
+        /// （Windows 是 CNG，macOS 是 SecurityTransforms，Linux 是 OpenSSL），
+        /// 而 ToXmlString / FromXmlString 是 RSA 基类的托管实现，三个平台都支持。
+        /// </summary>
         public static RSA LoadKey(string xml)
         {
-            var rsa = new RSACng();
+            var rsa = RSA.Create();
             rsa.FromXmlString(xml.Trim());
             return rsa;
         }
@@ -84,7 +91,7 @@ namespace MoonLauncher.Update
 
         public static (string privateXml, string publicXml) GenerateKey(int bits = 3072)
         {
-            using (var rsa = new RSACng(bits))
+            using (var rsa = RSA.Create(bits))
                 return (rsa.ToXmlString(true), rsa.ToXmlString(false));
         }
     }
