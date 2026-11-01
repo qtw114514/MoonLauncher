@@ -108,10 +108,18 @@ namespace MoonLauncher.Release
             var urls = o.TryGetValue("url", out var u) ? u : new List<string>();
             if (urls.Count == 0) throw new Exception("至少给一个 --url（建议 GitHub Release + 国内镜像各一个）");
 
-            // 只读 PE 里的版本资源，不加载程序集（开了“智能应用控制”的电脑会拦截加载未签名程序集）
-            var fv = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe);
-            var exeVerStr = $"{fv.FileMajorPart}.{fv.FileMinorPart}.{fv.FileBuildPart}";
-            if (exeVerStr != version) throw new Exception($"exe 内部版本是 {exeVerStr}，与 --version {version} 不一致（改 csproj 的 <Version> 后重新编译）");
+            // 只在 Windows PE 上校验内部版本资源：Mach-O / ELF 根本没有 PE 版本资源，
+            // FileVersionInfo 一律返回 0.0.0，拿着它比会误报。
+            if (IsWindowsPe(exe))
+            {
+                var fv = System.Diagnostics.FileVersionInfo.GetVersionInfo(exe);
+                var exeVerStr = $"{fv.FileMajorPart}.{fv.FileMinorPart}.{fv.FileBuildPart}";
+                if (exeVerStr != version) throw new Exception($"exe 内部版本是 {exeVerStr}，与 --version {version} 不一致（改 csproj 的 <Version> 后重新编译）");
+            }
+            else
+            {
+                Console.WriteLine("非 Windows PE 产物，跳过内部版本资源校验（请自行确认 --version 与 csproj 一致）");
+            }
 
             byte[] bytes = File.ReadAllBytes(exe);
             string sha;
@@ -142,6 +150,24 @@ namespace MoonLauncher.Release
             Console.WriteLine($"版本 {version}  大小 {bytes.Length}  SHA-256 {sha}");
             Console.WriteLine("把 update.json 提交到仓库 release/ 目录（以及所有镜像），exe 上传到上面的下载地址。");
             return 0;
+        }
+
+        /// <summary>
+        /// 是不是 Windows PE 文件。只读前两个字节的 DOS 魔数 MZ，
+        /// 不加载程序集（开了“智能应用控制”的电脑会拦截加载未签名程序集）。
+        /// Mach-O（macOS）与 ELF（Linux）都不是 PE，没有版本资源可言。
+        /// </summary>
+        static bool IsWindowsPe(string path)
+        {
+            try
+            {
+                using (var fs = File.OpenRead(path))
+                {
+                    var head = new byte[2];
+                    return fs.Read(head, 0, 2) == 2 && head[0] == (byte)'M' && head[1] == (byte)'Z';
+                }
+            }
+            catch { return false; }
         }
 
         static int Verify(Dictionary<string, List<string>> o)
