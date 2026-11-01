@@ -112,11 +112,29 @@
             <GradientStop Color="#F20C1A2E" Offset="1"/>
         </LinearGradientBrush>
 
-        <!-- 图标字体：WPF 版独占的 Segoe MDL2 Assets 在 macOS/Linux 上不可用，
-             这里给出各平台都有的回退链。个别码位可能缺字形，新界面优先用 PathIcon。 -->
-        <FontFamily x:Key="Icons">Segoe MDL2 Assets, Segoe UI Symbol, Apple Symbols, Noto Sans Symbols, sans-serif</FontFamily>
         <FontFamily x:Key="UiFont">Inter, Segoe UI, Microsoft YaHei UI, PingFang SC, Noto Sans CJK SC, sans-serif</FontFamily>
         <FontFamily x:Key="FontFamily.Mono">Consolas, SF Mono, Menlo, Noto Sans Mono CJK SC, monospace</FontFamily>
+
+        <!-- ===== 图标几何 =====
+             原用 Segoe MDL2 Assets 的私有区码位，该字体是微软专有字体，不能随应用分发，
+             且私有区码位在每个图标字体里含义不同，无法靠换字体解决。
+             这里改为 16×16 网格上的自绘矢量路径，PathIcon 渲染：不依赖任何字体、
+             三平台像素一致、随 Foreground 继承主题色。 -->
+        <StreamGeometry x:Key="Icon.Back">M10.9,2.1 L12.4,3.5 L7.9,8 L12.4,12.5 L10.9,13.9 L5,8 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Play">M4.2,2.2 L13.8,8 L4.2,13.8 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Settings">M6.54,3.22 L6.38,0.98 L9.62,0.98 L9.46,3.22 L11.41,4.34 L13.27,3.09 L14.89,5.9 L12.87,6.88 L12.87,9.13 L14.89,10.11 L13.27,12.91 L11.41,11.66 L9.46,12.78 L9.62,15.02 L6.38,15.02 L6.54,12.78 L4.59,11.66 L2.73,12.91 L1.11,10.11 L3.13,9.13 L3.13,6.88 L1.11,5.9 L2.73,3.09 L4.59,4.34 Z M8,5.6 A2.4,2.4 0 1 0 8,10.4 A2.4,2.4 0 1 0 8,5.6 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Folder">M1.4,3.2 L5.9,3.2 L7.7,5.6 L14.6,5.6 L14.6,12.8 L1.4,12.8 Z M2.9,7.1 L13.1,7.1 L13.1,11.3 L2.9,11.3 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Download">F1 M8,10.2 L3.4,5.6 L6.6,5.6 L6.6,1.6 L9.4,1.6 L9.4,5.6 L12.6,5.6 Z M2.6,12 L13.4,12 L13.4,13.7 L2.6,13.7 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Trash">F1 M6.2,1.3 L9.8,1.3 L9.8,3.2 L6.2,3.2 Z M2.6,3.4 L13.4,3.4 L13.4,5.2 L2.6,5.2 Z M4,5.7 L12,5.7 L11,14.2 L5,14.2 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Clipboard">M3.1,2.6 L12.9,2.6 L12.9,14.2 L3.1,14.2 Z M4.6,4.1 L11.4,4.1 L11.4,12.7 L4.6,12.7 Z M6,1 L10,1 L10,3.6 L6,3.6 Z M5.9,8.3 L7.4,9.8 L10.7,6.5 L12,7.8 L7.4,12.4 L4.6,9.6 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Person">F1 M8,1.8 A2.5,2.5 0 1 0 8,6.8 A2.5,2.5 0 1 0 8,1.8 Z M8,7.6 C4.6,7.6 2.2,9.8 2.2,13 L2.2,14.2 L13.8,14.2 L13.8,13 C13.8,9.8 11.4,7.6 8,7.6 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.SwitchAccount">F1 M2,3.1 L9.5,3.1 L9.5,1.4 L14,4.6 L9.5,7.8 L9.5,6.1 L2,6.1 Z M14,12.9 L6.5,12.9 L6.5,14.6 L2,11.4 L6.5,8.2 L6.5,9.9 L14,9.9 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Instance">M8,1.2 L14.4,4.8 L14.4,11.2 L8,14.8 L1.6,11.2 L1.6,4.8 Z M7.3,7.6 L8.7,7.6 L8.7,14.8 L7.3,14.8 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Check">M2.6,8.4 L6.4,12.2 L14.6,3 L13,1.6 L6.4,9.4 L4.2,7.2 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.News">M8,1 A7,7 0 1 0 8,15 A7,7 0 1 0 8,1 Z M8,2.7 A5.3,5.3 0 1 0 8,13.3 A5.3,5.3 0 1 0 8,2.7 Z M8,5 A1.1,1.1 0 1 0 8,7.2 A1.1,1.1 0 1 0 8,5 Z M7.15,8.2 L8.85,8.2 L8.85,11.6 L7.15,11.6 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Minimize">M2,7.15 L14,7.15 L14,8.85 L2,8.85 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Maximize">M2.6,2.6 L13.4,2.6 L13.4,13.4 L2.6,13.4 Z M4,4 L4,12 L12,12 L12,4 Z</StreamGeometry>
+        <StreamGeometry x:Key="Icon.Close">M2.6,4 L4,2.6 L8,6.6 L12,2.6 L13.4,4 L9.4,8 L13.4,12 L12,13.4 L8,9.4 L4,13.4 L2.6,12 L6.6,8 Z</StreamGeometry>
 
         <CornerRadius x:Key="R">10</CornerRadius>
         <CornerRadius x:Key="Radius.Window">22</CornerRadius>
@@ -243,10 +261,24 @@
         <Setter Property="LineHeight" Value="{StaticResource LineHeight.Caption}"/>
     </Style>
 
-    <Style Selector="TextBlock.icon">
-        <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
-        <Setter Property="FontSize" Value="{StaticResource Size.Icon.Sm}"/>
+    <!-- 图标：PathIcon 自绘。几何统一画在 16×16 视口内，外层用 Viewbox 等比缩放，
+         这样每个图标的视觉尺寸一致（PathIcon 默认按各自几何边界伸缩，会大小不一）。 -->
+    <Style Selector="PathIcon.icon">
+        <Setter Property="Width" Value="{StaticResource Size.Icon.Sm}"/>
+        <Setter Property="Height" Value="{StaticResource Size.Icon.Sm}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+        <!-- Fluent 主题给 PathIcon 设了默认 Foreground，优先级高于属性继承，
+             会导致按钮里的图标固定为黑色。这里显式从父级按钮取色。
+             独立使用的图标请在本地直接设 Foreground，本地值优先。 -->
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Viewbox Stretch="Uniform">
+                    <Path Data="{TemplateBinding Data}" Fill="{TemplateBinding Foreground}"
+                          Width="16" Height="16" Stretch="None"/>
+                </Viewbox>
+            </ControlTemplate>
+        </Setter>
     </Style>
 
     <!-- ================= 卡片 ================= -->
@@ -371,8 +403,6 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
-        <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
-        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Control}"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>

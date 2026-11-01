@@ -27,7 +27,7 @@
         <Grid Margin="{StaticResource Margin.HeaderBottom}" ColumnDefinitions="Auto,*,Auto">
             <Button Classes="ghost" Click="Back_Click" Margin="-8,0,8,0" VerticalAlignment="Top"
                     ToolTip.Tip="返回版本选择">
-                <TextBlock Text="&#xE72B;" Classes="icon"/>
+                <PathIcon Classes="icon" Data="{StaticResource Icon.Back}"/>
             </Button>
             <StackPanel Grid.Column="1" Margin="0,0,12,0">
                 <TextBlock Name="Title" Text="版本设置" Classes="h1" TextTrimming="CharacterEllipsis"/>
@@ -213,12 +213,12 @@
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                             <Button Classes="ghost" ToolTip.Tip="更新" Click="UpdateMod_Click"
                                                     IsVisible="{Binding HasUpdate}">
-                                                <TextBlock Text="&#xE896;" Classes="icon"/>
+                                            <PathIcon Classes="icon" Data="{StaticResource Icon.Download}"/>
                                             </Button>
                                             <CheckBox Classes="switch" IsChecked="{Binding Enabled, Mode=OneWay}"
                                                       Click="ToggleMod_Click" ToolTip.Tip="启用 / 禁用" Margin="6,0"/>
                                             <Button Classes="ghost" ToolTip.Tip="删除（放进回收站）" Click="DeleteMod_Click">
-                                                <TextBlock Text="&#xE74D;" Classes="icon"/>
+                                                <PathIcon Classes="icon" Data="{StaticResource Icon.Trash}"/>
                                             </Button>
                                         </StackPanel>
                                     </Grid>
@@ -254,7 +254,7 @@
                                         </StackPanel>
                                         <Button Grid.Column="1" Classes="ghost" VerticalAlignment="Center"
                                                 ToolTip.Tip="删除（放进回收站）" Click="DeleteFile_Click">
-                                            <TextBlock Text="&#xE74D;" Classes="icon"/>
+                                            <PathIcon Classes="icon" Data="{StaticResource Icon.Trash}"/>
                                         </Button>
                                     </Grid>
                                 </DataTemplate>

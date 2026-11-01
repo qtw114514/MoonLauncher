@@ -23,10 +23,10 @@
                         <Border Width="48" Height="48" CornerRadius="12"
                                 Background="{DynamicResource AccentSoft}" ClipToBounds="True">
                             <Grid>
-                                <TextBlock Name="AvatarFallback" Text="&#xE77B;"
-                                           FontFamily="{StaticResource Icons}" FontSize="24"
-                                           Foreground="{DynamicResource Accent}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <PathIcon Name="AvatarFallback" Data="{StaticResource Icon.Person}"
+                                          Width="24" Height="24"
+                                          Foreground="{DynamicResource Accent}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Image Name="Avatar" Stretch="Fill"
                                        RenderOptions.BitmapInterpolationMode="None"/>
                             </Grid>
@@ -41,7 +41,7 @@
                     <Button Classes="ghost" MinHeight="40" Margin="0,8,0,0" Click="Accounts_Click"
                             HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                            <TextBlock Text="&#xE8AB;" Classes="icon" FontSize="12"/>
+                            <PathIcon Classes="icon" Width="12" Height="12" Data="{StaticResource Icon.SwitchAccount}"/>
                             <TextBlock Text="切换 / 管理账户"/>
                         </StackPanel>
                     </Button>
@@ -52,9 +52,9 @@
                 <StackPanel>
                     <Grid ColumnDefinitions="Auto,*">
                         <Border Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentSoft}">
-                            <TextBlock Text="&#xE7FC;" FontFamily="{StaticResource Icons}" FontSize="21"
-                                       Foreground="{DynamicResource Accent}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <PathIcon Data="{StaticResource Icon.Instance}" Width="21" Height="21"
+                                      Foreground="{DynamicResource Accent}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="当前实例" Classes="sub"/>
@@ -138,9 +138,9 @@
                     <Grid ColumnDefinitions="Auto,*">
                         <Border Width="38" Height="38" CornerRadius="19"
                                 Background="{DynamicResource AccentSoft}" VerticalAlignment="Top">
-                            <TextBlock Name="StatusIcon" Text="&#xE73E;" FontFamily="{StaticResource Icons}"
-                                       FontSize="17" Foreground="{DynamicResource Ok}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <PathIcon Name="StatusIcon" Data="{StaticResource Icon.Check}"
+                                      Width="17" Height="17" Foreground="{DynamicResource Ok}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <TextBlock Name="StatusTitle" Text="正在检查启动环境" Classes="h2" Margin="0" TextWrapping="Wrap"/>
@@ -192,9 +192,9 @@
                         <Grid Name="NewsHero" Height="{StaticResource Size.News.HeroHeight}" IsVisible="False"
                               Cursor="Hand" PointerPressed="NewsHero_Click">
                             <Border Background="{DynamicResource AccentSoft}">
-                                <TextBlock Text="&#xE946;" Classes="icon" FontSize="{StaticResource Size.Icon.Lg}"
-                                           Foreground="{DynamicResource Accent}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <PathIcon Data="{StaticResource Icon.News}" Width="24" Height="24"
+                                          Foreground="{DynamicResource Accent}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <Image Name="NewsHeroImage" Stretch="UniformToFill"/>
                             <Rectangle Fill="{DynamicResource HeroOverlay}" IsHitTestVisible="False"/>

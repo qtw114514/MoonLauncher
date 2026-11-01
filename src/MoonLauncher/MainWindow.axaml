@@ -59,7 +59,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
                             VerticalAlignment="Center" Margin="{StaticResource Margin.WindowButtons}" Spacing="2">
                     <Button Name="TasksButton" Classes="titleicon" Click="Tasks_Click" ToolTip.Tip="下载任务">
-                        <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.BodySmall}"/>
+                        <PathIcon Classes="icon" Data="{StaticResource Icon.Download}"/>
                     </Button>
                     <TextBlock Name="TaskCount" Foreground="{StaticResource Text2}"
                                FontSize="{StaticResource Font.Caption}"
@@ -68,13 +68,13 @@
                     <!-- 自绘窗口按钮：macOS 保留系统红绿灯，这里按平台隐藏 -->
                     <StackPanel Name="WindowButtons" Orientation="Horizontal" Spacing="2" IsVisible="False">
                         <Button Classes="titleicon" Click="Min_Click" ToolTip.Tip="最小化">
-                            <TextBlock Text="&#xE921;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                            <PathIcon Classes="icon" Width="11" Height="11" Data="{StaticResource Icon.Minimize}"/>
                         </Button>
                         <Button Name="MaxButton" Classes="titleicon" Click="Max_Click" ToolTip.Tip="最大化">
-                            <TextBlock Text="&#xE922;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                            <PathIcon Classes="icon" Width="11" Height="11" Data="{StaticResource Icon.Maximize}"/>
                         </Button>
                         <Button Classes="titleicon" Click="Close_Click" ToolTip.Tip="关闭">
-                            <TextBlock Text="&#xE8BB;" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Font.Micro}"/>
+                            <PathIcon Classes="icon" Width="11" Height="11" Data="{StaticResource Icon.Close}"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
@@ -98,8 +98,7 @@
                                 ToolTip.Tip="在独立页面打开完整下载任务视图"
                                 Click="TaskDrawerViewAll_Click"/>
                         <Button Grid.Column="1" Classes="titleicon" Click="Tasks_Click" ToolTip.Tip="关闭">
-                            <TextBlock Text="&#xE8BB;" FontFamily="{StaticResource Icons}"
-                                       FontSize="{StaticResource Font.Micro}"/>
+                            <PathIcon Classes="icon" Width="11" Height="11" Data="{StaticResource Icon.Close}"/>
                         </Button>
                     </Grid>
                     <Border Grid.Row="1" Height="1" Background="{StaticResource Line}"

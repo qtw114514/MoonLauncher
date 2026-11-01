@@ -89,8 +89,8 @@
             <Border Name="EmptyState" Classes="cardbox" VerticalAlignment="Center"
                     Margin="{StaticResource Margin.Empty}" IsVisible="False">
                 <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="&#xE9D5;" Classes="icon" FontSize="{StaticResource Size.Icon.Lg}"
-                               Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
+                    <PathIcon Classes="icon" Data="{StaticResource Icon.Clipboard}" Width="24" Height="24"
+                              Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
                     <TextBlock Name="EmptyTitle" Text="暂时没有任务" Classes="h2"
                                HorizontalAlignment="Center" Margin="{StaticResource Margin.ActionsTop}"/>
                     <TextBlock Name="EmptyText" Classes="body" TextAlignment="Center"/>

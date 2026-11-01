@@ -5,7 +5,7 @@
         <Grid Margin="{StaticResource Margin.HeaderBottom}" ColumnDefinitions="Auto,*">
             <Button Classes="ghost" Click="Back_Click" Margin="-8,0,8,0" VerticalAlignment="Top"
                     ToolTip.Tip="返回启动页">
-                <TextBlock Text="&#xE72B;" Classes="icon"/>
+                <PathIcon Classes="icon" Data="{StaticResource Icon.Back}"/>
             </Button>
             <StackPanel Grid.Column="1">
                 <TextBlock Text="版本选择" Classes="h1"/>
@@ -117,13 +117,13 @@
                                         <Button Classes="ghost" Content="选择" Padding="8,4"
                                                 ToolTip.Tip="设为启动页当前版本" Click="SelectItem_Click"/>
                                         <Button Classes="ghost" ToolTip.Tip="启动" Click="LaunchItem_Click">
-                                            <TextBlock Text="&#xE768;" Classes="icon"/>
+                                            <PathIcon Classes="icon" Data="{StaticResource Icon.Play}"/>
                                         </Button>
                                         <Button Classes="ghost" ToolTip.Tip="版本设置" Click="SettingsItem_Click">
-                                            <TextBlock Text="&#xE713;" Classes="icon"/>
+                                            <PathIcon Classes="icon" Data="{StaticResource Icon.Settings}"/>
                                         </Button>
                                         <Button Classes="ghost" ToolTip.Tip="打开文件夹" Click="FolderItem_Click">
-                                            <TextBlock Text="&#xE838;" Classes="icon"/>
+                                            <PathIcon Classes="icon" Data="{StaticResource Icon.Folder}"/>
                                         </Button>
                                     </StackPanel>
                                 </Grid>

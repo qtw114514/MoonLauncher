@@ -10,7 +10,7 @@
             <StackPanel Margin="12,18,12,12">
                 <Button Classes="ghost" HorizontalAlignment="Left"
                         Margin="-8,0,0,8" Click="Back_Click" ToolTip.Tip="返回更多">
-                    <TextBlock Text="&#xE72B;" Classes="icon"/>
+                    <PathIcon Classes="icon" Data="{StaticResource Icon.Back}"/>
                 </Button>
                 <TextBlock Text="设置" Classes="h2" Margin="12,0,0,2"/>
                 <TextBlock Text="更改自动保存" Classes="sub" Margin="12,0,0,12"/>
