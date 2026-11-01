@@ -1,223 +1,289 @@
 <UserControl x:Class="MoonLauncher.UI.Pages.InstancePage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="clr-namespace:MoonLauncher.UI.Pages"
              xmlns:ui="clr-namespace:MoonLauncher.UI">
     <UserControl.Resources>
+        <pages:ModErrorVisibilityConverter x:Key="ModErrorVis"/>
         <ui:Bitmap32Converter x:Key="Bitmap32"/>
     </UserControl.Resources>
-    <Grid Margin="22,16,22,16">
+
+    <UserControl.Styles>
+        <!-- 游戏运行中锁定整组操作：列表 Tag 由 code-behind 设为 "False" -->
+        <Style Selector="ListBox[Tag=False] Button">
+            <Setter Property="IsEnabled" Value="False"/>
+        </Style>
+        <Style Selector="ListBox[Tag=False] CheckBox">
+            <Setter Property="IsEnabled" Value="False"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="{StaticResource Margin.Page}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="*" MinHeight="0"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="170"/>
-            <ColumnDefinition Width="16"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.ColumnSpan="3" Margin="0,0,0,12">
-            <Button Classes="ghost" Click="Back_Click" Margin="-8,0,6,0">
-                <TextBlock Text="←" Classes="icon"/>
+        <Grid Margin="{StaticResource Margin.HeaderBottom}" ColumnDefinitions="Auto,*,Auto">
+            <Button Classes="ghost" Click="Back_Click" Margin="-8,0,8,0" VerticalAlignment="Top"
+                    ToolTip.Tip="返回版本选择">
+                <TextBlock Text="&#xE72B;" Classes="icon"/>
             </Button>
-            <TextBlock x:Name="Title" Text="版本设置" Classes="h1" VerticalAlignment="Center"/>
-            <TextBlock x:Name="SubTitle" Classes="sub" VerticalAlignment="Center" Margin="12,3,0,0"/>
-        </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                <TextBlock Name="Title" Text="版本设置" Classes="h1" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Name="SubTitle" Classes="sub" Margin="{StaticResource Margin.TextTop}"/>
+            </StackPanel>
+            <Border Grid.Column="2" Background="{DynamicResource AccentSoft}"
+                    CornerRadius="{StaticResource Radius.Pill}" Padding="10,5" VerticalAlignment="Top">
+                <TextBlock Name="StateText" Text="实例管理" Classes="sub" Foreground="{DynamicResource Accent}"/>
+            </Border>
+        </Grid>
 
-        <StackPanel Grid.Row="1">
-            <RadioButton x:Name="TabOverview" GroupName="it" Classes="sidenav" Tag="ℹ" Content="概览" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabSettings" GroupName="it" Classes="sidenav" Tag="⚙" Content="设置" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabMods" GroupName="it" Classes="sidenav" Tag="🧩" Content="Mod" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabResource" GroupName="it" Classes="sidenav" Tag="🎨" Content="资源包" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabShader" GroupName="it" Classes="sidenav" Tag="☀" Content="光影包" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabSaves" GroupName="it" Classes="sidenav" Tag="💾" Content="存档" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabShots" GroupName="it" Classes="sidenav" Tag="📷" Content="截图" Checked="Tab_Checked"/>
-            <RadioButton x:Name="TabExport" GroupName="it" Classes="sidenav" Tag="↗" Content="导出整合包" Checked="Tab_Checked"/>
-        </StackPanel>
-
-        <Grid Grid.Row="1" Grid.Column="2">
-            <!-- 概览 -->
-            <ScrollViewer x:Name="PanelOverview" VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="版本信息" Classes="h2"/>
-                            <TextBlock x:Name="InfoText" Classes="body"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="快捷操作" Classes="h2"/>
-                            <WrapPanel>
-                                <Button Content="打开版本文件夹" Margin="0,0,8,8" Click="OpenDir_Click"/>
-                                <Button Content="打开游戏目录" Margin="0,0,8,8" Click="OpenGameDir_Click"/>
-                                <Button Content="补全游戏文件" Margin="0,0,8,8" Click="Complete_Click"/>
-                                <Button Content="导出启动脚本" Margin="0,0,8,8" Click="ExportScript_Click"/>
-                                <Button Content="重命名" Margin="0,0,8,8" Click="Rename_Click"/>
-                                <Button Content="修改描述" Margin="0,0,8,8" Click="Describe_Click"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="危险操作" Classes="h2"/>
-                            <TextBlock Classes="sub" Text="删除会把整个版本文件夹放进回收站（隔离版本的存档、Mod 也在里面）。" Margin="0,0,0,8"/>
-                            <Button Content="删除这个版本" Classes="dangerbutton" HorizontalAlignment="Left" Click="Delete_Click"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- 设置 -->
-            <ScrollViewer x:Name="PanelSettings" VerticalScrollBarVisibility="Auto" IsVisible="False">
-                <StackPanel>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="游戏目录" Classes="h2"/>
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="版本隔离" VerticalAlignment="Center"/>
-                                <ComboBox x:Name="Isolation" Width="240" HorizontalAlignment="Right" SelectionChanged="Setting_Changed">
-                                    <ComboBoxItem Content="跟随全局设置" Tag=""/>
-                                    <ComboBoxItem Content="开启（存档、Mod 放在版本文件夹）" Tag="on"/>
-                                    <ComboBoxItem Content="关闭（共用 .minecraft）" Tag="off"/>
-                                </ComboBox>
-                            </Grid>
-                            <TextBlock Classes="sub" Text="开启后这个版本的 mods、saves、config 都放在它自己的文件夹里，不同整合包互不干扰。"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="Java 与内存" Classes="h2"/>
-                            <Grid Margin="0,0,0,10">
-                                <TextBlock Text="Java" VerticalAlignment="Center"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <ComboBox x:Name="JavaBox" Width="320" SelectionChanged="Setting_Changed"/>
-                                    <Button Content="浏览…" Margin="8,0,0,0" Click="BrowseJava_Click"/>
-                                </StackPanel>
-                            </Grid>
-                            <Grid Margin="0,0,0,6">
-                                <TextBlock Text="游戏内存" VerticalAlignment="Center"/>
-                                <ComboBox x:Name="MemMode" Width="240" HorizontalAlignment="Right" SelectionChanged="Setting_Changed">
-                                    <ComboBoxItem Content="跟随全局设置" Tag=""/>
-                                    <ComboBoxItem Content="自动分配" Tag="auto"/>
-                                    <ComboBoxItem Content="自定义" Tag="custom"/>
-                                </ComboBox>
-                            </Grid>
-                            <Grid x:Name="MemCustomRow" Margin="0,4,0,0">
-                                <Slider x:Name="MemSlider" Minimum="1024" Maximum="16384" TickFrequency="256" IsSnapToTickEnabled="True" Margin="0,0,90,0" ValueChanged="MemSlider_ValueChanged"/>
-                                <TextBlock x:Name="MemText" HorizontalAlignment="Right" VerticalAlignment="Center" Classes="body"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="cardbox">
-                        <StackPanel>
-                            <TextBlock Text="启动选项" Classes="h2"/>
-                            <TextBlock Text="游戏窗口标题（留空不修改，可用 {version}）" Classes="sub"/>
-                            <TextBox x:Name="TitleBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
-                            <TextBlock Text="启动后自动进入服务器（如 mc.example.com:25565）" Classes="sub"/>
-                            <TextBox x:Name="ServerBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
-                            <TextBlock Text="主界面左下角显示的版本类型文字" Classes="sub"/>
-                            <TextBox x:Name="VersionTypeBox" Margin="0,4,0,10" Tag="MoonLauncher" LostFocus="Text_LostFocus"/>
-                            <TextBlock Text="额外 JVM 参数（留空使用全局设置）" Classes="sub"/>
-                            <TextBox x:Name="JvmBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
-                            <TextBlock Text="额外游戏参数（留空使用全局设置）" Classes="sub"/>
-                            <TextBox x:Name="GameArgsBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
-                            <CheckBox x:Name="SkipCheck" Classes="switch" Content="启动前不检查文件完整性（更快，但文件坏了不会自动修复）" Click="Setting_Changed"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- Mod -->
-            <DockPanel x:Name="PanelMods" IsVisible="False">
-                <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-                    <TextBox x:Name="ModSearch" Tag="搜索已安装的 Mod" Margin="0,0,330,0" TextChanged="ModSearch_TextChanged"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="打开文件夹" Margin="0,0,6,0" Click="OpenMods_Click"/>
-                        <Button x:Name="CheckUpdatesBtn" Content="检查更新" Margin="0,0,6,0" Click="CheckUpdates_Click"/>
-                        <Button x:Name="UpdateAllBtn" Content="全部更新" Margin="0,0,6,0" Click="UpdateAll_Click" IsVisible="False"/>
-                        <Button Content="下载 Mod" Classes="primary" Click="DownloadMods_Click"/>
-                    </StackPanel>
-                </Grid>
-                <TextBlock x:Name="ModStats" DockPanel.Dock="Top" Classes="sub" Margin="2,0,0,8"/>
-                <ListBox x:Name="ModList" Classes="cardlist" DragDrop.AllowDrop="True" DragDrop.Drop="ModList_Drop">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Width="36" Height="36" CornerRadius="7" Background="{DynamicResource AccentSoft}" Margin="0,0,12,0" ClipToBounds="True">
-                                    <Image Source="{Binding IconPixels, Converter={StaticResource Bitmap32}}" Stretch="UniformToFill" RenderOptions.BitmapInterpolationMode="None"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Version}" Classes="sub" Margin="8,1,0,0"/>
-                                        <Border Background="{DynamicResource OkSoft}" CornerRadius="4" Padding="5,0" Margin="8,0,0,0" IsVisible="{Binding HasUpdate}">
-                                            <TextBlock Text="有更新" FontSize="11" Foreground="{DynamicResource Ok}"/>
-                                        </Border>
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding FileName}" Classes="sub" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Classes="ghost" ToolTip.Tip="更新" Click="UpdateMod_Click" IsVisible="{Binding HasUpdate}">
-                                        <TextBlock Text="↓" Classes="icon"/>
-                                    </Button>
-                                    <CheckBox Classes="switch" IsChecked="{Binding Enabled, Mode=OneWay}" Click="ToggleMod_Click" ToolTip.Tip="启用 / 禁用" Margin="6,0"/>
-                                    <Button Classes="ghost" ToolTip.Tip="删除（放进回收站）" Click="DeleteMod_Click">
-                                        <TextBlock Text="✕" Classes="icon"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-
-            <!-- 文件夹类（资源包 / 光影 / 存档 / 截图） -->
-            <DockPanel x:Name="PanelFiles" IsVisible="False">
-                <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-                    <TextBlock x:Name="FilesHint" Classes="sub" VerticalAlignment="Center" Margin="0,0,260,0"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="打开文件夹" Margin="0,0,6,0" Click="OpenFiles_Click"/>
-                        <Button x:Name="FilesDownload" Content="去下载" Classes="primary" Click="FilesDownload_Click"/>
-                    </StackPanel>
-                </Grid>
-                <ListBox x:Name="FileList" Classes="cardlist" DragDrop.AllowDrop="True" DragDrop.Drop="FileList_Drop">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <StackPanel Margin="0,0,40,0">
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding Info}" Classes="sub"/>
-                                </StackPanel>
-                                <Button Classes="ghost" HorizontalAlignment="Right" ToolTip.Tip="删除（放进回收站）" Click="DeleteFile_Click">
-                                    <TextBlock Text="✕" Classes="icon"/>
-                                </Button>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-
-            <!-- 导出 -->
-            <ScrollViewer x:Name="PanelExport" IsVisible="False" VerticalScrollBarVisibility="Auto">
-                <Border Classes="cardbox" VerticalAlignment="Top">
+        <Grid Grid.Row="1" ColumnDefinitions="184,16,*">
+            <!-- 主区：当前实例的功能库，属于启动域子页面。 -->
+            <Border Classes="cardbox" Margin="0" Padding="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <TextBlock Text="导出为 Modrinth 整合包（.mrpack）" Classes="h2"/>
-                        <TextBlock Classes="body" Text="能在 Modrinth 上找到的 Mod 只记录下载地址（文件小、合规），其他文件（配置、找不到来源的 Mod）打包进 overrides。导出的文件可以被本启动器、PCL、HMCL、Prism 等导入。" Margin="0,0,0,12"/>
-                        <TextBlock Text="整合包名称" Classes="sub"/>
-                        <TextBox x:Name="PackName" Margin="0,4,0,10"/>
-                        <TextBlock Text="整合包版本" Classes="sub"/>
-                        <TextBox x:Name="PackVersion" Text="1.0.0" Margin="0,4,0,10"/>
-                        <CheckBox x:Name="PackSaves" Classes="switch" Content="包含存档"/>
-                        <Button Content="导出…" Classes="primary" HorizontalAlignment="Left" Margin="0,12,0,0" Click="Export_Click"/>
+                        <TextBlock Text="实例管理" Classes="h2" Margin="10,4,0,8"/>
+                        <RadioButton Name="TabOverview" GroupName="it" Classes="sidenav" Content="概览" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabSettings" GroupName="it" Classes="sidenav" Content="全部设置" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabMods" GroupName="it" Classes="sidenav" Content="Mod" Checked="Tab_Checked"/>
+                        <TextBlock Name="NonModdedHint" Classes="sub" Margin="12,2,8,8" IsVisible="False"
+                                   Text="当前版本未识别到 Mod 加载器，Mod 管理不可用；其他实例功能仍可使用。"/>
+                        <RadioButton Name="TabResource" GroupName="it" Classes="sidenav" Content="资源包" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabShader" GroupName="it" Classes="sidenav" Content="光影包" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabSaves" GroupName="it" Classes="sidenav" Content="存档" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabShots" GroupName="it" Classes="sidenav" Content="截图" Checked="Tab_Checked"/>
+                        <RadioButton Name="TabExport" GroupName="it" Classes="sidenav" Content="导出整合包" Checked="Tab_Checked"/>
                     </StackPanel>
-                </Border>
-            </ScrollViewer>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 从区：所选功能的详细内容。 -->
+            <Grid Grid.Column="2">
+                <!-- 概览 -->
+                <ScrollViewer Name="PanelOverview" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="版本信息" Classes="h2"/>
+                                <TextBlock Name="InfoText" Classes="body"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="实例操作" Classes="h2"/>
+                                <WrapPanel>
+                                    <Button Content="打开版本文件夹" Margin="0,0,8,8" Click="OpenDir_Click"/>
+                                    <Button Content="打开游戏目录" Margin="0,0,8,8" Click="OpenGameDir_Click"/>
+                                    <Button Name="CompleteBtn" Content="补全游戏文件" Margin="0,0,8,8" Click="Complete_Click"/>
+                                    <Button Content="导出启动脚本" Margin="0,0,8,8" Click="ExportScript_Click"/>
+                                    <Button Name="RenameBtn" Content="重命名" Margin="0,0,8,8" Click="Rename_Click"/>
+                                    <Button Content="修改描述" Margin="0,0,8,8" Click="Describe_Click"/>
+                                </WrapPanel>
+                                <TextBlock Name="BusyNotice" Classes="sub" Foreground="{DynamicResource Warn}"
+                                           IsVisible="False"
+                                           Text="游戏正在运行或启动准备中，补全、重命名、删除及文件修改已锁定。"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="危险操作" Classes="h2"/>
+                                <TextBlock Classes="sub" Text="删除会把整个版本文件夹放进回收站（隔离版本的存档、Mod 也在里面）。" Margin="0,0,0,8"/>
+                                <Button Name="DeleteBtn" Content="删除这个版本" Classes="dangerbutton"
+                                        HorizontalAlignment="Left" Click="Delete_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 全部实例设置 -->
+                <ScrollViewer Name="PanelSettings" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled" IsVisible="False">
+                    <StackPanel>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="游戏目录" Classes="h2"/>
+                                <Grid Margin="0,0,0,6" ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="版本隔离" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                    <ComboBox Name="Isolation" Grid.Column="1" HorizontalAlignment="Stretch"
+                                              SelectionChanged="Setting_Changed">
+                                        <ComboBoxItem Content="跟随全局设置" Tag=""/>
+                                        <ComboBoxItem Content="开启（存档、Mod 放在版本文件夹）" Tag="on"/>
+                                        <ComboBoxItem Content="关闭（共用 .minecraft）" Tag="off"/>
+                                    </ComboBox>
+                                </Grid>
+                                <TextBlock Classes="sub" Text="开启后这个版本的 mods、saves、config 都放在它自己的文件夹里，不同整合包互不干扰。"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="Java 与内存" Classes="h2"/>
+                                <Grid Margin="0,0,0,10" ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Text="Java" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                    <ComboBox Name="JavaBox" Grid.Column="1" HorizontalAlignment="Stretch"
+                                              SelectionChanged="Setting_Changed"/>
+                                    <Button Grid.Column="2" Content="浏览…" Margin="8,0,0,0" Click="BrowseJava_Click"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,6" ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="游戏内存" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                    <ComboBox Name="MemMode" Grid.Column="1" HorizontalAlignment="Stretch"
+                                              SelectionChanged="Setting_Changed">
+                                        <ComboBoxItem Content="跟随全局设置" Tag=""/>
+                                        <ComboBoxItem Content="自动分配" Tag="auto"/>
+                                        <ComboBoxItem Content="自定义" Tag="custom"/>
+                                    </ComboBox>
+                                </Grid>
+                                <Grid Name="MemCustomRow" Margin="0,4,0,0" ColumnDefinitions="*,Auto">
+                                    <Slider Name="MemSlider" Minimum="1024" Maximum="16384" TickFrequency="256"
+                                            IsSnapToTickEnabled="True" Margin="0,0,16,0"
+                                            ValueChanged="MemSlider_ValueChanged"/>
+                                    <TextBlock Name="MemText" Grid.Column="1" VerticalAlignment="Center" Classes="body"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="cardbox">
+                            <StackPanel>
+                                <TextBlock Text="启动选项" Classes="h2"/>
+                                <TextBlock Text="游戏窗口标题（留空不修改，可用 {version}）" Classes="sub"/>
+                                <TextBox Name="TitleBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
+                                <TextBlock Text="启动后自动进入服务器（如 mc.example.com:25565）" Classes="sub"/>
+                                <TextBox Name="ServerBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
+                                <TextBlock Text="主界面左下角显示的版本类型文字" Classes="sub"/>
+                                <TextBox Name="VersionTypeBox" Margin="0,4,0,10" Tag="MoonLauncher" LostFocus="Text_LostFocus"/>
+                                <TextBlock Text="额外 JVM 参数（留空使用全局设置）" Classes="sub"/>
+                                <TextBox Name="JvmBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
+                                <TextBlock Text="额外游戏参数（留空使用全局设置）" Classes="sub"/>
+                                <TextBox Name="GameArgsBox" Margin="0,4,0,10" LostFocus="Text_LostFocus"/>
+                                <CheckBox Name="SkipCheck" Classes="switch"
+                                          Content="启动前不检查文件完整性（更快，但文件坏了不会自动修复）"
+                                          Click="Setting_Changed"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Mod -->
+                <DockPanel Name="PanelMods" IsVisible="False">
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8" RowDefinitions="Auto,Auto">
+                        <TextBox Name="ModSearch" Tag="搜索已安装的 Mod" TextChanged="ModSearch_TextChanged"/>
+                        <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                            <Button Content="打开文件夹" Margin="0,0,6,0" Click="OpenMods_Click"/>
+                            <Button Name="CheckUpdatesBtn" Content="检查更新" Margin="0,0,6,0" Click="CheckUpdates_Click"/>
+                            <Button Name="UpdateAllBtn" Content="全部更新" Margin="0,0,6,0"
+                                    Click="UpdateAll_Click" IsVisible="False"/>
+                            <Button Content="下载 Mod" Classes="primary" Click="DownloadMods_Click"/>
+                        </WrapPanel>
+                    </Grid>
+                    <TextBlock Name="ModStats" DockPanel.Dock="Top" Classes="sub" Margin="2,0,0,8"/>
+                    <Grid>
+                        <ListBox Name="ModList" Classes="cardlist"
+                                 DragDrop.AllowDrop="True" DragDrop.Drop="ModList_Drop">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="36" Height="36" CornerRadius="7"
+                                                Background="{DynamicResource AccentSoft}" Margin="0,0,12,0"
+                                                ClipToBounds="True">
+                                            <Image Source="{Binding IconPixels, Converter={StaticResource Bitmap32}}"
+                                                   Stretch="UniformToFill"
+                                                   RenderOptions.BitmapInterpolationMode="None"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                       ToolTip.Tip="{Binding DisplayName}"/>
+                                            <WrapPanel>
+                                                <TextBlock Text="{Binding Version}" Classes="sub" Margin="0,0,8,0"/>
+                                                <Border Background="{DynamicResource OkSoft}" CornerRadius="4"
+                                                        Padding="5,0" IsVisible="{Binding HasUpdate}">
+                                                    <TextBlock Text="有更新" FontSize="11" Foreground="{DynamicResource Ok}"/>
+                                                </Border>
+                                            </WrapPanel>
+                                            <TextBlock Text="{Binding FileName}" Classes="sub"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                       ToolTip.Tip="{Binding FilePath}"/>
+                                            <TextBlock Text="{Binding LoadError}" Classes="sub"
+                                                       Foreground="{DynamicResource Danger}"
+                                                       IsVisible="{Binding LoadError, Converter={StaticResource ModErrorVis}}"
+                                                       ToolTip.Tip="{Binding LoadError}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Classes="ghost" ToolTip.Tip="更新" Click="UpdateMod_Click"
+                                                    IsVisible="{Binding HasUpdate}">
+                                                <TextBlock Text="&#xE896;" Classes="icon"/>
+                                            </Button>
+                                            <CheckBox Classes="switch" IsChecked="{Binding Enabled, Mode=OneWay}"
+                                                      Click="ToggleMod_Click" ToolTip.Tip="启用 / 禁用" Margin="6,0"/>
+                                            <Button Classes="ghost" ToolTip.Tip="删除（放进回收站）" Click="DeleteMod_Click">
+                                                <TextBlock Text="&#xE74D;" Classes="icon"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Name="ModEmpty" Classes="body" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" TextAlignment="Center" MaxWidth="360" Margin="24"
+                                   IsHitTestVisible="False" IsVisible="False"/>
+                    </Grid>
+                </DockPanel>
+
+                <!-- 文件夹类（资源包 / 光影 / 存档 / 截图） -->
+                <DockPanel Name="PanelFiles" IsVisible="False">
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,8" RowDefinitions="Auto,Auto">
+                        <TextBlock Name="FilesHint" Classes="sub"/>
+                        <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                            <Button Content="打开文件夹" Margin="0,0,6,0" Click="OpenFiles_Click"/>
+                            <Button Name="FilesDownload" Content="去下载" Classes="primary" Click="FilesDownload_Click"/>
+                        </WrapPanel>
+                    </Grid>
+                    <Grid>
+                        <ListBox Name="FileList" Classes="cardlist"
+                                 DragDrop.AllowDrop="True" DragDrop.Drop="FileList_Drop">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                       ToolTip.Tip="{Binding Path}"/>
+                                            <TextBlock Text="{Binding Info}" Classes="sub"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" VerticalAlignment="Center"
+                                                ToolTip.Tip="删除（放进回收站）" Click="DeleteFile_Click">
+                                            <TextBlock Text="&#xE74D;" Classes="icon"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Name="FilesEmpty" Classes="body" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" TextAlignment="Center" MaxWidth="360" Margin="24"
+                                   IsHitTestVisible="False" IsVisible="False"/>
+                    </Grid>
+                </DockPanel>
+
+                <!-- 导出 -->
+                <ScrollViewer Name="PanelExport" IsVisible="False" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Border Classes="cardbox" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="导出为 Modrinth 整合包（.mrpack）" Classes="h2"/>
+                            <TextBlock Classes="body" Text="能在 Modrinth 上找到的 Mod 只记录下载地址（文件小、合规），其他文件（配置、找不到来源的 Mod）打包进 overrides。导出的文件可以被本启动器、PCL、HMCL、Prism 等导入。" Margin="0,0,0,12"/>
+                            <TextBlock Text="整合包名称" Classes="sub"/>
+                            <TextBox Name="PackName" Margin="0,4,0,10"/>
+                            <TextBlock Text="整合包版本" Classes="sub"/>
+                            <TextBox Name="PackVersion" Text="1.0.0" Margin="0,4,0,10"/>
+                            <CheckBox Name="PackSaves" Classes="switch" Content="包含存档"/>
+                            <Button Content="导出…" Classes="primary" HorizontalAlignment="Left"
+                                    Margin="0,12,0,0" Click="Export_Click"/>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

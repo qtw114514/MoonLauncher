@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data.Converters;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.Controls.Primitives;
@@ -18,6 +20,16 @@ using MoonLauncher.Game;
 
 namespace MoonLauncher.UI.Pages
 {
+    /// <summary>Mod 读取失败时显示错误行，否则隐藏</summary>
+    public sealed class ModErrorVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            string.IsNullOrWhiteSpace(value as string) ? false : true;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     public class FileEntry
     {
         public string Path { get; set; }
@@ -45,11 +57,46 @@ namespace MoonLauncher.UI.Pages
         {
             _inst.Reload();
             Title.Text = _inst.Id;
-            SubTitle.Text = _inst.IsValid ? _inst.Description : "版本文件不完整";
+            SubTitle.Text = _inst.IsValid ? _inst.Description : "版本文件不完整：" + _inst.LoadError;
             InfoText.Text = BuildInfo();
-            TabMods.IsVisible = _inst.IsModded ? true : false;
+            TabMods.IsEnabled = _inst.IsModded;
+            ToolTip.SetTip(TabMods, _inst.IsModded ? "管理已安装的 Mod" : "当前版本未识别到 Mod 加载器");
+            NonModdedHint.IsVisible = !_inst.IsModded;
+            if (!_inst.IsModded && TabMods.IsChecked == true) TabOverview.IsChecked = true;
+            UpdateSafetyState();
             if (TabSettings.IsChecked == true) LoadSettings();
             if (TabMods.IsChecked == true) _ = LoadModsAsync();
+        }
+
+        /// <summary>
+        /// 游戏运行 / 启动准备中时，把会改动实例的操作提前锁住并给出可见提示，
+        /// 而不是等用户点了再报错。
+        /// </summary>
+        void UpdateSafetyState()
+        {
+            bool busy = LaunchService.IsInstanceBusy(_inst);
+            StateText.Text = busy ? "运行中 · 修改已锁定" : _inst.IsValid ? "实例管理" : "版本文件异常";
+            StateText.Foreground = (Avalonia.Media.IBrush)this.FindResource(
+                busy ? "Warn" : _inst.IsValid ? "Accent" : "Danger");
+            BusyNotice.IsVisible = busy;
+            CompleteBtn.IsEnabled = !busy;
+            RenameBtn.IsEnabled = !busy;
+            DeleteBtn.IsEnabled = !busy;
+            UpdateAllBtn.IsEnabled = !busy;
+            ModList.Tag = busy ? "False" : "True";
+            DragDrop.SetAllowDrop(ModList, !busy);
+            ToolTip.SetTip(ModList, busy ? "游戏运行中，Mod 修改与拖放已锁定" : "把 .jar 拖到这里安装 Mod");
+            FileList.Tag = busy ? "False" : "True";
+            DragDrop.SetAllowDrop(FileList, !busy);
+            ToolTip.SetTip(FileList, busy ? "游戏运行中，文件删除与拖放已锁定" : "可以把文件或文件夹拖到这里");
+        }
+
+        /// <summary>真正改动前再确认一次；返回 false 时已提示用户</summary>
+        bool EnsureCanModify(string action)
+        {
+            if (!LaunchService.IsInstanceBusy(_inst)) return true;
+            Dialogs.Toast($"游戏正在运行或启动准备中，不能{action}", MainWindow.ToastKind.Error);
+            return false;
         }
 
         string BuildInfo()
@@ -247,12 +294,26 @@ namespace MoonLauncher.UI.Pages
         {
             var dir = _inst.ModsDir;
             ModStats.Text = "读取中…";
-            _mods = await Task.Run(() => LocalMods.Scan(dir));
-            ApplyModFilter();
+            ModEmpty.IsVisible = false;
+            try
+            {
+                _mods = await Task.Run(() => LocalMods.Scan(dir));
+                ApplyModFilter();
+            }
+            catch (Exception ex)
+            {
+                _mods.Clear();
+                ModList.ItemsSource = null;
+                UpdateAllBtn.IsVisible = false;
+                ModStats.Text = "Mod 读取失败";
+                ModEmpty.Text = "无法读取 Mod 文件夹：" + ex.Message;
+                ModEmpty.IsVisible = true;
+            }
         }
 
         void ApplyModFilter()
         {
+            if (ModList == null) return;
             var q = (ModSearch.Text ?? "").Trim();
             var list = string.IsNullOrEmpty(q) ? _mods : _mods.Where(m =>
                 (m.Name ?? "").IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -261,8 +322,18 @@ namespace MoonLauncher.UI.Pages
             ModList.ItemsSource = list;
             int enabled = _mods.Count(m => m.Enabled);
             int upd = _mods.Count(m => m.HasUpdate);
-            ModStats.Text = _mods.Count == 0 ? "还没有 Mod，点右上角下载，或把 .jar 拖进下面" : $"共 {_mods.Count} 个，已启用 {enabled} 个" + (upd > 0 ? $"，{upd} 个可更新" : "");
-            UpdateAllBtn.IsVisible = upd > 0 ? true : false;
+            int bad = _mods.Count(m => !string.IsNullOrWhiteSpace(m.LoadError));
+            bool busy = LaunchService.IsInstanceBusy(_inst);
+            ModStats.Text = (_mods.Count == 0
+                    ? "还没有 Mod，点上方下载，或把 .jar 拖进下面"
+                    : $"共 {_mods.Count} 个，已启用 {enabled} 个" + (upd > 0 ? $"，{upd} 个可更新" : "") + (bad > 0 ? $"，{bad} 个坏 Mod / 无法读取" : ""))
+                + (busy ? " · 游戏运行中，修改已锁定" : "");
+            ModEmpty.Text = _mods.Count == 0
+                ? "这里还没有 Mod。\n点上方“下载 Mod”，或把 .jar 文件拖进列表。"
+                : "没有匹配搜索条件的 Mod。";
+            ModEmpty.IsVisible = list.Count == 0;
+            UpdateAllBtn.IsVisible = upd > 0;
+            UpdateAllBtn.IsEnabled = !busy;
         }
 
         void ModSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyModFilter();
@@ -354,6 +425,7 @@ namespace MoonLauncher.UI.Pages
             FilesHint.Text = hint;
             FilesDownload.IsVisible = TabSaves.IsChecked == true || TabShots.IsChecked == true ? false : true;
             var list = new List<FileEntry>();
+            string error = null;
             try
             {
                 if (Directory.Exists(dir))
@@ -367,8 +439,12 @@ namespace MoonLauncher.UI.Pages
                     }
                 }
             }
-            catch (Exception ex) { Log.Warn("读取文件夹失败：" + ex.Message); }
+            catch (Exception ex) { error = ex.Message; Log.Warn("读取文件夹失败：" + ex.Message); }
             FileList.ItemsSource = list.OrderByDescending(x => x.Info).ToList();
+            FilesEmpty.Text = error == null
+                ? "这里还没有文件。\n可以打开文件夹核对路径，或把文件拖进列表。"
+                : "读取文件夹失败：" + error;
+            FilesEmpty.IsVisible = list.Count == 0;
         }
 
         void OpenFiles_Click(object sender, RoutedEventArgs e) => Util.OpenFolder(_filesDir);
