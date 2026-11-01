@@ -11,16 +11,18 @@
                 <StackPanel DockPanel.Dock="Bottom">
                     <Button Content="导入整合包文件" Click="ImportPack_Click"/>
                 </StackPanel>
-                <StackPanel>
-                    <TextBlock Text="游戏" Classes="sub" Margin="12,0,0,6"/>
-                    <RadioButton x:Name="NavGame" GroupName="dl" Classes="sidenav" Tag="⛏" Content="Minecraft" Checked="Nav_Checked"/>
-                    <TextBlock Text="社区资源" Classes="sub" Margin="12,14,0,6"/>
-                    <RadioButton x:Name="NavMod" GroupName="dl" Classes="sidenav" Tag="🧩" Content="Mod" Checked="Nav_Checked"/>
-                    <RadioButton x:Name="NavPack" GroupName="dl" Classes="sidenav" Tag="📦" Content="整合包" Checked="Nav_Checked"/>
-                    <RadioButton x:Name="NavRes" GroupName="dl" Classes="sidenav" Tag="🎨" Content="资源包" Checked="Nav_Checked"/>
-                    <RadioButton x:Name="NavShader" GroupName="dl" Classes="sidenav" Tag="☀" Content="光影包" Checked="Nav_Checked"/>
-                    <RadioButton x:Name="NavData" GroupName="dl" Classes="sidenav" Tag="🗃" Content="数据包" Checked="Nav_Checked"/>
-                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock Text="游戏" Classes="sub" Margin="12,0,0,6"/>
+                        <RadioButton x:Name="NavGame" GroupName="dl" Classes="sidenav" Tag="⛏" Content="Minecraft" Checked="Nav_Checked"/>
+                        <TextBlock Text="社区资源" Classes="sub" Margin="12,14,0,6"/>
+                        <RadioButton x:Name="NavMod" GroupName="dl" Classes="sidenav" Tag="🧩" Content="Mod" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavPack" GroupName="dl" Classes="sidenav" Tag="📦" Content="整合包" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavRes" GroupName="dl" Classes="sidenav" Tag="🎨" Content="资源包" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavShader" GroupName="dl" Classes="sidenav" Tag="☀" Content="光影包" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavData" GroupName="dl" Classes="sidenav" Tag="🗃" Content="数据包" Checked="Nav_Checked"/>
+                    </StackPanel>
+                </ScrollViewer>
             </DockPanel>
         </Border>
         <ContentControl x:Name="Host" Grid.Column="1" Focusable="False"/>
