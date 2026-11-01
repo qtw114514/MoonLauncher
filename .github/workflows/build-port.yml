@@ -13,10 +13,19 @@ on:
 
 jobs:
   build:
+    name: build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          # macOS 同时出两个架构：Intel 与 Apple Silicon 的用户都得能用。
+          # 在 arm64 runner 上交叉打包 x64 没问题，publish 只是把 runtime pack 解出来，不执行二进制。
+          - os: macos-latest
+            rids: "osx-arm64 osx-x64"
+          - os: ubuntu-latest
+            rids: "linux-x64"
+          - os: windows-latest
+            rids: "win-x64"
     runs-on: ${{ matrix.os }}
     steps:
       - name: 检出代码
@@ -41,6 +50,65 @@ jobs:
       - name: 检查 XAML 资源键
         shell: bash
         run: sh tools/check-xaml-keys.sh
+
+      # ===== 以下为产物打包，闸门全过之后才跑 =====
+
+      - name: 读取版本号
+        id: version
+        shell: bash
+        run: |
+          V=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' src/MoonLauncher/MoonLauncher.csproj | head -1)
+          if [ -z "$V" ]; then echo "无法从 csproj 读取 <Version>" >&2; exit 1; fi
+          echo "value=$V" >> "$GITHUB_OUTPUT"
+
+      # 复用 tools/publish.sh，保证 CI 产物与本地发布完全一致（同一套单文件参数）
+      - name: 打包产物
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -e
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Git Bash 的 /c/... 路径传给原生 dotnet.exe 不可靠，这里直接 publish。
+            # Windows 产物是单个 exe，不需要 macOS 那套 .app 组装逻辑。
+            for rid in ${{ matrix.rids }}; do
+              dotnet publish src/MoonLauncher/MoonLauncher.csproj -c Release -r "$rid" \
+                --self-contained true \
+                -p:PublishSingleFile=true \
+                -p:IncludeNativeLibrariesForSelfExtract=true \
+                -p:Version="$VERSION" \
+                -nologo -o "dist/$rid"
+            done
+          else
+            for rid in ${{ matrix.rids }}; do
+              sh tools/publish.sh "$rid"
+            done
+          fi
+
+      # .app / 可执行文件是目录树，直接交给 upload-artifact（内部是 zip）会丢掉
+      # Unix 可执行位，下载后双击无反应。先压成 tar.gz 把权限位带过去。
+      - name: 压缩 Unix 产物
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -e
+          mkdir -p artifacts
+          for rid in ${{ matrix.rids }}; do
+            # COPYFILE_DISABLE 防止 macOS 的 tar 把扩展属性另存成 ._* 文件
+            COPYFILE_DISABLE=1 tar -czf "artifacts/MoonLauncher-$VERSION-$rid.tar.gz" -C dist "$rid"
+          done
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoonLauncher-${{ steps.version.outputs.value }}-${{ matrix.os }}
+          path: |
+            artifacts/*.tar.gz
+            dist/win-x64/*.exe
+          if-no-files-found: error
+          retention-days: 30
 
   selftest:
     # 逐个实例化所有页面，确认 XAML 能在运行时真正加载（绑定、模板、资源整体校验）。
