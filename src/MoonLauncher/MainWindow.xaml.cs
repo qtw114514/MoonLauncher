@@ -225,14 +225,23 @@ namespace MoonLauncher
         void Window_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             UpdateDialogBounds();
+            UpdateTitleLayout();
+        }
+
+        void UpdateTitleLayout()
+        {
             UpdateNavIndicator(false);
-            VersionBadge.Visibility = ActualWidth < 840 ? Visibility.Collapsed : Visibility.Visible;
+            VersionBadge.Visibility = ActualWidth < 900 ? Visibility.Collapsed : Visibility.Visible;
             if (!GlobalSearchInput.IsKeyboardFocused) AnimateSearchWidth(SearchWidth());
-            SearchShortcut.Visibility = ActualWidth < 900 || GlobalSearchInput.IsKeyboardFocused || GlobalSearchInput.Text.Length > 0
+            SearchShortcut.Visibility = SearchWidth() < 180 || GlobalSearchInput.IsKeyboardFocused || GlobalSearchInput.Text.Length > 0
                 ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        double SearchWidth() => ActualWidth < 900 ? 140 : 248;
+        double SearchWidth()
+        {
+            bool taskVisible = DownloadTasksButton.Visibility == Visibility.Visible;
+            return ActualWidth < 900 || taskVisible && ActualWidth < 1100 ? 64 : 248;
+        }
 
         void AnimateSearchWidth(double width)
         {
@@ -246,7 +255,7 @@ namespace MoonLauncher
         {
             SearchShortcut.Visibility = Visibility.Collapsed;
             GlobalSearchBox.BorderBrush = (Brush)FindResource("Focus");
-            AnimateSearchWidth(ActualWidth < 900 ? 170 : 306);
+            AnimateSearchWidth(ActualWidth < 900 ? 96 : DownloadTasksButton.Visibility == Visibility.Visible ? 170 : 306);
             GlobalSearch_TextChanged(GlobalSearchInput, null);
         }
 
@@ -346,28 +355,17 @@ namespace MoonLauncher
             if (IsTaskDrawerOpen) return;
             if (_drawerTasks == null) _drawerTasks = new TasksPage();
             TaskDrawerHost.Content = _drawerTasks;
+            TaskDrawerPanel.RenderTransform = null;
             TaskDrawerLayer.Visibility = Visibility.Visible;
             _drawerTasks.OnShown();
             if (Motion.ReducedMotion)
             {
                 TaskDrawerLayer.Opacity = 1;
-                TaskDrawerPanel.RenderTransform = null;
                 return;
             }
             TaskDrawerLayer.Opacity = 0;
-            var transform = new TranslateTransform(48, 0);
-            TaskDrawerPanel.RenderTransform = transform;
-            var storyboard = new Storyboard();
-            var fade = new DoubleAnimation(0, 1, new Duration(TimeSpan.FromMilliseconds(180)));
-            Storyboard.SetTarget(fade, TaskDrawerLayer);
-            Storyboard.SetTargetProperty(fade, new PropertyPath(FrameworkElement.OpacityProperty));
-            var slide = new DoubleAnimation(48, 0, new Duration(TimeSpan.FromMilliseconds(220)))
-            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-            Storyboard.SetTarget(slide, transform);
-            Storyboard.SetTargetProperty(slide, new PropertyPath(TranslateTransform.XProperty));
-            storyboard.Children.Add(fade);
-            storyboard.Children.Add(slide);
-            storyboard.Begin();
+            TaskDrawerLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, new Duration(TimeSpan.FromMilliseconds(180)))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
         }
 
         void CloseTaskDrawer()
@@ -396,6 +394,7 @@ namespace MoonLauncher
         {
             bool active = TaskManager.Tasks.Any(t => t.IsActive);
             DownloadTasksButton.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            UpdateTitleLayout();
         }
 
         void OnTaskFinished(LauncherTask t)
