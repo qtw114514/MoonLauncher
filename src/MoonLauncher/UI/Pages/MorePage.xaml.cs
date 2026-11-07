@@ -51,7 +51,9 @@ namespace MoonLauncher.UI.Pages
             await Dialogs.Long("分析结果：" + Path.GetFileName(f), sb.ToString());
         }
 
-        async void LauncherLog_Click(object sender, RoutedEventArgs e)
+        async void LauncherLog_Click(object sender, RoutedEventArgs e) => await ShowLauncherLog();
+
+        public async Task ShowLauncherLog()
         {
             var r = await Dialogs.Long("启动器日志（最近 500 行）", Log.RecentText(), new[] { "关闭", "打开日志文件夹" });
             if (r == 1) Util.OpenFolder(Paths.Logs);

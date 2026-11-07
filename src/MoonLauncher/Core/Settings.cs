@@ -130,7 +130,8 @@ namespace MoonLauncher.Core
         public static string Isolation { get => Get("launch.isolation", "modded"); set => Set("launch.isolation", value); }
         public static string WindowTitle { get => Get("launch.title"); set => Set("launch.title", value); }
 
-        public static string ThemeColor { get => Get("ui.theme", "#2F7BF5"); set => Set("ui.theme", value); }
+        public static string ThemeColor { get => Get("ui.theme", "#93A7FF"); set => Set("ui.theme", value); }
+        public static bool LightTheme { get => GetBool("ui.light", false); set => Set("ui.light", value); }
         public static string BackgroundImage { get => Get("ui.background"); set => Set("ui.background", value); }
         /// <summary>液态玻璃（仿 macOS / iOS 的毛玻璃效果）</summary>
         public static bool Glass { get => GetBool("ui.glass", false); set => Set("ui.glass", value); }

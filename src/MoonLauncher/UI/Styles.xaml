@@ -2,75 +2,75 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- 阶段 4 设计令牌。旧键名保留给既有页面，Brush.* / Color.* 为语义键。 -->
-    <!-- 默认蓝白主题：强调蓝 #2F7BF5，深海军蓝底 #0A1524，卡片为白色透明层级。 -->
-    <Color x:Key="AccentColor">#2F7BF5</Color>
-    <Color x:Key="Color.Accent">#2F7BF5</Color>
-    <Color x:Key="AccentHoverColor">#5493F7</Color>
-    <Color x:Key="Color.AccentHover">#5493F7</Color>
-    <Color x:Key="AccentPressedColor">#2560BF</Color>
-    <Color x:Key="Color.AccentPressed">#2560BF</Color>
-    <Color x:Key="AccentSoftColor">#11274A</Color>
-    <Color x:Key="Color.AccentSoft">#11274A</Color>
-    <Color x:Key="AccentSoft2Color">#163667</Color>
-    <Color x:Key="OnAccentColor">#0A1524</Color>
-    <Color x:Key="Color.OnAccent">#0A1524</Color>
-    <Color x:Key="OnAccentHoverColor">#0A1524</Color>
-    <Color x:Key="Color.OnAccentHover">#0A1524</Color>
+    <!-- 月光深色主题。旧键名保留给既有页面，Brush.* / Color.* 为语义键。 -->
+    <!-- 对应 index.html：近黑底 #08090D、淡紫蓝 #93A7FF、低对比描边与白色透明层级。 -->
+    <Color x:Key="AccentColor">#93A7FF</Color>
+    <Color x:Key="Color.Accent">#93A7FF</Color>
+    <Color x:Key="AccentHoverColor">#AAB8FF</Color>
+    <Color x:Key="Color.AccentHover">#AAB8FF</Color>
+    <Color x:Key="AccentPressedColor">#6A79E6</Color>
+    <Color x:Key="Color.AccentPressed">#6A79E6</Color>
+    <Color x:Key="AccentSoftColor">#2493A7FF</Color>
+    <Color x:Key="Color.AccentSoft">#2493A7FF</Color>
+    <Color x:Key="AccentSoft2Color">#3893A7FF</Color>
+    <Color x:Key="OnAccentColor">#0A0E1A</Color>
+    <Color x:Key="Color.OnAccent">#0A0E1A</Color>
+    <Color x:Key="OnAccentHoverColor">#0A0E1A</Color>
+    <Color x:Key="Color.OnAccentHover">#0A0E1A</Color>
     <Color x:Key="OnAccentPressedColor">#FFFFFF</Color>
     <Color x:Key="Color.OnAccentPressed">#FFFFFF</Color>
-    <Color x:Key="SelectionGlowColor">#592F7BF5</Color>
-    <Color x:Key="Color.SelectionGlow">#592F7BF5</Color>
+    <Color x:Key="SelectionGlowColor">#4293A7FF</Color>
+    <Color x:Key="Color.SelectionGlow">#4293A7FF</Color>
 
-    <Color x:Key="BackgroundColor">#0A1524</Color>
-    <Color x:Key="Color.Background">#0A1524</Color>
-    <Color x:Key="CardColor">#13FFFFFF</Color>
-    <Color x:Key="Color.Surface">#13FFFFFF</Color>
-    <Color x:Key="CardHoverColor">#1FFFFFFF</Color>
-    <Color x:Key="Color.SurfaceHover">#1FFFFFFF</Color>
-    <Color x:Key="SurfaceElevatedColor">#26FFFFFF</Color>
-    <Color x:Key="Color.SurfaceElevated">#26FFFFFF</Color>
-    <Color x:Key="DialogSurfaceColor">#F20E1C30</Color>
-    <Color x:Key="Color.DialogSurface">#F20E1C30</Color>
-    <Color x:Key="ScrimColor">#990A1424</Color>
-    <Color x:Key="Color.Scrim">#990A1424</Color>
-    <Color x:Key="LineColor">#22FFFFFF</Color>
-    <Color x:Key="Color.Line">#22FFFFFF</Color>
-    <Color x:Key="LineStrongColor">#40FFFFFF</Color>
-    <Color x:Key="Color.LineStrong">#40FFFFFF</Color>
-    <Color x:Key="ControlBorderColor">#59FFFFFF</Color>
-    <Color x:Key="Color.ControlBorder">#59FFFFFF</Color>
-    <Color x:Key="TextColor">#EFF4FB</Color>
-    <Color x:Key="Color.Text">#EFF4FB</Color>
-    <Color x:Key="Text2Color">#9DB2CE</Color>
-    <Color x:Key="Color.TextSecondary">#9DB2CE</Color>
-    <Color x:Key="Text3Color">#7E93B0</Color>
-    <Color x:Key="Color.TextTertiary">#7E93B0</Color>
-    <Color x:Key="TextDisabledColor">#64788F</Color>
-    <Color x:Key="Color.TextDisabled">#64788F</Color>
-    <Color x:Key="DangerColor">#FF5A5F</Color>
-    <Color x:Key="Color.Danger">#FF5A5F</Color>
-    <Color x:Key="OnDangerColor">#0A1524</Color>
-    <Color x:Key="Color.OnDanger">#0A1524</Color>
-    <Color x:Key="DangerSoftColor">#33FF5A5F</Color>
-    <Color x:Key="OkColor">#34C77B</Color>
-    <Color x:Key="Color.Ok">#34C77B</Color>
-    <Color x:Key="OnOkColor">#0A1524</Color>
-    <Color x:Key="Color.OnOk">#0A1524</Color>
-    <Color x:Key="OkSoftColor">#3334C77B</Color>
-    <Color x:Key="WarnColor">#FFB020</Color>
-    <Color x:Key="Color.Warning">#FFB020</Color>
-    <Color x:Key="OnWarningColor">#0A1524</Color>
-    <Color x:Key="Color.OnWarning">#0A1524</Color>
-    <Color x:Key="WarnSoftColor">#33FFB020</Color>
-    <Color x:Key="FocusColor">#7FB2FF</Color>
-    <Color x:Key="Color.Focus">#7FB2FF</Color>
-    <Color x:Key="HighlightTopColor">#17FFFFFF</Color>
-    <Color x:Key="Color.HighlightTop">#17FFFFFF</Color>
+    <Color x:Key="BackgroundColor">#08090D</Color>
+    <Color x:Key="Color.Background">#08090D</Color>
+    <Color x:Key="CardColor">#09FFFFFF</Color>
+    <Color x:Key="Color.Surface">#09FFFFFF</Color>
+    <Color x:Key="CardHoverColor">#10FFFFFF</Color>
+    <Color x:Key="Color.SurfaceHover">#10FFFFFF</Color>
+    <Color x:Key="SurfaceElevatedColor">#16FFFFFF</Color>
+    <Color x:Key="Color.SurfaceElevated">#16FFFFFF</Color>
+    <Color x:Key="DialogSurfaceColor">#F7141720</Color>
+    <Color x:Key="Color.DialogSurface">#F7141720</Color>
+    <Color x:Key="ScrimColor">#B308090D</Color>
+    <Color x:Key="Color.Scrim">#B308090D</Color>
+    <Color x:Key="LineColor">#0EFFFFFF</Color>
+    <Color x:Key="Color.Line">#0EFFFFFF</Color>
+    <Color x:Key="LineStrongColor">#24FFFFFF</Color>
+    <Color x:Key="Color.LineStrong">#24FFFFFF</Color>
+    <Color x:Key="ControlBorderColor">#17FFFFFF</Color>
+    <Color x:Key="Color.ControlBorder">#17FFFFFF</Color>
+    <Color x:Key="TextColor">#E9EDF6</Color>
+    <Color x:Key="Color.Text">#E9EDF6</Color>
+    <Color x:Key="Text2Color">#B7C0D4</Color>
+    <Color x:Key="Color.TextSecondary">#B7C0D4</Color>
+    <Color x:Key="Text3Color">#79839A</Color>
+    <Color x:Key="Color.TextTertiary">#79839A</Color>
+    <Color x:Key="TextDisabledColor">#616B80</Color>
+    <Color x:Key="Color.TextDisabled">#616B80</Color>
+    <Color x:Key="DangerColor">#FF7075</Color>
+    <Color x:Key="Color.Danger">#FF7075</Color>
+    <Color x:Key="OnDangerColor">#08090D</Color>
+    <Color x:Key="Color.OnDanger">#08090D</Color>
+    <Color x:Key="DangerSoftColor">#26FF7075</Color>
+    <Color x:Key="OkColor">#65C99A</Color>
+    <Color x:Key="Color.Ok">#65C99A</Color>
+    <Color x:Key="OnOkColor">#08090D</Color>
+    <Color x:Key="Color.OnOk">#08090D</Color>
+    <Color x:Key="OkSoftColor">#2665C99A</Color>
+    <Color x:Key="WarnColor">#E8B45F</Color>
+    <Color x:Key="Color.Warning">#E8B45F</Color>
+    <Color x:Key="OnWarningColor">#08090D</Color>
+    <Color x:Key="Color.OnWarning">#08090D</Color>
+    <Color x:Key="WarnSoftColor">#26E8B45F</Color>
+    <Color x:Key="FocusColor">#93A7FF</Color>
+    <Color x:Key="Color.Focus">#93A7FF</Color>
+    <Color x:Key="HighlightTopColor">#0BFFFFFF</Color>
+    <Color x:Key="Color.HighlightTop">#0BFFFFFF</Color>
     <Color x:Key="TransparentColor">#00000000</Color>
     <Color x:Key="Color.Transparent">#00000000</Color>
-    <Color x:Key="ScrollThumbColor">#59FFFFFF</Color>
-    <Color x:Key="ScrollThumbHoverColor">#80FFFFFF</Color>
+    <Color x:Key="ScrollThumbColor">#1CFFFFFF</Color>
+    <Color x:Key="ScrollThumbHoverColor">#2EFFFFFF</Color>
 
     <SolidColorBrush x:Key="Accent" Color="{DynamicResource AccentColor}"/>
     <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource AccentColor}"/>
@@ -140,54 +140,68 @@
     <SolidColorBrush x:Key="ScrollThumbHover" Color="{DynamicResource ScrollThumbHoverColor}"/>
 
     <LinearGradientBrush x:Key="BorderGradient" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#E6FFFFFF" Offset="0"/>
-        <GradientStop Color="#80FFFFFF" Offset="0.45"/>
-        <GradientStop Color="#4D9FB4D6" Offset="1"/>
+        <GradientStop Color="#16FFFFFF" Offset="0"/>
+        <GradientStop Color="#0EFFFFFF" Offset="0.45"/>
+        <GradientStop Color="#2493A7FF" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Brush.BorderGradient" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#E6FFFFFF" Offset="0"/>
-        <GradientStop Color="#80FFFFFF" Offset="0.45"/>
-        <GradientStop Color="#4D9FB4D6" Offset="1"/>
+        <GradientStop Color="#16FFFFFF" Offset="0"/>
+        <GradientStop Color="#0EFFFFFF" Offset="0.45"/>
+        <GradientStop Color="#2493A7FF" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="TopHighlight" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#17FFFFFF" Offset="0"/>
+        <GradientStop Color="#07FFFFFF" Offset="0"/>
         <GradientStop Color="#00000000" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Brush.TopHighlight" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#17FFFFFF" Offset="0"/>
+        <GradientStop Color="#07FFFFFF" Offset="0"/>
         <GradientStop Color="#00000000" Offset="1"/>
     </LinearGradientBrush>
-    <!-- 背景氛围光：默认蓝主光 + 靛蓝辅光（键名保留兼容）。 -->
-    <RadialGradientBrush x:Key="GlowGreen" RadiusX="0.8" RadiusY="0.8" Center="0.15,0.05" GradientOrigin="0.15,0.05">
-        <GradientStop Color="#332F7BF5" Offset="0"/>
-        <GradientStop Color="#002F7BF5" Offset="1"/>
+    <!-- 背景氛围光：顶部与两侧极淡的冷色月光。 -->
+    <RadialGradientBrush x:Key="GlowGreen" RadiusX="0.9" RadiusY="0.9" Center="0.5,-0.12" GradientOrigin="0.5,-0.12">
+        <GradientStop Color="#1B7A91FF" Offset="0"/>
+        <GradientStop Color="#007A91FF" Offset="1"/>
     </RadialGradientBrush>
-    <RadialGradientBrush x:Key="Brush.GlowGreen" RadiusX="0.8" RadiusY="0.8" Center="0.15,0.05" GradientOrigin="0.15,0.05">
-        <GradientStop Color="#332F7BF5" Offset="0"/>
-        <GradientStop Color="#002F7BF5" Offset="1"/>
+    <RadialGradientBrush x:Key="Brush.GlowGreen" RadiusX="0.9" RadiusY="0.9" Center="0.5,-0.12" GradientOrigin="0.5,-0.12">
+        <GradientStop Color="#1B7A91FF" Offset="0"/>
+        <GradientStop Color="#007A91FF" Offset="1"/>
     </RadialGradientBrush>
-    <RadialGradientBrush x:Key="GlowTeal" RadiusX="0.7" RadiusY="0.7" Center="0.9,0.8" GradientOrigin="0.9,0.8">
-        <GradientStop Color="#262052C4" Offset="0"/>
-        <GradientStop Color="#002052C4" Offset="1"/>
+    <RadialGradientBrush x:Key="GlowTeal" RadiusX="0.8" RadiusY="0.8" Center="0.96,0.02" GradientOrigin="0.96,0.02">
+        <GradientStop Color="#0C7696FF" Offset="0"/>
+        <GradientStop Color="#007696FF" Offset="1"/>
     </RadialGradientBrush>
-    <RadialGradientBrush x:Key="Brush.GlowTeal" RadiusX="0.7" RadiusY="0.7" Center="0.9,0.8" GradientOrigin="0.9,0.8">
-        <GradientStop Color="#262052C4" Offset="0"/>
-        <GradientStop Color="#002052C4" Offset="1"/>
+    <RadialGradientBrush x:Key="Brush.GlowTeal" RadiusX="0.8" RadiusY="0.8" Center="0.96,0.02" GradientOrigin="0.96,0.02">
+        <GradientStop Color="#0C7696FF" Offset="0"/>
+        <GradientStop Color="#007696FF" Offset="1"/>
     </RadialGradientBrush>
-    <!-- 新闻头图承托：深蓝黑纵向渐变，上透明下实。 -->
+    <!-- 新闻头图承托：近黑纵向渐变，上透明下实。 -->
     <LinearGradientBrush x:Key="HeroOverlay" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#00000000" Offset="0"/>
-        <GradientStop Color="#730A1524" Offset="0.45"/>
-        <GradientStop Color="#F20A1524" Offset="1"/>
+        <GradientStop Color="#4008090D" Offset="0.42"/>
+        <GradientStop Color="#E008090D" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Brush.HeroOverlay" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#00000000" Offset="0"/>
-        <GradientStop Color="#730A1524" Offset="0.45"/>
-        <GradientStop Color="#F20A1524" Offset="1"/>
+        <GradientStop Color="#4008090D" Offset="0.42"/>
+        <GradientStop Color="#E008090D" Offset="1"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="TitleBrush" StartPoint="0,0" EndPoint="1,0">
-        <GradientStop Color="#F2102545" Offset="0"/>
-        <GradientStop Color="#F20C1A2E" Offset="1"/>
+        <GradientStop Color="#B80A0C12" Offset="0"/>
+        <GradientStop Color="#B808090D" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NavActive" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#20CBD6FF" Offset="0"/>
+        <GradientStop Color="#0EB0C0FF" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PlayGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="{DynamicResource AccentHoverColor}" Offset="0"/>
+        <GradientStop Color="{DynamicResource AccentColor}" Offset="0.52"/>
+        <GradientStop Color="{DynamicResource AccentPressedColor}" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NewsRule" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#7593A7FF" Offset="0"/>
+        <GradientStop Color="#2993A7FF" Offset="0.62"/>
+        <GradientStop Color="#0093A7FF" Offset="1"/>
     </LinearGradientBrush>
 
     <DropShadowEffect x:Key="Shadow.Card" BlurRadius="32" ShadowDepth="6" Opacity="0.28" Color="#000000"/>
@@ -201,10 +215,10 @@
     <FontFamily x:Key="FontFamily.Mono">Consolas, Microsoft YaHei UI</FontFamily>
 
     <CornerRadius x:Key="R">10</CornerRadius>
-    <CornerRadius x:Key="Radius.Window">22</CornerRadius>
-    <CornerRadius x:Key="Radius.Dialog">22</CornerRadius>
-    <CornerRadius x:Key="Radius.Card">18</CornerRadius>
-    <CornerRadius x:Key="Radius.Container">13</CornerRadius>
+    <CornerRadius x:Key="Radius.Window">18</CornerRadius>
+    <CornerRadius x:Key="Radius.Dialog">18</CornerRadius>
+    <CornerRadius x:Key="Radius.Card">14</CornerRadius>
+    <CornerRadius x:Key="Radius.Container">12</CornerRadius>
     <CornerRadius x:Key="Radius.Control">10</CornerRadius>
     <CornerRadius x:Key="Radius.Small">8</CornerRadius>
     <CornerRadius x:Key="Radius.Pill">999</CornerRadius>
@@ -217,34 +231,34 @@
     <sys:Double x:Key="Space.6">24</sys:Double>
     <sys:Double x:Key="Space.8">32</sys:Double>
     <sys:Double x:Key="Space.10">40</sys:Double>
-    <sys:Double x:Key="Size.Hit.Min">40</sys:Double>
+    <sys:Double x:Key="Size.Hit.Min">36</sys:Double>
     <sys:Double x:Key="Size.Button.PrimaryHeight">44</sys:Double>
-    <sys:Double x:Key="Size.Nav.Height">40</sys:Double>
-    <sys:Double x:Key="Size.Nav.MinWidth">78</sys:Double>
-    <sys:Double x:Key="Size.Nav.GroupWidth">430</sys:Double>
-    <sys:Double x:Key="Size.TopBar.Height">68</sys:Double>
-    <sys:Double x:Key="Size.Highlight.Height">16</sys:Double>
-    <sys:Double x:Key="Size.Input.Height">40</sys:Double>
-    <sys:Double x:Key="Size.List.Row">52</sys:Double>
+    <sys:Double x:Key="Size.Nav.Height">30</sys:Double>
+    <sys:Double x:Key="Size.Nav.MinWidth">64</sys:Double>
+    <sys:Double x:Key="Size.Nav.GroupWidth">330</sys:Double>
+    <sys:Double x:Key="Size.TopBar.Height">60</sys:Double>
+    <sys:Double x:Key="Size.Highlight.Height">12</sys:Double>
+    <sys:Double x:Key="Size.Input.Height">36</sys:Double>
+    <sys:Double x:Key="Size.List.Row">46</sys:Double>
     <sys:Double x:Key="Size.Icon.Sm">14</sys:Double>
     <sys:Double x:Key="Size.Icon.Md">18</sys:Double>
     <sys:Double x:Key="Size.Icon.Lg">24</sys:Double>
-    <sys:Double x:Key="Size.Brand.Icon">28</sys:Double>
+    <sys:Double x:Key="Size.Brand.Icon">22</sys:Double>
     <sys:Double x:Key="Size.Dialog.MinWidth">420</sys:Double>
     <sys:Double x:Key="Size.Dialog.MaxWidth">720</sys:Double>
     <sys:Double x:Key="Size.Dialog.ViewportMargin">40</sys:Double>
     <sys:Double x:Key="Size.Dialog.ViewportHeightMargin">64</sys:Double>
     <sys:Double x:Key="Size.Task.DetailMaxHeight">120</sys:Double>
     <sys:Double x:Key="Size.Task.DrawerWidth">400</sys:Double>
-    <sys:Double x:Key="Size.News.HeroHeight">200</sys:Double>
+    <sys:Double x:Key="Size.News.HeroHeight">330</sys:Double>
     <sys:Double x:Key="Size.Combo.MaxHeight">320</sys:Double>
     <sys:Double x:Key="Size.Progress.IndeterminateWidth">72</sys:Double>
     <sys:Double x:Key="Size.Switch.Width">40</sys:Double>
     <sys:Double x:Key="Size.Switch.Height">22</sys:Double>
     <sys:Double x:Key="Size.Switch.Knob">16</sys:Double>
-    <sys:Double x:Key="Size.ScrollBar">8</sys:Double>
+    <sys:Double x:Key="Size.ScrollBar">6</sys:Double>
 
-    <GridLength x:Key="Size.TopBar.Row">68</GridLength>
+    <GridLength x:Key="Size.TopBar.Row">60</GridLength>
     <GridLength x:Key="Size.Dialog.ViewportRow">64</GridLength>
 
     <sys:Double x:Key="Font.Display">34</sys:Double>
@@ -449,6 +463,15 @@
         </Setter>
     </Style>
     <Style TargetType="Button" x:Key="Style.Button.Primary" BasedOn="{StaticResource Primary}"/>
+    <Style TargetType="Button" x:Key="PlayButton" BasedOn="{StaticResource Primary}">
+        <Setter Property="Background" Value="{StaticResource PlayGradient}"/>
+        <Setter Property="BorderBrush" Value="#24FFFFFF"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="6" Opacity="0.24" Color="#6E87FF"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style TargetType="Button" x:Key="DangerButton" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
@@ -516,43 +539,44 @@
     </Style>
     <Style TargetType="Button" x:Key="Style.Button.Icon" BasedOn="{StaticResource TitleIcon}"/>
 
-    <!-- 顶部五域 -->
+    <!-- 顶部五域：无图标文字标签与低调月光胶囊。 -->
     <Style TargetType="RadioButton" x:Key="TopNav">
-        <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
-        <Setter Property="FontSize" Value="{StaticResource Font.Body}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text3}"/>
+        <Setter Property="FontSize" Value="{StaticResource Font.BodySmall}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Margin" Value="{StaticResource Margin.NavItem}"/>
+        <Setter Property="Margin" Value="1"/>
         <Setter Property="MinWidth" Value="{StaticResource Size.Nav.MinWidth}"/>
         <Setter Property="MinHeight" Value="{StaticResource Size.Nav.Height}"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="b" Background="Transparent" CornerRadius="{StaticResource Radius.Pill}" Padding="{StaticResource Padding.Nav}">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource Icons}" FontSize="{StaticResource Size.Icon.Md}"
-                                       VerticalAlignment="Center" Margin="{StaticResource Margin.IconRight}" Foreground="{TemplateBinding Foreground}"/>
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </StackPanel>
+                    <Border x:Name="b" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="15" Padding="{StaticResource Padding.Nav}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Background" Value="{DynamicResource CardHover}"/></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHover}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Text2}"/>
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource Accent}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+                            <Setter TargetName="b" Property="Background" Value="Transparent"/>
+                            <Setter TargetName="b" Property="BorderBrush" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="IsChecked" Value="True"/>
                                 <Condition Property="IsMouseOver" Value="True"/>
                             </MultiTrigger.Conditions>
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource AccentHover}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource OnAccentHover}"/>
+                            <Setter TargetName="b" Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
                         </MultiTrigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource AccentPressed}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource OnAccentPressed}"/>
+                            <Setter TargetName="b" Property="Background" Value="{DynamicResource AccentSoft}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Focus}"/>
@@ -699,6 +723,36 @@
                             <Setter TargetName="ph" Property="Visibility" Value="Visible"/>
                         </MultiTrigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter TargetName="b" Property="Opacity" Value="0.5"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="TextBox" x:Key="InlineSearch">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Text}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/>
+        <Setter Property="SelectionOpacity" Value="0.26"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid Background="Transparent">
+                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ph" Text="{TemplateBinding Tag}" Foreground="{DynamicResource TextDisabled}"
+                                   VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="ph" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

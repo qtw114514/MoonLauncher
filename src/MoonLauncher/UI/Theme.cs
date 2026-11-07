@@ -9,17 +9,18 @@ namespace MoonLauncher.UI
 {
     public static class Theme
     {
-        /// <summary>默认强调色：清晰蓝。旧版本默认绿首次启动会一次性迁移到这里。</summary>
-        public const string DefaultAccentHex = "#2F7BF5";
-        static readonly Color DefaultAccent = Color.FromRgb(0x2F, 0x7B, 0xF5);
-        /// <summary>旧版本默认绿；仅用于一次性迁移识别，不再是默认色。</summary>
+        /// <summary>默认强调色：月光淡紫蓝。旧版本默认绿首次启动会一次性迁移到这里。</summary>
+        public const string DefaultAccentHex = "#93A7FF";
+        static readonly Color DefaultAccent = Color.FromRgb(0x93, 0xA7, 0xFF);
+        /// <summary>旧版本默认色；仅用于一次性迁移识别，不再是默认色。</summary>
         const string LegacyGreenHex = "#63B850";
-        static readonly Color DeepNavy = Color.FromRgb(0x0A, 0x15, 0x24);
+        const string LegacyBlueHex = "#2F7BF5";
+        static readonly Color DeepNavy = Color.FromRgb(0x08, 0x09, 0x0D);
         static bool _legacyChecked;
 
         public static readonly (string name, string hex)[] Presets =
         {
-            ("默认蓝", DefaultAccentHex), ("草方块绿", LegacyGreenHex), ("末影紫", "#7C5CFA"), ("岩浆橙", "#F08A24"),
+            ("月光紫", DefaultAccentHex), ("草方块绿", LegacyGreenHex), ("末影紫", "#7C5CFA"), ("岩浆橙", "#F08A24"),
             ("樱花粉", "#E5568B"), ("海晶青", "#0EA5B7"), ("红石红", "#D9483B"), ("黑曜石", "#3C4454"),
         };
 
@@ -34,10 +35,10 @@ namespace MoonLauncher.UI
             var requested = Parse(hex, DefaultAccent);
             bool isDefault = requested == DefaultAccent;
             var accent = EnsureReadable(requested);
-            var hover = EnsureReadable(isDefault ? Color.FromRgb(0x54, 0x93, 0xF7) : Mix(accent.Color, Colors.White, 0.18));
-            var pressed = EnsureReadable(isDefault ? Color.FromRgb(0x25, 0x60, 0xBF) : Mix(accent.Color, Colors.Black, 0.22));
-            var soft = Mix(accent.Color, DeepNavy, 0.82);
-            var soft2 = Mix(accent.Color, DeepNavy, 0.68);
+            var hover = EnsureReadable(isDefault ? Color.FromRgb(0xAA, 0xB8, 0xFF) : Mix(accent.Color, Colors.White, 0.18));
+            var pressed = EnsureReadable(isDefault ? Color.FromRgb(0x6A, 0x79, 0xE6) : Mix(accent.Color, Colors.Black, 0.22));
+            var soft = Color.FromArgb(0x24, accent.Color.R, accent.Color.G, accent.Color.B);
+            var soft2 = Color.FromArgb(0x38, accent.Color.R, accent.Color.G, accent.Color.B);
 
             SetColor("Accent", accent.Color);
             SetColor("AccentHover", hover.Color);
@@ -48,19 +49,70 @@ namespace MoonLauncher.UI
             SetColor("OnAccentHover", hover.Foreground);
             SetColor("OnAccentPressed", pressed.Foreground);
 
-            var glow = Color.FromArgb(0x59, accent.Color.R, accent.Color.G, accent.Color.B);
+            var glow = Color.FromArgb(0x42, accent.Color.R, accent.Color.G, accent.Color.B);
             Application.Current.Resources["SelectionGlowColor"] = glow;
             Application.Current.Resources["Color.SelectionGlow"] = glow;
 
-            // 顶栏仍以深海军蓝为主，只带少量强调色，避免整窗变成第二套亮色主题。
-            var title = new LinearGradientBrush(Mix(DeepNavy, accent.Color, 0.16), Mix(DeepNavy, accent.Color, 0.05), 0);
+            // 顶栏保持近黑半透明，只带极少量强调色。
+            var title = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 0)
+            };
+            title.GradientStops.Add(new GradientStop(Color.FromArgb(0xB8, 0x0A, 0x0C, 0x12), 0));
+            title.GradientStops.Add(new GradientStop(Color.FromArgb(0xB8, 0x08, 0x09, 0x0D), 1));
             title.Freeze();
             Application.Current.Resources["TitleBrush"] = title;
+            ApplyBrightness(Settings.LightTheme);
+        }
+
+        public static void ToggleBrightness()
+        {
+            Settings.LightTheme = !Settings.LightTheme;
+            Apply(Settings.ThemeColor);
+        }
+
+        public static void ApplyBrightness(bool light)
+        {
+            if (light)
+            {
+                SetColor("Background", Color.FromRgb(0xF4, 0xF6, 0xFB));
+                SetColor("Card", Color.FromArgb(0xBF, 0xFF, 0xFF, 0xFF));
+                SetColor("CardHover", Color.FromRgb(0xFF, 0xFF, 0xFF));
+                SetColor("SurfaceElevated", Colors.White);
+                SetColor("DialogSurface", Color.FromRgb(0xFF, 0xFF, 0xFF));
+                SetColor("Scrim", Color.FromArgb(0x66, 0x08, 0x09, 0x0D));
+                SetColor("Line", Color.FromArgb(0x14, 0x0A, 0x0E, 0x1A));
+                SetColor("LineStrong", Color.FromArgb(0x29, 0x0A, 0x0E, 0x1A));
+                SetColor("ControlBorder", Color.FromArgb(0x24, 0x0A, 0x0E, 0x1A));
+                SetColor("Text", Color.FromRgb(0x17, 0x1C, 0x29));
+                SetColor("Text2", Color.FromRgb(0x46, 0x51, 0x67));
+                SetColor("Text3", Color.FromRgb(0x68, 0x74, 0x8A));
+                SetColor("TextDisabled", Color.FromRgb(0x8A, 0x94, 0xA6));
+                SetColor("ScrollThumb", Color.FromArgb(0x33, 0x0A, 0x0E, 0x1A));
+                SetColor("ScrollThumbHover", Color.FromArgb(0x4D, 0x0A, 0x0E, 0x1A));
+                Application.Current.Resources["TitleBrush"] = new SolidColorBrush(Color.FromRgb(0xF7, 0xF8, 0xFC));
+                return;
+            }
+            SetColor("Background", DeepNavy);
+            SetColor("Card", Color.FromArgb(0x09, 0xFF, 0xFF, 0xFF));
+            SetColor("CardHover", Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF));
+            SetColor("SurfaceElevated", Color.FromArgb(0x16, 0xFF, 0xFF, 0xFF));
+            SetColor("DialogSurface", Color.FromRgb(0x14, 0x17, 0x20));
+            SetColor("Scrim", Color.FromArgb(0xB3, 0x08, 0x09, 0x0D));
+            SetColor("Line", Color.FromArgb(0x0E, 0xFF, 0xFF, 0xFF));
+            SetColor("LineStrong", Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF));
+            SetColor("ControlBorder", Color.FromArgb(0x17, 0xFF, 0xFF, 0xFF));
+            SetColor("Text", Color.FromRgb(0xE9, 0xED, 0xF6));
+            SetColor("Text2", Color.FromRgb(0xB7, 0xC0, 0xD4));
+            SetColor("Text3", Color.FromRgb(0x79, 0x83, 0x9A));
+            SetColor("TextDisabled", Color.FromRgb(0x61, 0x6B, 0x80));
+            SetColor("ScrollThumb", Color.FromArgb(0x1C, 0xFF, 0xFF, 0xFF));
+            SetColor("ScrollThumbHover", Color.FromArgb(0x2E, 0xFF, 0xFF, 0xFF));
         }
 
         /// <summary>
-        /// 旧绿色配置 → 蓝白默认，仅迁移一次（用 ui.theme.migratedToBlue 标记）。
-        /// 迁移之后用户若在设置里明确选回草方块绿，保持用户选择。
+        /// 旧默认绿色 / 蓝色 → 月光默认，各自只迁移一次；用户明确选择的其他颜色保持不变。
         /// </summary>
         static string MigrateLegacyAccent(string hex)
         {
@@ -68,11 +120,22 @@ namespace MoonLauncher.UI
             _legacyChecked = true;
             try
             {
+                string value = (hex ?? "").Trim();
                 bool marked = Settings.GetBool("ui.theme.migratedToBlue", false);
                 if (!marked)
                 {
                     Settings.Set("ui.theme.migratedToBlue", true);
-                    if (string.Equals((hex ?? "").Trim(), LegacyGreenHex, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(value, LegacyGreenHex, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Settings.ThemeColor = DefaultAccentHex;
+                        return DefaultAccentHex;
+                    }
+                }
+                bool moonlightMarked = Settings.GetBool("ui.theme.migratedToMoonlight", false);
+                if (!moonlightMarked)
+                {
+                    Settings.Set("ui.theme.migratedToMoonlight", true);
+                    if (string.Equals(value, LegacyBlueHex, StringComparison.OrdinalIgnoreCase))
                     {
                         Settings.ThemeColor = DefaultAccentHex;
                         return DefaultAccentHex;
@@ -87,7 +150,16 @@ namespace MoonLauncher.UI
         {
             var resources = Application.Current.Resources;
             resources[name + "Color"] = color;
-            resources["Color." + name] = color;
+            string semantic = name == "Card" ? "Surface" : name == "CardHover" ? "SurfaceHover" : name;
+            resources["Color." + semantic] = color;
+            string brushKey = name == "Background" ? "Bg" : name;
+            if (resources.Contains(brushKey))
+            {
+                var brush = new SolidColorBrush(color);
+                brush.Freeze();
+                resources[brushKey] = brush;
+                resources["Brush." + semantic] = brush;
+            }
         }
 
         /// <summary>逐状态选择深海军蓝/白前景；中间亮度颜色会继续派生，直到达到 4.5:1。</summary>

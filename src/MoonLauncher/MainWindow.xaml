@@ -23,7 +23,7 @@
         <Rectangle Grid.Row="1" Fill="{DynamicResource GlowTeal}" IsHitTestVisible="False"/>
         <Image x:Name="BgImage" Grid.Row="1" Stretch="UniformToFill" Opacity="0.12" IsHitTestVisible="False"/>
 
-        <!-- 深海军蓝顶栏与五域胶囊：资源=原 DownloadPage；下载任务=右上角任务抽屉。 -->
+        <!-- 近黑玻璃顶栏与无图标五域胶囊：资源=原 DownloadPage；下载任务=右上角任务抽屉。 -->
         <Border Background="{DynamicResource TitleBrush}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -34,33 +34,92 @@
                 <Border Grid.ColumnSpan="3" Height="{StaticResource Size.Highlight.Height}" VerticalAlignment="Top"
                         Background="{DynamicResource TopHighlight}" IsHitTestVisible="False"/>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="{StaticResource Margin.Brand}">
-                    <Image Source="Assets/icon.png" Width="{StaticResource Size.Brand.Icon}" Height="{StaticResource Size.Brand.Icon}" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                    <TextBlock Text="MoonLauncher" Foreground="{DynamicResource Text}" FontSize="{StaticResource Font.H3}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="{StaticResource Margin.IconRight}"/>
-                    <Border Background="{DynamicResource Card}" CornerRadius="{StaticResource Radius.Small}" Padding="{StaticResource Padding.Badge}" VerticalAlignment="Center">
-                        <TextBlock x:Name="VersionTag" Text="v0.1" Foreground="{DynamicResource Text2}" FontSize="{StaticResource Font.Micro}"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="22,0,12,0">
+                    <Path Width="22" Height="22" Stretch="Uniform" Margin="0,0,8,0"
+                          Data="M20.6,14.4 A8.4,8.4 0 0 1 9.6,3.4 A8.4,8.4 0 1 0 20.6,14.4 Z">
+                        <Path.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#E2E9FF" Offset="0"/>
+                                <GradientStop Color="#B3C2FF" Offset="0.55"/>
+                                <GradientStop Color="#8192F0" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Path.Fill>
+                        <Path.Effect><DropShadowEffect BlurRadius="5" ShadowDepth="0" Opacity="0.5" Color="#93A7FF"/></Path.Effect>
+                    </Path>
+                    <TextBlock Text="MoonLauncher" Foreground="{DynamicResource Text}" FontSize="14.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="·" Foreground="{DynamicResource TextDisabled}" FontSize="12" VerticalAlignment="Center" Margin="7,0,5,0"/>
+                    <Border x:Name="VersionBadge" Background="#0BFFFFFF" BorderBrush="{DynamicResource Line}" BorderThickness="1"
+                            CornerRadius="5" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock x:Name="VersionTag" Text="v0.1" Foreground="#8E99B2" FontFamily="{StaticResource FontFamily.Mono}" FontSize="10.5"/>
                     </Border>
                 </StackPanel>
 
-                <Border Grid.Column="1" Style="{StaticResource NavPill}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                <Border Grid.Column="1" Style="{StaticResource NavPill}" CornerRadius="20" HorizontalAlignment="Center" VerticalAlignment="Center"
                         MinWidth="{StaticResource Size.Nav.GroupWidth}" WindowChrome.IsHitTestVisibleInChrome="True">
-                    <UniformGrid Rows="1">
-                        <RadioButton x:Name="NavLaunch" GroupName="nav" Style="{StaticResource TopNav}" Tag="&#xE768;" Content="启动" Checked="Nav_Checked" AutomationProperties.Name="启动"/>
-                        <RadioButton x:Name="NavDownload" GroupName="nav" Style="{StaticResource TopNav}" Tag="&#xE896;" Content="资源" Checked="Nav_Checked" AutomationProperties.Name="资源"/>
-                        <RadioButton x:Name="NavMultiplayer" GroupName="nav" Style="{StaticResource TopNav}" Tag="&#xE8AB;" Content="联机" Checked="Nav_Checked" AutomationProperties.Name="联机"/>
-                        <RadioButton x:Name="NavSettings" GroupName="nav" Style="{StaticResource TopNav}" Tag="&#xE713;" Content="设置" Checked="Nav_Checked" AutomationProperties.Name="设置"/>
-                        <RadioButton x:Name="NavMore" GroupName="nav" Style="{StaticResource TopNav}" Tag="&#xE712;" Content="更多" Checked="Nav_Checked" AutomationProperties.Name="更多"/>
-                    </UniformGrid>
+                    <Grid x:Name="NavItemsHost" SizeChanged="NavItemsHost_SizeChanged">
+                        <Border x:Name="NavIndicator" Width="64" Height="30" Background="{StaticResource NavActive}"
+                                BorderBrush="#16FFFFFF" BorderThickness="1" CornerRadius="15"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <Border.Effect><DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.38" Color="#000000"/></Border.Effect>
+                            <Border.RenderTransform><TranslateTransform x:Name="NavIndicatorTransform" X="1"/></Border.RenderTransform>
+                        </Border>
+                        <UniformGrid Rows="1">
+                            <RadioButton x:Name="NavLaunch" GroupName="nav" Style="{StaticResource TopNav}" Content="启动" Checked="Nav_Checked" AutomationProperties.Name="启动"/>
+                            <RadioButton x:Name="NavDownload" GroupName="nav" Style="{StaticResource TopNav}" Content="下载" Checked="Nav_Checked" AutomationProperties.Name="下载"/>
+                            <RadioButton x:Name="NavMultiplayer" GroupName="nav" Style="{StaticResource TopNav}" Content="联机" Checked="Nav_Checked" AutomationProperties.Name="联机"/>
+                            <RadioButton x:Name="NavSettings" GroupName="nav" Style="{StaticResource TopNav}" Content="设置" Checked="Nav_Checked" AutomationProperties.Name="设置"/>
+                            <RadioButton x:Name="NavMore" GroupName="nav" Style="{StaticResource TopNav}" Content="更多" Checked="Nav_Checked" AutomationProperties.Name="更多"/>
+                        </UniformGrid>
+                    </Grid>
                 </Border>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
-                            Margin="{StaticResource Margin.WindowButtons}" WindowChrome.IsHitTestVisibleInChrome="True">
+                            Margin="12,0,12,0" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Border x:Name="GlobalSearchBox" Width="248" Height="34" Background="#08FFFFFF" BorderBrush="{DynamicResource Line}"
+                            BorderThickness="1" CornerRadius="17" Padding="13,0" Margin="0,0,6,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*" MinWidth="0"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE721;" FontFamily="{StaticResource Icons}" FontSize="13" Foreground="{DynamicResource TextDisabled}"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="GlobalSearchInput" Grid.Column="1" Style="{StaticResource InlineSearch}" Tag="全局搜索功能……"
+                                     TextChanged="GlobalSearch_TextChanged" GotKeyboardFocus="GlobalSearch_Focus"
+                                     LostKeyboardFocus="GlobalSearch_LostFocus" PreviewKeyDown="GlobalSearch_KeyDown"/>
+                            <Border x:Name="SearchShortcut" Grid.Column="2" Background="#09FFFFFF" BorderBrush="{DynamicResource Line}"
+                                    BorderThickness="1" CornerRadius="4" Padding="5,3" VerticalAlignment="Center">
+                                <TextBlock Text="⌘K" FontFamily="{StaticResource FontFamily.Mono}" FontSize="10" Foreground="{DynamicResource TextDisabled}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <Popup x:Name="GlobalSearchPopup" PlacementTarget="{Binding ElementName=GlobalSearchBox}" Placement="Bottom"
+                           AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
+                        <Border Background="{DynamicResource DialogSurface}" BorderBrush="{DynamicResource LineStrong}" BorderThickness="1"
+                                CornerRadius="12" Padding="5" Margin="0,6,8,8" Effect="{StaticResource Shadow.Dialog}">
+                            <ListBox x:Name="GlobalSearchResults" Width="238" MaxHeight="260" Style="{StaticResource CardList}"
+                                     Foreground="{DynamicResource Text}" PreviewMouseLeftButtonUp="GlobalSearchResults_Click"
+                                     PreviewKeyDown="GlobalSearchResults_KeyDown"/>
+                        </Border>
+                    </Popup>
                     <Button x:Name="DownloadTasksButton" Style="{StaticResource TitleIcon}" Content="&#xE896;" Click="TasksTitle_Click"
                             ToolTip="下载任务" AutomationProperties.Name="下载任务" Visibility="Collapsed"/>
                     <Button Style="{StaticResource TitleIcon}" Content="&#xE921;" Click="Min_Click" ToolTip="最小化" AutomationProperties.Name="最小化"/>
                     <Button x:Name="MaxButton" Style="{StaticResource TitleIcon}" Content="&#xE922;" Click="Max_Click" ToolTip="最大化" AutomationProperties.Name="最大化"/>
                     <Button Style="{StaticResource TitleIcon}" Content="&#xE8BB;" Click="Close_Click" ToolTip="关闭" AutomationProperties.Name="关闭"/>
                 </StackPanel>
+                <Border Grid.ColumnSpan="3" Height="1" VerticalAlignment="Bottom" IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#0093A7FF" Offset="0"/>
+                            <GradientStop Color="#2493A7FF" Offset="0.22"/>
+                            <GradientStop Color="#3D93A7FF" Offset="0.5"/>
+                            <GradientStop Color="#2493A7FF" Offset="0.78"/>
+                            <GradientStop Color="#0093A7FF" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
             </Grid>
         </Border>
 

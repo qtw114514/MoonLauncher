@@ -22,6 +22,19 @@ namespace MoonLauncher
         readonly Dictionary<RadioButton, Stack<FrameworkElement>> _stacks = new Dictionary<RadioButton, Stack<FrameworkElement>>();
         RadioButton _tab;
         DispatcherTimer _toastTimer;
+        readonly (string Title, string Action, string Keywords)[] _globalActions =
+        {
+            ("启动", "launch", "启动 游戏 首页 launch play"),
+            ("下载", "download", "下载 资源 安装 版本 download resources"),
+            ("联机", "multiplayer", "联机 服务器 房间 multiplayer server"),
+            ("设置", "settings", "设置 选项 settings preferences"),
+            ("更多", "more", "更多 帮助 关于 常见问题 more help about"),
+            ("切换 / 管理账号", "accounts", "账号 账户 登录 离线 微软 account login"),
+            ("当前版本设置", "instance", "版本 实例 设置 instance version"),
+            ("下载任务", "tasks", "下载 任务 进度 tasks downloads"),
+            ("外观设置", "appearance", "外观 主题 颜色 背景 玻璃 appearance theme"),
+            ("启动器日志", "logs", "日志 终端 诊断 log terminal"),
+        };
 
         public LaunchPage LaunchPage { get; private set; }
         public DownloadPage DownloadPage { get; private set; }
@@ -67,10 +80,22 @@ namespace MoonLauncher
             UpdateDialogBounds();
             NavLaunch.IsChecked = true;
             OpenStartupPage();
-            // Esc 只收起任务抽屉，不影响页面内其它输入。
+            // Ctrl+K 聚焦全局搜索；Esc 优先收起搜索，再收起任务抽屉。
             PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Escape && IsTaskDrawerOpen) { CloseTaskDrawer(); e.Handled = true; }
+                if (e.Key == Key.K && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Windows)) != 0)
+                {
+                    GlobalSearchInput.Focus();
+                    GlobalSearchInput.SelectAll();
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape && GlobalSearchInput.IsKeyboardFocused)
+                {
+                    ClearGlobalSearch();
+                    GlobalSearchInput.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape && IsTaskDrawerOpen) { CloseTaskDrawer(); e.Handled = true; }
             };
 #if DEBUG
             if (DemoCapture.Active)
@@ -91,6 +116,27 @@ namespace MoonLauncher
             CloseTaskDrawer(); // 切换域时收起抽屉（含抽屉内“浏览资源”等跳转）
             _tab = (RadioButton)sender;
             Show(_stacks[_tab].Peek());
+            UpdateNavIndicator();
+        }
+
+        void NavItemsHost_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateNavIndicator(false);
+
+        void UpdateNavIndicator(bool animate = true)
+        {
+            if (_tab == null || _tab.ActualWidth <= 0) return;
+            var point = _tab.TranslatePoint(new Point(0, 0), NavItemsHost);
+            double width = _tab.ActualWidth;
+            if (!animate || Motion.ReducedMotion)
+            {
+                NavIndicator.BeginAnimation(WidthProperty, null);
+                NavIndicatorTransform.BeginAnimation(TranslateTransform.XProperty, null);
+                NavIndicator.Width = width;
+                NavIndicatorTransform.X = point.X;
+                return;
+            }
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            NavIndicator.BeginAnimation(WidthProperty, new DoubleAnimation(width, TimeSpan.FromMilliseconds(300)) { EasingFunction = ease });
+            NavIndicatorTransform.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(point.X, TimeSpan.FromMilliseconds(300)) { EasingFunction = ease });
         }
 
         void Show(FrameworkElement page)
@@ -176,7 +222,112 @@ namespace MoonLauncher
             MaxButton.Content = WindowState == WindowState.Maximized ? "" : "";
         }
 
-        void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateDialogBounds();
+        void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateDialogBounds();
+            UpdateNavIndicator(false);
+            VersionBadge.Visibility = ActualWidth < 840 ? Visibility.Collapsed : Visibility.Visible;
+            if (!GlobalSearchInput.IsKeyboardFocused) AnimateSearchWidth(SearchWidth());
+            SearchShortcut.Visibility = ActualWidth < 900 || GlobalSearchInput.IsKeyboardFocused || GlobalSearchInput.Text.Length > 0
+                ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        double SearchWidth() => ActualWidth < 900 ? 140 : 248;
+
+        void AnimateSearchWidth(double width)
+        {
+            if (Math.Abs(GlobalSearchBox.Width - width) < 0.5) return;
+            if (Motion.ReducedMotion) { GlobalSearchBox.Width = width; return; }
+            GlobalSearchBox.BeginAnimation(WidthProperty, new DoubleAnimation(width, TimeSpan.FromMilliseconds(340))
+            { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        }
+
+        void GlobalSearch_Focus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            SearchShortcut.Visibility = Visibility.Collapsed;
+            GlobalSearchBox.BorderBrush = (Brush)FindResource("Focus");
+            AnimateSearchWidth(ActualWidth < 900 ? 170 : 306);
+            GlobalSearch_TextChanged(GlobalSearchInput, null);
+        }
+
+        void GlobalSearch_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            GlobalSearchBox.BorderBrush = (Brush)FindResource("Line");
+            SearchShortcut.Visibility = ActualWidth >= 900 && GlobalSearchInput.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+            AnimateSearchWidth(SearchWidth());
+        }
+
+        void GlobalSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string query = (GlobalSearchInput.Text ?? "").Trim().ToLowerInvariant();
+            var matches = _globalActions.Where(a => query.Length == 0 || (a.Title + " " + a.Keywords).ToLowerInvariant().Contains(query)).ToList();
+            GlobalSearchResults.ItemsSource = matches.Select(a => a.Title).ToList();
+            GlobalSearchPopup.IsOpen = GlobalSearchInput.IsKeyboardFocused && query.Length > 0 && matches.Count > 0;
+            SearchShortcut.Visibility = query.Length > 0 || GlobalSearchInput.IsKeyboardFocused ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        void GlobalSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                ClearGlobalSearch();
+                GlobalSearchInput.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down && GlobalSearchResults.Items.Count > 0)
+            {
+                GlobalSearchPopup.IsOpen = true;
+                GlobalSearchResults.SelectedIndex = 0;
+                GlobalSearchResults.Focus();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && GlobalSearchResults.Items.Count > 0)
+            {
+                ExecuteGlobalAction((GlobalSearchResults.SelectedItem ?? GlobalSearchResults.Items[0]) as string);
+                e.Handled = true;
+            }
+        }
+
+        void GlobalSearchResults_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (GlobalSearchResults.SelectedItem is string title) ExecuteGlobalAction(title);
+        }
+
+        void GlobalSearchResults_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && GlobalSearchResults.SelectedItem is string title)
+            {
+                ExecuteGlobalAction(title);
+                e.Handled = true;
+            }
+        }
+
+        void ExecuteGlobalAction(string title)
+        {
+            var action = _globalActions.FirstOrDefault(a => a.Title == title);
+            if (action.Title == null) return;
+            ClearGlobalSearch();
+            switch (action.Action)
+            {
+                case "accounts": _ = AccountDialogs.ManageAsync(); break;
+                case "instance":
+                    var inst = LaunchPage.SelectedInstance();
+                    if (inst != null) { GoTab("launch"); Push(new InstancePage(inst)); }
+                    else Dialogs.Toast("先选择或安装一个版本");
+                    break;
+                case "tasks": ToggleTasks(true); break;
+                case "appearance": GoTab("settings"); SettingsPage.ScrollTo("ui"); break;
+                case "logs": _ = MorePage.ShowLauncherLog(); break;
+                default: GoTab(action.Action); break;
+            }
+        }
+
+        void ClearGlobalSearch()
+        {
+            GlobalSearchPopup.IsOpen = false;
+            GlobalSearchResults.SelectedItem = null;
+            GlobalSearchInput.Clear();
+        }
 
         // ---------- 任务入口（有活动任务时显示右上角入口；失败任务保留在任务中心可恢复，不计为活动） ----------
         TasksPage _drawerTasks;

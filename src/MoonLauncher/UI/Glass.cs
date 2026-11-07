@@ -8,8 +8,8 @@ using MoonLauncher.Core;
 namespace MoonLauncher.UI
 {
     /// <summary>
-    /// 深海军蓝 Liquid Glass：窗口级 DWM 模糊、半透明表面、渐变描边。
-    /// 控件卡片不做独立实时模糊；DWM 不可用时仍保留不透明的深蓝内容层。
+    /// 月光深色 Liquid Glass：窗口级 DWM 模糊、半透明表面、低调渐变描边。
+    /// 控件卡片不做独立实时模糊；DWM 不可用时仍保留不透明的近黑内容层。
     /// </summary>
     public static class Glass
     {
@@ -48,25 +48,30 @@ namespace MoonLauncher.UI
         public static void Apply(Window win, bool on)
         {
             Active = on;
+            bool light = Settings.LightTheme;
             if (on)
             {
-                SetBaseColor("Background", Color.FromArgb(Alpha(A("ui.glass.bg", 90)), 0x0A, 0x15, 0x24));
-                int card = A("ui.glass.card", 8);
+                SetBaseColor("Background", light
+                    ? Color.FromArgb(Alpha(A("ui.glass.bg", 90)), 0xF4, 0xF6, 0xFB)
+                    : Color.FromArgb(Alpha(A("ui.glass.bg", 90)), 0x08, 0x09, 0x0D));
+                int card = A("ui.glass.card", 4);
                 SetBaseColor("Card", Color.FromArgb(Alpha(card), 0xFF, 0xFF, 0xFF));
-                SetBaseColor("CardHover", Color.FromArgb(Alpha(Math.Min(100, card + 5)), 0xFF, 0xFF, 0xFF));
-                SetBaseColor("Line", Color.FromArgb(Alpha(A("ui.glass.edge", 14)), 0xFF, 0xFF, 0xFF));
-                var edge = GlassEdge(A("ui.glass.edge", 90));
+                SetBaseColor("CardHover", Color.FromArgb(Alpha(Math.Min(100, card + 4)), 0xFF, 0xFF, 0xFF));
+                SetBaseColor("Line", light
+                    ? Color.FromArgb(Alpha(A("ui.glass.edge", 8)), 0x0A, 0x0E, 0x1A)
+                    : Color.FromArgb(Alpha(A("ui.glass.edge", 6)), 0xFF, 0xFF, 0xFF));
+                var edge = GlassEdge(A("ui.glass.edge", 9));
                 Application.Current.Resources["BorderGradient"] = edge;
                 Application.Current.Resources["Brush.BorderGradient"] = edge;
                 Application.Current.Resources["TitleBrush"] = TitleGlass();
             }
             else
             {
-                SetBaseColor("Background", Color.FromRgb(0x0A, 0x15, 0x24));
-                SetBaseColor("Card", Color.FromArgb(0x13, 0xFF, 0xFF, 0xFF));
-                SetBaseColor("CardHover", Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
-                SetBaseColor("Line", Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF));
-                var edge = GlassEdge(90);
+                SetBaseColor("Background", Color.FromRgb(0x08, 0x09, 0x0D));
+                SetBaseColor("Card", Color.FromArgb(0x09, 0xFF, 0xFF, 0xFF));
+                SetBaseColor("CardHover", Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF));
+                SetBaseColor("Line", Color.FromArgb(0x0E, 0xFF, 0xFF, 0xFF));
+                var edge = GlassEdge(9);
                 Application.Current.Resources["BorderGradient"] = edge;
                 Application.Current.Resources["Brush.BorderGradient"] = edge;
                 Theme.Apply(Settings.ThemeColor);
@@ -83,9 +88,14 @@ namespace MoonLauncher.UI
 
         static void SetBaseColor(string name, Color color)
         {
-            Application.Current.Resources[name + "Color"] = color;
+            var resources = Application.Current.Resources;
+            resources[name + "Color"] = color;
             string semantic = name == "Background" ? "Background" : name == "Card" ? "Surface" : name == "CardHover" ? "SurfaceHover" : "Line";
-            Application.Current.Resources["Color." + semantic] = color;
+            resources["Color." + semantic] = color;
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            resources[name == "Background" ? "Bg" : name] = brush;
+            resources["Brush." + semantic] = brush;
         }
 
         public static void RefreshTitle() { if (Active) Application.Current.Resources["TitleBrush"] = TitleGlass(); }
@@ -96,7 +106,7 @@ namespace MoonLauncher.UI
             {
                 if (on)
                 {
-                    // Acrylic 不可用或调用失败时回退普通 Blur；内容资源本身始终有深蓝承托。
+                    // Acrylic 不可用或调用失败时回退普通 Blur；内容资源本身始终有近黑承托。
                     if (!Acrylic || !TryAccent(hwnd, AccentEnableAcrylicBlurBehind))
                         TryAccent(hwnd, AccentEnableBlurBehind);
                 }
@@ -111,7 +121,7 @@ namespace MoonLauncher.UI
             {
                 AccentState = state,
                 AccentFlags = AccentFlagsDrawLeftBorder,
-                GradientColor = unchecked((int)0x9924150A), // ABGR：半透明深海军蓝罩色（#0A1524）
+                GradientColor = unchecked((int)0x990D0908), // ABGR：半透明近黑罩色（#08090D）
             };
             var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(policy));
             try
@@ -128,20 +138,20 @@ namespace MoonLauncher.UI
             var br = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
             br.GradientStops.Add(new GradientStop(Color.FromArgb(Alpha(edge), 0xFF, 0xFF, 0xFF), 0));
             br.GradientStops.Add(new GradientStop(Color.FromArgb(Alpha(edge * 55 / 100), 0xFF, 0xFF, 0xFF), 0.45));
-            br.GradientStops.Add(new GradientStop(Color.FromArgb(Alpha(edge * 33 / 100), 0xA9, 0xB6, 0xC9), 1));
+            br.GradientStops.Add(new GradientStop(Color.FromArgb(Alpha(edge * 33 / 100), 0x93, 0xA7, 0xFF), 1));
             br.Freeze();
             return br;
         }
 
         static LinearGradientBrush TitleGlass()
         {
-            var c = Theme.Parse(Settings.ThemeColor, Color.FromRgb(0x2F, 0x7B, 0xF5));
-            var navy = Color.FromRgb(0x0A, 0x15, 0x24);
-            var from = Theme.Mix(navy, c, 0.18);
-            var to = Theme.Mix(navy, c, 0.06);
+            var c = Theme.Parse(Settings.ThemeColor, Color.FromRgb(0x93, 0xA7, 0xFF));
+            var navy = Settings.LightTheme ? Color.FromRgb(0xF4, 0xF6, 0xFB) : Color.FromRgb(0x08, 0x09, 0x0D);
+            var from = Theme.Mix(navy, c, 0.05);
+            var to = Theme.Mix(navy, c, 0.02);
             var br = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
-            br.GradientStops.Add(new GradientStop(Color.FromArgb(0xF2, from.R, from.G, from.B), 0));
-            br.GradientStops.Add(new GradientStop(Color.FromArgb(0xF2, to.R, to.G, to.B), 1));
+            br.GradientStops.Add(new GradientStop(Color.FromArgb(0xB8, from.R, from.G, from.B), 0));
+            br.GradientStops.Add(new GradientStop(Color.FromArgb(0xB8, to.R, to.G, to.B), 1));
             br.Freeze();
             return br;
         }

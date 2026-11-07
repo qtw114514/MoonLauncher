@@ -14,6 +14,14 @@ namespace MoonLauncher.UI
     {
         static Style S(string k) => (Style)Application.Current.FindResource(k);
 
+        public static async Task AddAsync()
+        {
+            int type = await Dialogs.Choose("新建账号", "请选择要添加的账号类型。", new[] { "离线", "微软正版", "外置登录" });
+            if (type == 0) await AddOfflineAsync();
+            else if (type == 1) await AddMicrosoftAsync();
+            else if (type == 2) await AddYggdrasilAsync();
+        }
+
         public static async Task ManageAsync()
         {
             while (true)

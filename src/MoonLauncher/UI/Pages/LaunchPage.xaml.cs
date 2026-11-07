@@ -34,18 +34,29 @@ namespace MoonLauncher.UI.Pages
         {
             InitializeComponent();
             AccountStore.Changed += () => Dispatcher.BeginInvoke((Action)RefreshAccount);
-            Settings.Changed += RefreshHomeCard;
-            RefreshHomeCard();
             _logTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _logTimer.Tick += (s, e) => FlushLog();
-            var h = DateTime.Now.Hour;
-            Greeting.Text = h < 6 ? "夜深了，注意休息" : h < 12 ? "早上好" : h < 14 ? "中午好" : h < 18 ? "下午好" : "晚上好";
-            // 圆角同心裁剪：卡片圆角取自 Radius.Card 令牌，头图不外溢。
+            // 圆角同心裁剪，并按 HTML 的 16:6.6 比例与断点调整头图和摘要。
             NewsCard.SizeChanged += (s, e) =>
             {
                 double r = ((CornerRadius)FindResource("Radius.Card")).TopLeft;
                 NewsCard.Clip = new RectangleGeometry(new Rect(NewsCard.RenderSize), r, r);
+                UpdateNewsLayout();
             };
+        }
+
+        void UpdateNewsLayout()
+        {
+            double width = NewsCard.ActualWidth;
+            if (width <= 0) return;
+            bool narrow = width < 560;
+            NewsHero.Height = Math.Max(narrow ? 300 : 280, Math.Min(440, width * 6.6 / 16));
+            NewsFoot.ColumnDefinitions[1].Width = narrow ? new GridLength(0) : new GridLength(320);
+            NewsLead.Margin = narrow ? new Thickness(0) : new Thickness(0, 0, 32, 0);
+            Grid.SetColumn(NewsHeroDesc, narrow ? 0 : 1);
+            Grid.SetRow(NewsHeroDesc, narrow ? 1 : 0);
+            NewsHeroDesc.Margin = narrow ? new Thickness(0, 14, 0, 0) : new Thickness(0);
+            NewsHeroDesc.MaxHeight = narrow ? 82 : 102;
         }
 
         public void OnShown()
@@ -87,45 +98,6 @@ namespace MoonLauncher.UI.Pages
             LaunchButton.IsEnabled = !running && !starting;
             LaunchText.Text = running ? "游戏运行中" : starting ? "正在启动…" : _lastLaunchError != null ? "重试启动" : "启动游戏";
             if (running) RunningCard.Visibility = Visibility.Visible;
-
-            var acc = AccountStore.Selected;
-            var inst = SelectedInstance();
-            if (running)
-            {
-                StatusIcon.Text = "\uE73E";
-                StatusTitle.Text = "游戏运行中";
-                StatusDescription.Text = "运行日志已显示在下方，可打开目录或结束游戏。";
-            }
-            else if (starting)
-            {
-                StatusIcon.Text = "\uE916";
-                StatusTitle.Text = "正在启动游戏";
-                StatusDescription.Text = LaunchStep.Text;
-            }
-            else if (_lastLaunchError != null)
-            {
-                StatusIcon.Text = "\uE783";
-                StatusTitle.Text = "上次启动失败";
-                StatusDescription.Text = "点击左侧“重试启动”恢复；详细原因与修复操作见错误提示。";
-            }
-            else if (acc == null)
-            {
-                StatusIcon.Text = "\uE77B";
-                StatusTitle.Text = "需要添加账户";
-                StatusDescription.Text = "点击左侧“切换 / 管理账户”，支持离线、微软与外置账户。";
-            }
-            else if (inst == null)
-            {
-                StatusIcon.Text = "\uE7FC";
-                StatusTitle.Text = "还没有可用实例";
-                StatusDescription.Text = "点击左侧“切换”管理游戏目录，或前往下载页安装版本。";
-            }
-            else
-            {
-                StatusIcon.Text = "\uE73E";
-                StatusTitle.Text = "一切准备就绪";
-                StatusDescription.Text = $"{acc.Name} · {inst.Id}";
-            }
         }
 
         // ---------- 账号 ----------
@@ -142,7 +114,7 @@ namespace MoonLauncher.UI.Pages
                 return;
             }
             PlayerName.Text = acc.Name;
-            AccountType.Text = acc.TypeText + "账号";
+            AccountType.Text = acc.Type == Accounts.AccountType.Offline ? "离线登录" : acc.TypeText + "账号";
             Avatar.Source = null;
             AvatarFallback.Visibility = Visibility.Visible;
             RefreshLaunchState();
@@ -154,62 +126,24 @@ namespace MoonLauncher.UI.Pages
             catch (Exception ex) { Log.Warn("获取头像失败：" + ex.Message); }
         }
 
-        void Accounts_Click(object sender, RoutedEventArgs e) => _ = AccountDialogs.ManageAsync();
-
-        // ---------- 自定义主页 ----------
-        string _homeNavigated;
-        void RefreshHomeCard()
+        void Accounts_Click(object sender, RoutedEventArgs e)
         {
-            if (HomeCard == null) return;
-            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshHomeCard); return; }
-            var raw = (Settings.Get("home.url") ?? "").Trim();
-            if (string.IsNullOrEmpty(raw))
-            {
-                HomeCard.Visibility = Visibility.Collapsed;
-                _homeNavigated = null;
-                return;
-            }
-            Uri uri = null;
-            try
-            {
-                uri = System.IO.File.Exists(raw)
-                    ? new Uri(System.IO.Path.GetFullPath(raw))
-                    : new Uri(raw, UriKind.Absolute);
-                if (uri.Scheme != "http" && uri.Scheme != "https" && uri.Scheme != "file") uri = null;
-            }
-            catch { uri = null; }
-            if (uri == null)
-            {
-                HomeCard.Visibility = Visibility.Visible;
-                HomeWeb.Visibility = Visibility.Collapsed;
-                HomeHint.Visibility = Visibility.Visible;
-                _homeNavigated = null;
-                return;
-            }
-            HomeCard.Visibility = Visibility.Visible;
-            HomeHint.Visibility = Visibility.Collapsed;
-            HomeWeb.Visibility = Visibility.Visible;
-            var key = uri.ToString();
-            if (_homeNavigated != key) { _homeNavigated = key; try { HomeWeb.Navigate(uri); } catch { HomeHint.Visibility = Visibility.Visible; } }
+            AccountMenu.IsOpen = !AccountMenu.IsOpen;
+            AccountCaretRotation.Angle = AccountMenu.IsOpen ? 180 : 0;
         }
 
-        void OpenHome_Click(object sender, RoutedEventArgs e)
+        void AccountMenu_Closed(object sender, EventArgs e) => AccountCaretRotation.Angle = 0;
+
+        void SwitchAccounts_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(_homeNavigated)) Util.OpenUrl(_homeNavigated);
+            AccountMenu.IsOpen = false;
+            _ = AccountDialogs.ManageAsync();
         }
 
-        void HomeWeb_LoadCompleted(object sender, System.Windows.Navigation.NavigationEventArgs e) => HomeHint.Visibility = Visibility.Collapsed;
-
-        /// <summary>屏蔽 IE 脚本错误弹窗（WPF WebBrowser 没有公开的开关，反射设置 IWebBrowser2.Silent）</summary>
-        void HomeWeb_Loaded(object sender, RoutedEventArgs e)
+        async void NewAccount_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var fi = typeof(WebBrowser).GetField("_axIWebBrowser2", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                var com = fi?.GetValue(HomeWeb);
-                com?.GetType().InvokeMember("Silent", System.Reflection.BindingFlags.SetProperty, null, com, new object[] { true });
-            }
-            catch { }
+            AccountMenu.IsOpen = false;
+            await AccountDialogs.AddAsync();
         }
 
         // ---------- 版本 ----------
@@ -234,37 +168,31 @@ namespace MoonLauncher.UI.Pages
             RefreshCurrentInstance();
         }
 
-        void RefreshCurrentInstance()
-        {
-            var inst = SelectedInstance();
-            if (inst == null)
-            {
-                LaunchSub.Text = "还没有安装任何版本";
-                InstanceName.Text = "尚未安装实例";
-                InstanceDesc.Text = "去下载页安装一个版本即可开始。";
-                InstanceCard.ToolTip = $"游戏目录：{GameRepo.Current.Root}";
-                RefreshLaunchState();
-                return;
-            }
-            LaunchSub.Text = inst.Id;
-            InstanceName.Text = inst.Id;
-            InstanceDesc.Text = (string.IsNullOrWhiteSpace(inst.Description) ? $"Minecraft {inst.McVersion}" : inst.Description) + (inst.Isolated ? " · 版本隔离" : "");
-            InstanceCard.ToolTip = $"{inst.Id}\n{inst.Description}\n游戏目录：{inst.GameDir}";
-            RefreshLaunchState();
-        }
+        void RefreshCurrentInstance() => RefreshLaunchState();
 
         // ---------- 实例列表（左栏，虚拟化+回收，只滚动自身） ----------
         bool _syncingList;
+        List<InstanceItem> _allInstances = new List<InstanceItem>();
 
         public void RefreshInstances()
         {
             if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshInstances); return; }
-            var items = GameRepo.Current.ListInstances().Select(InstanceItem.From).ToList();
+            _allInstances = GameRepo.Current.ListInstances().Select(InstanceItem.From).ToList();
+            ApplyInstanceFilter();
+        }
+
+        void ApplyInstanceFilter()
+        {
+            string query = (VersionSearch.Text ?? "").Trim();
+            var items = _allInstances.Where(x => query.Length == 0 ||
+                x.Id.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (x.Desc ?? "").IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
             var current = SelectedInstance();
             _syncingList = true;
             try
             {
                 InstanceList.ItemsSource = items;
+                InstanceEmpty.Text = _allInstances.Count == 0 ? "当前游戏目录还没有实例，请从下载页安装。" : "没有找到匹配的版本";
                 InstanceEmpty.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
                 InstanceList.Visibility = items.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
                 InstanceList.SelectedItem = current == null ? null : items.FirstOrDefault(x => x.Id == current.Id);
@@ -272,15 +200,15 @@ namespace MoonLauncher.UI.Pages
             finally { _syncingList = false; }
         }
 
+        void VersionSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyInstanceFilter();
+
         void InstanceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_syncingList) return;
             if (!(InstanceList.SelectedItem is InstanceItem item) || !item.Instance.IsValid) return;
             Settings.SelectedVersion = item.Id;
-            RefreshCurrentInstance(); // 只更新当前实例卡片与启动按钮，不重建列表（保留滚动位置）
+            RefreshCurrentInstance();
         }
-
-        void Versions_Click(object sender, RoutedEventArgs e) => MainWindow.Current.Push(new VersionsPage());
 
         void VersionSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -289,18 +217,11 @@ namespace MoonLauncher.UI.Pages
             MainWindow.Current.Push(new InstancePage(inst));
         }
 
-        void ManageMods_Click(object sender, RoutedEventArgs e)
+        void InstanceGear_Click(object sender, RoutedEventArgs e)
         {
-            var inst = SelectedInstance();
-            if (inst == null) { Dialogs.Toast("先选择或安装一个版本，再管理 Mod"); return; }
-            MainWindow.Current.Push(new InstancePage(inst, "mods"));
-        }
-
-        void DownloadMods_Click(object sender, RoutedEventArgs e)
-        {
-            var inst = SelectedInstance();
-            MainWindow.Current.GoTab("download");
-            MainWindow.Current.DownloadPage.OpenContent(ContentType.Mod, inst);
+            e.Handled = true;
+            if ((sender as FrameworkElement)?.Tag is Instance inst && inst.IsValid)
+                MainWindow.Current.Push(new InstancePage(inst));
         }
 
         void OpenGameDir_Click(object sender, RoutedEventArgs e)
@@ -309,8 +230,6 @@ namespace MoonLauncher.UI.Pages
             if (inst == null) { Dialogs.Toast("还没有可打开的实例目录，请先安装版本"); return; }
             Util.OpenFolder(inst.GameDir);
         }
-
-        void GoDownload_Click(object sender, RoutedEventArgs e) => MainWindow.Current.GoTab("download");
 
         // ---------- 官方新闻（minecraft.net RSS，后台加载，失败给明确错误与重试） ----------
         async Task LoadNewsAsync()
@@ -322,7 +241,6 @@ namespace MoonLauncher.UI.Pages
                 {
                     NewsLoading.Visibility = Visibility.Visible;
                     NewsError.Visibility = Visibility.Collapsed;
-                    NewsItems.Visibility = Visibility.Collapsed;
                     NewsHero.Visibility = Visibility.Collapsed;
                     NewsHeroImage.Source = null;
                     _heroLink = null;
@@ -342,40 +260,21 @@ namespace MoonLauncher.UI.Pages
                     NewsError.Visibility = Visibility.Visible;
                     return;
                 }
-                NewsItems.Children.Clear();
-                if (result.FromCache)
-                {
-                    NewsItems.Children.Add(new TextBlock
-                    {
-                        Text = "暂时连不上官网，以下为本地缓存（1 小时内）内容。",
-                        Style = (Style)FindResource("Sub")
-                    });
-                }
 
-                // 首条新闻：顶部大图横幅（标题/日期/摘要压在深蓝黑渐变承托上），点击打开原文。
+                // 与设计稿一致，只展示首条真实新闻的大图、标题、摘要与官网入口。
                 var hero = result.Items[0];
-                NewsHeroDate.Text = hero.Date;
                 NewsHeroTitle.Text = hero.Title;
                 NewsHeroDesc.Text = hero.Description;
                 _heroLink = hero.Link;
-                NewsHero.ToolTip = string.IsNullOrEmpty(hero.Link) ? null : hero.Link + "（点击打开原文）";
+                NewsHero.ToolTip = (result.FromCache ? "当前为本地缓存内容。" : "") +
+                    (string.IsNullOrEmpty(hero.Link) ? "" : hero.Link + "（点击打开原文）");
                 NewsHero.Visibility = Visibility.Visible;
+                UpdateNewsLayout();
                 if (!string.IsNullOrEmpty(hero.ImageUrl))
                 {
                     _heroImageUrl = hero.ImageUrl;
                     _ = LoadHeroImageAsync(hero.ImageUrl);
                 }
-
-                // 其余新闻保留为下方列表。
-                bool firstRow = true;
-                foreach (var item in result.Items.Skip(1))
-                {
-                    if (!firstRow)
-                        NewsItems.Children.Add(new Border { Height = 1, Background = (System.Windows.Media.Brush)FindResource("Line") });
-                    AddNewsItem(item);
-                    firstRow = false;
-                }
-                NewsItems.Visibility = Visibility.Visible;
                 _newsLoaded = true;
             }
             catch (Exception ex) { Log.Warn("更新官方新闻界面失败：" + ex.Message); }
@@ -398,44 +297,26 @@ namespace MoonLauncher.UI.Pages
             if (!string.IsNullOrEmpty(_heroLink)) Util.OpenUrl(_heroLink);
         }
 
-        void AddNewsItem(MinecraftNews.Item item)
-        {
-            var panel = new StackPanel();
-            panel.Children.Add(new TextBlock
-            {
-                Text = item.Title,
-                FontWeight = FontWeights.SemiBold,
-                FontSize = 14,
-                Foreground = (System.Windows.Media.Brush)FindResource("Text"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                ToolTip = item.Title
-            });
-            var meta = string.IsNullOrEmpty(item.Date) ? "阅读全文 →" : $"{item.Date} · 阅读全文 →";
-            panel.Children.Add(new TextBlock { Text = meta, Style = (Style)FindResource("Sub"), Margin = new Thickness(0, 2, 0, 0) });
-            if (!string.IsNullOrEmpty(item.Description))
-                panel.Children.Add(new TextBlock
-                {
-                    Text = item.Description,
-                    Style = (Style)FindResource("Sub"),
-                    Margin = new Thickness(0, 4, 0, 0),
-                    TextWrapping = TextWrapping.NoWrap,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                    ToolTip = item.Description
-                });
-            var btn = new Button
-            {
-                Content = panel,
-                Style = (Style)FindResource("Ghost"),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                ToolTip = item.Link
-            };
-            btn.Click += (s, e) => Util.OpenUrl(item.Link);
-            NewsItems.Children.Add(btn);
-        }
-
         void NewsSource_Click(object sender, RoutedEventArgs e) => Util.OpenUrl(MinecraftNews.SourceUrl);
         void NewsRetry_Click(object sender, RoutedEventArgs e) => _ = LoadNewsAsync();
+
+        // ---------- 右下角工具 ----------
+        void DockSettings_Click(object sender, RoutedEventArgs e) => MainWindow.Current.GoTab("settings");
+
+        void DockContrast_Click(object sender, RoutedEventArgs e)
+        {
+            Theme.ToggleBrightness();
+            Glass.Apply(MainWindow.Current, Settings.Glass);
+        }
+
+        async void DockTerminal_Click(object sender, RoutedEventArgs e)
+        {
+            if (_session != null && !_session.HasExited)
+                await Dialogs.Long("游戏日志", GameLog.Text, width: 720);
+            else await MainWindow.Current.MorePage.ShowLauncherLog();
+        }
+
+        void DockHelp_Click(object sender, RoutedEventArgs e) => MainWindow.Current.GoTab("more");
 
         // ---------- 启动 ----------
         void Launch_Click(object sender, RoutedEventArgs e) => _ = LaunchAsync();
